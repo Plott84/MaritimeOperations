@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import test
+@testable import MaritimeOperations
 
 struct MaritimeOperationsTests {
     @Test func eligibilityUsesConfiguredThreshold() {

@@ -7,6 +7,8 @@ struct MainView: View {
     @Bindable var session: ActiveDPSessionStore
     var onOpenRigMoves: () -> Void
 
+    @State private var saveErrorMessage: String?
+
     private var latestFive: [DPEntry] { Array(entries.prefix(5)) }
 
     var body: some View {
@@ -24,6 +26,14 @@ struct MainView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(AppTheme.background, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .alert("Save failed", isPresented: Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { saveErrorMessage = nil }
+        } message: {
+            Text(saveErrorMessage ?? "")
+        }
     }
 
     private var timerCard: some View {
@@ -185,7 +195,12 @@ struct MainView: View {
             dpClass: session.dpClass
         )
         modelContext.insert(entry)
-        try? modelContext.save()
-        session.clear()
+        do {
+            try modelContext.save()
+            session.clear()
+        } catch {
+            modelContext.delete(entry)
+            saveErrorMessage = "Couldn’t save this DP session. Timer is still running — try Stop again."
+        }
     }
 }

@@ -4,12 +4,12 @@ Personal DPO logbook helper (iPhone, iOS 18+, SwiftUI + SwiftData).
 
 ## Open in Xcode
 
-1. Open `test.xcodeproj` (target/module still named `test`; display name is **Maritime Operations**).
-2. Select an iPhone Simulator (or a signed device).
-3. Product → Run.
+1. Open `MaritimeOperations.xcodeproj`.
+2. Scheme: **MaritimeOperations**.
+3. Select an iPhone Simulator (or a signed device) → Product → Run.
 
-If `xcodebuild` can’t find iOS SDKs, ensure Xcode.app is selected:
-`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+CLI tip if `xcodebuild` can’t find SDKs:
+`export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
 
 ## MVP included
 
@@ -17,6 +17,7 @@ If `xcodebuild` can’t find iOS SDKs, ensure Xcode.app is selected:
 - Design tokens (navy / blue / teal / gold)
 - Unified `DPEntry` (timed + manual)
 - Main DP timer: persists `startedAt`, elapsed via `TimelineView` (survives kill/relaunch)
+- Stop surfaces save failures (timer keeps running on failure)
 - Entries list + Add Manual Entry (Mode / activity / Master’s initials optional)
 - Configurable eligibility threshold (not hardcoded 1h/2h)
 
@@ -26,4 +27,4 @@ If `xcodebuild` can’t find iOS SDKs, ensure Xcode.app is selected:
 2. Add Manual with duration only → same list (source Manual).
 3. Start DP → background → kill app → relaunch → timer still running with correct elapsed.
 4. Manual save with empty vessel or negative duration → blocked with field message.
-5. Scroll Entries: last row not under tab bar; activity metadata wraps (no double truncation).
+5. Scroll Entries: last row not under tab bar; activity metadata wraps.

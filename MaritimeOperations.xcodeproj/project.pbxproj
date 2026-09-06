@@ -12,50 +12,50 @@
 			containerPortal = 2E0F8A3B2F846FD500CB04F6 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 2E0F8A422F846FD500CB04F6;
-			remoteInfo = test;
+			remoteInfo = MaritimeOperations;
 		};
 		2E0F8A622F846FD700CB04F6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2E0F8A3B2F846FD500CB04F6 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 2E0F8A422F846FD500CB04F6;
-			remoteInfo = test;
+			remoteInfo = MaritimeOperations;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2E0F8A432F846FD500CB04F6 /* test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = test.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2E0F8A572F846FD700CB04F6 /* testTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		2E0F8A612F846FD700CB04F6 /* testUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E0F8A432F846FD500CB04F6 /* MaritimeOperations.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MaritimeOperations.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E0F8A572F846FD700CB04F6 /* MaritimeOperationsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MaritimeOperationsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E0F8A612F846FD700CB04F6 /* MaritimeOperationsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MaritimeOperationsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2E0F8A692F846FD700CB04F6 /* Exceptions for "test" folder in "test" target */ = {
+		2E0F8A692F846FD700CB04F6 /* Exceptions for "MaritimeOperations" folder in "MaritimeOperations" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 2E0F8A422F846FD500CB04F6 /* test */;
+			target = 2E0F8A422F846FD500CB04F6 /* MaritimeOperations */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2E0F8A452F846FD500CB04F6 /* test */ = {
+		2E0F8A452F846FD500CB04F6 /* MaritimeOperations */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2E0F8A692F846FD700CB04F6 /* Exceptions for "test" folder in "test" target */,
+				2E0F8A692F846FD700CB04F6 /* Exceptions for "MaritimeOperations" folder in "MaritimeOperations" target */,
 			);
-			path = test;
+			path = MaritimeOperations;
 			sourceTree = "<group>";
 		};
-		2E0F8A5A2F846FD700CB04F6 /* testTests */ = {
+		2E0F8A5A2F846FD700CB04F6 /* MaritimeOperationsTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = testTests;
+			path = MaritimeOperationsTests;
 			sourceTree = "<group>";
 		};
-		2E0F8A642F846FD700CB04F6 /* testUITests */ = {
+		2E0F8A642F846FD700CB04F6 /* MaritimeOperationsUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = testUITests;
+			path = MaritimeOperationsUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -88,9 +88,9 @@
 		2E0F8A3A2F846FD500CB04F6 = {
 			isa = PBXGroup;
 			children = (
-				2E0F8A452F846FD500CB04F6 /* test */,
-				2E0F8A5A2F846FD700CB04F6 /* testTests */,
-				2E0F8A642F846FD700CB04F6 /* testUITests */,
+				2E0F8A452F846FD500CB04F6 /* MaritimeOperations */,
+				2E0F8A5A2F846FD700CB04F6 /* MaritimeOperationsTests */,
+				2E0F8A642F846FD700CB04F6 /* MaritimeOperationsUITests */,
 				2E0F8A442F846FD500CB04F6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		2E0F8A442F846FD500CB04F6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2E0F8A432F846FD500CB04F6 /* test.app */,
-				2E0F8A572F846FD700CB04F6 /* testTests.xctest */,
-				2E0F8A612F846FD700CB04F6 /* testUITests.xctest */,
+				2E0F8A432F846FD500CB04F6 /* MaritimeOperations.app */,
+				2E0F8A572F846FD700CB04F6 /* MaritimeOperationsTests.xctest */,
+				2E0F8A612F846FD700CB04F6 /* MaritimeOperationsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2E0F8A422F846FD500CB04F6 /* test */ = {
+		2E0F8A422F846FD500CB04F6 /* MaritimeOperations */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2E0F8A6A2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "test" */;
+			buildConfigurationList = 2E0F8A6A2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "MaritimeOperations" */;
 			buildPhases = (
 				2E0F8A3F2F846FD500CB04F6 /* Sources */,
 				2E0F8A402F846FD500CB04F6 /* Frameworks */,
@@ -121,18 +121,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2E0F8A452F846FD500CB04F6 /* test */,
+				2E0F8A452F846FD500CB04F6 /* MaritimeOperations */,
 			);
-			name = test;
+			name = MaritimeOperations;
 			packageProductDependencies = (
 			);
-			productName = test;
-			productReference = 2E0F8A432F846FD500CB04F6 /* test.app */;
+			productName = MaritimeOperations;
+			productReference = 2E0F8A432F846FD500CB04F6 /* MaritimeOperations.app */;
 			productType = "com.apple.product-type.application";
 		};
-		2E0F8A562F846FD700CB04F6 /* testTests */ = {
+		2E0F8A562F846FD700CB04F6 /* MaritimeOperationsTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2E0F8A6F2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "testTests" */;
+			buildConfigurationList = 2E0F8A6F2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "MaritimeOperationsTests" */;
 			buildPhases = (
 				2E0F8A532F846FD700CB04F6 /* Sources */,
 				2E0F8A542F846FD700CB04F6 /* Frameworks */,
@@ -144,18 +144,18 @@
 				2E0F8A592F846FD700CB04F6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2E0F8A5A2F846FD700CB04F6 /* testTests */,
+				2E0F8A5A2F846FD700CB04F6 /* MaritimeOperationsTests */,
 			);
-			name = testTests;
+			name = MaritimeOperationsTests;
 			packageProductDependencies = (
 			);
-			productName = testTests;
-			productReference = 2E0F8A572F846FD700CB04F6 /* testTests.xctest */;
+			productName = MaritimeOperationsTests;
+			productReference = 2E0F8A572F846FD700CB04F6 /* MaritimeOperationsTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		2E0F8A602F846FD700CB04F6 /* testUITests */ = {
+		2E0F8A602F846FD700CB04F6 /* MaritimeOperationsUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2E0F8A722F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "testUITests" */;
+			buildConfigurationList = 2E0F8A722F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "MaritimeOperationsUITests" */;
 			buildPhases = (
 				2E0F8A5D2F846FD700CB04F6 /* Sources */,
 				2E0F8A5E2F846FD700CB04F6 /* Frameworks */,
@@ -167,13 +167,13 @@
 				2E0F8A632F846FD700CB04F6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				2E0F8A642F846FD700CB04F6 /* testUITests */,
+				2E0F8A642F846FD700CB04F6 /* MaritimeOperationsUITests */,
 			);
-			name = testUITests;
+			name = MaritimeOperationsUITests;
 			packageProductDependencies = (
 			);
-			productName = testUITests;
-			productReference = 2E0F8A612F846FD700CB04F6 /* testUITests.xctest */;
+			productName = MaritimeOperationsUITests;
+			productReference = 2E0F8A612F846FD700CB04F6 /* MaritimeOperationsUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 2E0F8A3E2F846FD500CB04F6 /* Build configuration list for PBXProject "test" */;
+			buildConfigurationList = 2E0F8A3E2F846FD500CB04F6 /* Build configuration list for PBXProject "MaritimeOperations" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -213,9 +213,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2E0F8A422F846FD500CB04F6 /* test */,
-				2E0F8A562F846FD700CB04F6 /* testTests */,
-				2E0F8A602F846FD700CB04F6 /* testUITests */,
+				2E0F8A422F846FD500CB04F6 /* MaritimeOperations */,
+				2E0F8A562F846FD700CB04F6 /* MaritimeOperationsTests */,
+				2E0F8A602F846FD700CB04F6 /* MaritimeOperationsUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -271,12 +271,12 @@
 /* Begin PBXTargetDependency section */
 		2E0F8A592F846FD700CB04F6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2E0F8A422F846FD500CB04F6 /* test */;
+			target = 2E0F8A422F846FD500CB04F6 /* MaritimeOperations */;
 			targetProxy = 2E0F8A582F846FD700CB04F6 /* PBXContainerItemProxy */;
 		};
 		2E0F8A632F846FD700CB04F6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2E0F8A422F846FD500CB04F6 /* test */;
+			target = 2E0F8A422F846FD500CB04F6 /* MaritimeOperations */;
 			targetProxy = 2E0F8A622F846FD700CB04F6 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -287,12 +287,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = test/test.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MaritimeOperations/MaritimeOperations.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = test/Info.plist;
+				INFOPLIST_FILE = MaritimeOperations/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Maritime Operations";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -321,12 +321,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = test/test.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MaritimeOperations/MaritimeOperations.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = test/Info.plist;
+				INFOPLIST_FILE = MaritimeOperations/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Maritime Operations";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -478,7 +478,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hen.testTests;
+				PRODUCT_BUNDLE_IDENTIFIER = no.henningolsen.MaritimeOperationsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -486,7 +486,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/test.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/test";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MaritimeOperations.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MaritimeOperations";
 			};
 			name = Debug;
 		};
@@ -499,7 +499,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hen.testTests;
+				PRODUCT_BUNDLE_IDENTIFIER = no.henningolsen.MaritimeOperationsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -507,7 +507,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/test.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/test";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MaritimeOperations.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MaritimeOperations";
 			};
 			name = Release;
 		};
@@ -518,7 +518,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hen.testUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = no.henningolsen.MaritimeOperationsUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -526,7 +526,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = test;
+				TEST_TARGET_NAME = MaritimeOperations;
 			};
 			name = Debug;
 		};
@@ -537,7 +537,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hen.testUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = no.henningolsen.MaritimeOperationsUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -545,14 +545,14 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = test;
+				TEST_TARGET_NAME = MaritimeOperations;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2E0F8A3E2F846FD500CB04F6 /* Build configuration list for PBXProject "test" */ = {
+		2E0F8A3E2F846FD500CB04F6 /* Build configuration list for PBXProject "MaritimeOperations" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2E0F8A6D2F846FD700CB04F6 /* Debug */,
@@ -561,7 +561,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2E0F8A6A2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "test" */ = {
+		2E0F8A6A2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "MaritimeOperations" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2E0F8A6B2F846FD700CB04F6 /* Debug */,
@@ -570,7 +570,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2E0F8A6F2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "testTests" */ = {
+		2E0F8A6F2F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "MaritimeOperationsTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2E0F8A702F846FD700CB04F6 /* Debug */,
@@ -579,7 +579,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2E0F8A722F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "testUITests" */ = {
+		2E0F8A722F846FD700CB04F6 /* Build configuration list for PBXNativeTarget "MaritimeOperationsUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2E0F8A732F846FD700CB04F6 /* Debug */,
