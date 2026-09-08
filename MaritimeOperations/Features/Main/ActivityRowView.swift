@@ -22,18 +22,26 @@ struct ActivityRowView: View {
                         .font(.caption)
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(alignment: .firstTextBaseline) {
-                    Text(metadataLine)
+                // BUG-002: stack metadata on two lines; duration on its own row
+                if !lineOne.isEmpty {
+                    Text(lineOne)
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.teal)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 8)
-                    Label(AppFormatters.hoursString(entry.durationHours), systemImage: "clock")
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.textSecondary)
                 }
+                if !lineTwo.isEmpty {
+                    Text(lineTwo)
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.teal)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Label(AppFormatters.hoursString(entry.durationHours), systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.textSecondary)
             }
 
             Image(systemName: "chevron.right")
@@ -50,10 +58,14 @@ struct ActivityRowView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var metadataLine: String {
-        [entry.vesselType, entry.dpClass, entry.vessel]
+    private var lineOne: String {
+        [entry.vesselType, entry.dpClass]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " • ")
+    }
+
+    private var lineTwo: String {
+        entry.vessel.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
