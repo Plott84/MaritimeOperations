@@ -2,58 +2,64 @@ import SwiftUI
 
 struct ActivityRowView: View {
     let entry: DPEntry
+    var showsRail: Bool = true
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text("DP")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("DP session")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    Spacer(minLength: 8)
-                    Text(AppFormatters.activityDate.string(from: entry.date))
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.trailing)
-                        .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .top, spacing: 10) {
+            if showsRail {
+                VStack(spacing: 0) {
+                    Circle()
+                        .fill(AppTheme.teal.opacity(0.85))
+                        .frame(width: 7, height: 7)
+                    Rectangle()
+                        .fill(AppTheme.teal.opacity(0.35))
+                        .frame(width: 1)
+                        .frame(maxHeight: .infinity)
                 }
-
-                // BUG-002: stack metadata on two lines; duration on its own row
-                if !lineOne.isEmpty {
-                    Text(lineOne)
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.teal)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if !lineTwo.isEmpty {
-                    Text(lineTwo)
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.teal)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Label(AppFormatters.hoursString(entry.durationHours), systemImage: "clock")
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.textSecondary)
+                .frame(width: 10)
             }
 
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(AppTheme.textSecondary)
-                .padding(.top, 4)
-        }
-        .padding(12)
-        .background(AppTheme.surfaceElevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+            HStack(alignment: .top, spacing: 10) {
+                Text("DP")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .frame(width: 28, height: 28)
+                    .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("DP session")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Spacer(minLength: 8)
+                        Text(AppFormatters.activityDate.string(from: entry.date))
+                            .font(.caption2)
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    Text(lineOne)
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.teal)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !lineTwo.isEmpty {
+                        Text(lineTwo)
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.teal.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Label(AppFormatters.hoursString(entry.durationHours), systemImage: "clock")
+                        .font(.caption2)
+                        .foregroundStyle(AppTheme.textSecondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+            }
+            .padding(10)
+            .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .accessibilityElement(children: .combine)
     }
@@ -62,7 +68,7 @@ struct ActivityRowView: View {
         [entry.vesselType, entry.dpClass]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-            .joined(separator: " • ")
+            .joined(separator: " · ")
     }
 
     private var lineTwo: String {

@@ -6,11 +6,8 @@ struct PlaceholderTabView: View {
 
     var body: some View {
         ZStack {
-            AppTheme.background.ignoresSafeArea()
-            VStack(spacing: 8) {
-                Text(title)
-                    .font(.largeTitle.weight(.semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
+            AppCanvas()
+            VStack(spacing: 12) {
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(AppTheme.textSecondary)
@@ -20,5 +17,14 @@ struct PlaceholderTabView: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                TealCircleButton(systemImage: "plus") {}
+                    .disabled(true)
+                    .accessibilityLabel("Add")
+            }
+        }
     }
 }

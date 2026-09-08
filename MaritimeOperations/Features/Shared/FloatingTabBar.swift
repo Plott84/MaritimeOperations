@@ -22,10 +22,10 @@ enum AppTab: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .main: return "house.fill"
-        case .entries: return "clipboard"
-        case .rigMoves: return "arrow.triangle.swap"
+        case .entries: return "list.clipboard"
+        case .rigMoves: return "arrow.left.arrow.right"
         case .tools: return "wrench.and.screwdriver"
-        case .export: return "doc.badge.arrow.down"
+        case .export: return "square.and.arrow.up"
         }
     }
 }
@@ -40,14 +40,24 @@ struct FloatingTabBar: View {
                     selection = tab
                 } label: {
                     VStack(spacing: 4) {
-                        Image(systemName: tab.systemImage)
-                            .font(.system(size: 18, weight: .semibold))
+                        ZStack {
+                            if selection == tab {
+                                Circle()
+                                    .fill(AppTheme.teal.opacity(0.22))
+                                    .frame(width: 36, height: 36)
+                            }
+                            Image(systemName: tab.systemImage)
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .frame(height: 36)
                         Text(tab.title)
                             .font(.caption2.weight(.medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
-                    .foregroundStyle(selection == tab ? AppTheme.teal : AppTheme.textPrimary.opacity(0.85))
+                    .foregroundStyle(selection == tab ? AppTheme.teal : AppTheme.textPrimary.opacity(0.8))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 6)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -55,16 +65,17 @@ struct FloatingTabBar: View {
                 .accessibilityAddTraits(selection == tab ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
         .background {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            Capsule(style: .continuous)
                 .fill(.ultraThinMaterial)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                    Capsule(style: .continuous)
+                        .stroke(AppTheme.teal.opacity(0.35), lineWidth: 1)
                 }
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
     }
 }
