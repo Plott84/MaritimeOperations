@@ -41,7 +41,8 @@ struct EntriesView: View {
                 TealCircleButton(systemImage: "plus") {
                     showingAdd = true
                 }
-                .accessibilityLabel("Add Manual Entry")
+                .accessibilityLabel("Add entry")
+                .accessibilityIdentifier("navAddEntry")
             }
         }
         .sheet(isPresented: $showingAdd) {
@@ -99,6 +100,7 @@ struct EntriesView: View {
                     .foregroundStyle(AppTheme.textPrimary)
                     .background(Color.black.opacity(0.28), in: Capsule())
                     .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
+                    .accessibilityIdentifier("addManualEntryPill")
 
                     Button {} label: {
                         Label("Share DP Entries", systemImage: "square.and.arrow.up")

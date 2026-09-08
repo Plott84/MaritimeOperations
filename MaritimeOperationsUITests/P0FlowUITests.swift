@@ -45,7 +45,7 @@ final class P0FlowUITests: XCTestCase {
         XCTAssertTrue(entriesTab.waitForExistence(timeout: 8))
         entriesTab.tap()
 
-        let add = app.buttons["Add Manual Entry"]
+        let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()
 
@@ -70,7 +70,7 @@ final class P0FlowUITests: XCTestCase {
         app.launch()
 
         app.buttons["Entries"].tap()
-        let add = app.buttons["Add Manual Entry"]
+        let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()
 
