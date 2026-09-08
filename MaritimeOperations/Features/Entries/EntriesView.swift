@@ -8,11 +8,17 @@ struct EntriesView: View {
     var body: some View {
         Group {
             if entries.isEmpty {
-                ContentUnavailableView(
-                    "No entries yet",
-                    systemImage: "clipboard",
-                    description: Text("Stop a DP timer or add a manual line from your old book.")
-                )
+                ContentUnavailableView {
+                    Label("No entries yet", systemImage: "clipboard")
+                } description: {
+                    Text("Stop a DP timer or add a manual line from your old book.")
+                } actions: {
+                    Button("Add Manual Entry") {
+                        showingAdd = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppTheme.teal)
+                }
                 .foregroundStyle(AppTheme.textSecondary)
             } else {
                 List {
@@ -45,7 +51,7 @@ struct EntriesView: View {
     @ViewBuilder
     private func entryRow(_ entry: DPEntry) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
+            HStack(alignment: .firstTextBaseline) {
                 Text(entry.vessel.isEmpty ? "Untitled vessel" : entry.vessel)
                     .font(.headline)
                     .foregroundStyle(AppTheme.textPrimary)
@@ -55,10 +61,21 @@ struct EntriesView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AppTheme.primaryBlue)
             }
-            Text(secondaryLine(entry))
-                .font(.subheadline)
-                .foregroundStyle(AppTheme.teal)
-                .fixedSize(horizontal: false, vertical: true)
+
+            // BUG-002: two lines — don’t squeeze metadata into one HStack with duration
+            if !lineOne(entry).isEmpty {
+                Text(lineOne(entry))
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.teal)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !lineTwo(entry).isEmpty {
+                Text(lineTwo(entry))
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.teal)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             HStack {
                 Text(entry.source.label)
                     .font(.caption)
@@ -78,10 +95,15 @@ struct EntriesView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func secondaryLine(_ entry: DPEntry) -> String {
-        [entry.rig, entry.vesselType, entry.dpClass]
+    private func lineOne(_ entry: DPEntry) -> String {
+        [entry.vesselType, entry.dpClass]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " • ")
+    }
+
+    private func lineTwo(_ entry: DPEntry) -> String {
+        let rig = entry.rig.trimmingCharacters(in: .whitespacesAndNewlines)
+        return rig
     }
 }
