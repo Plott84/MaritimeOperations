@@ -4,14 +4,16 @@ struct ActivityRowView: View {
     let entry: DPEntry
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .top, spacing: 10) {
             VStack(spacing: 0) {
                 Circle()
                     .fill(AppTheme.teal.opacity(0.9))
                     .frame(width: 7, height: 7)
+                    .padding(.top, 12)
                 Rectangle()
                     .fill(AppTheme.teal.opacity(0.28))
                     .frame(width: 1)
+                    .frame(maxHeight: .infinity)
             }
             .frame(width: 10)
 

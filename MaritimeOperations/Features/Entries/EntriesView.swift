@@ -83,8 +83,8 @@ struct EntriesView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 10) {
-                    counterTile(title: "Total entries", value: entries.count)
-                    counterTile(title: "Editable", value: editableCount)
+                    counterTile(title: "Total entries", value: entries.count, systemImage: "list.clipboard")
+                    counterTile(title: "Editable", value: editableCount, systemImage: "square.and.pencil")
                 }
 
                 HStack(spacing: 10) {
@@ -119,16 +119,16 @@ struct EntriesView: View {
         }
     }
 
-    private func counterTile(title: String, value: Int) -> some View {
+    private func counterTile(title: String, value: Int, systemImage: String) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: "list.clipboard")
+            Image(systemName: systemImage)
                 .foregroundStyle(AppTheme.primaryBlue)
+            Text("\(value)")
+                .font(.title.weight(.bold))
+                .foregroundStyle(AppTheme.textPrimary)
             Text(title)
                 .font(.caption)
                 .foregroundStyle(AppTheme.textSecondary)
-            Text("\(value)")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)

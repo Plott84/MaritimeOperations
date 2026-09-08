@@ -23,9 +23,9 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .main: return "house.fill"
         case .entries: return "list.clipboard"
-        case .rigMoves: return "arrow.left.arrow.right"
+        case .rigMoves: return "point.topleft.down.curvedto.point.bottomright.up"
         case .tools: return "wrench.and.screwdriver"
-        case .export: return "square.and.arrow.up"
+        case .export: return "doc.text"
         }
     }
 }
@@ -43,11 +43,12 @@ struct FloatingTabBar: View {
                         ZStack {
                             if selection == tab {
                                 Circle()
-                                    .fill(AppTheme.teal.opacity(0.22))
+                                    .fill(AppTheme.teal)
                                     .frame(width: 36, height: 36)
                             }
                             Image(systemName: tab.systemImage)
                                 .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(selection == tab ? Color.black.opacity(0.85) : AppTheme.textPrimary.opacity(0.8))
                         }
                         .frame(height: 36)
                         Text(tab.title)
