@@ -5,14 +5,28 @@ struct AppCanvas: View {
         ZStack {
             AppTheme.background
             GridOverlay()
-            Image(systemName: "location.north.line")
-                .font(.system(size: 220, weight: .ultraLight))
-                .foregroundStyle(AppTheme.teal.opacity(0.07))
-                .rotationEffect(.degrees(12))
-                .offset(x: 140, y: -220)
+            TriangleLineArt()
                 .allowsHitTesting(false)
         }
         .ignoresSafeArea()
+    }
+}
+
+
+private struct TriangleLineArt: View {
+    var body: some View {
+        Canvas { context, size in
+            let origin = CGPoint(x: size.width - 28, y: 36)
+            var path = Path()
+            // Faint geometric triangle, top-right — not a compass icon
+            path.move(to: CGPoint(x: origin.x - 150, y: origin.y + 18))
+            path.addLine(to: CGPoint(x: origin.x - 20, y: origin.y + 210))
+            path.addLine(to: CGPoint(x: origin.x - 90, y: origin.y + 8))
+            path.closeSubpath()
+            path.move(to: CGPoint(x: origin.x - 118, y: origin.y + 70))
+            path.addLine(to: CGPoint(x: origin.x - 48, y: origin.y + 150))
+            context.stroke(path, with: .color(AppTheme.teal.opacity(0.10)), lineWidth: 1.2)
+        }
     }
 }
 

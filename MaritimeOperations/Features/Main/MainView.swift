@@ -59,17 +59,17 @@ struct MainView: View {
                     if session.startedAt != nil {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             Text(AppFormatters.timerString(from: session.elapsed(at: context.date)))
-                                .font(.system(size: 72, weight: .bold, design: .rounded))
+                                .font(.system(size: 88, weight: .bold, design: .rounded))
                                 .monospacedDigit()
-                                .foregroundStyle(AppTheme.textPrimary)
+                                .foregroundStyle(timerGradient)
                                 .minimumScaleFactor(0.6)
                                 .lineLimit(1)
                         }
                     } else {
                         Text("00:00")
-                            .font(.system(size: 72, weight: .bold, design: .rounded))
+                            .font(.system(size: 88, weight: .bold, design: .rounded))
                             .monospacedDigit()
-                            .foregroundStyle(AppTheme.textPrimary)
+                            .foregroundStyle(timerGradient)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -161,7 +161,7 @@ struct MainView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 12)
                 } else {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 0) {
                         ForEach(latestFive, id: \.id) { entry in
                             ActivityRowView(entry: entry)
                         }
@@ -169,6 +169,15 @@ struct MainView: View {
                 }
             }
         }
+    }
+
+
+    private var timerGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(white: 0.78), Color.white],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 
     private func toggleTimer() {
