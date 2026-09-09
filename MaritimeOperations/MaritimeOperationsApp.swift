@@ -7,6 +7,6 @@ struct MaritimeOperationsApp: App {
         WindowGroup {
             RootView()
         }
-        .modelContainer(for: DPEntry.self)
+        .modelContainer(for: [DPEntry.self, RigMove.self])
     }
 }
