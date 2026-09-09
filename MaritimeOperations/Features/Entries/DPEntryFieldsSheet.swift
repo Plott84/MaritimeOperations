@@ -1,7 +1,8 @@
 import SwiftUI
 import SwiftData
+import CoreLocation
 
-/// Confirm a timed stop, or edit an existing line. No new fields.
+/// DP line: start/stop times, derived hours, ship, location or GPS, activity code, notes.
 struct DPEntryFieldsSheet: View {
     enum Mode {
         case confirmStop
@@ -15,16 +16,18 @@ struct DPEntryFieldsSheet: View {
     var session: ActiveDPSessionStore?
     var onSaved: () -> Void = {}
 
-    @State private var vessel: String
-    @State private var rig: String
-    @State private var vesselType: String
-    @State private var dpClass: String
-    @State private var modeText: String
+    @State private var start: Date
+    @State private var stop: Date
+    @State private var shipName: String
+    @State private var locationName: String
+    @State private var latitudeText: String
+    @State private var longitudeText: String
     @State private var activityCode: String
-    @State private var masterInitials: String
     @State private var notes: String
     @State private var fieldError: String?
     @State private var saveError: String?
+    @State private var gpsNote: String?
+    @State private var locator = WhenInUseLocation()
 
     init(mode: Mode, session: ActiveDPSessionStore? = nil, onSaved: @escaping () -> Void = {}) {
         self.mode = mode
@@ -32,25 +35,31 @@ struct DPEntryFieldsSheet: View {
         self.onSaved = onSaved
         switch mode {
         case .confirmStop:
-            // A new line starts empty. Sample row values are not standing defaults.
-            _vessel = State(initialValue: "")
-            _rig = State(initialValue: "")
-            _vesselType = State(initialValue: "")
-            _dpClass = State(initialValue: "")
-            _modeText = State(initialValue: "")
+            let started = session?.startedAt ?? .now
+            _start = State(initialValue: started)
+            _stop = State(initialValue: .now)
+            _shipName = State(initialValue: "")
+            _locationName = State(initialValue: "")
+            _latitudeText = State(initialValue: "")
+            _longitudeText = State(initialValue: "")
             _activityCode = State(initialValue: "")
-            _masterInitials = State(initialValue: "")
             _notes = State(initialValue: "")
         case .edit(let entry):
-            _vessel = State(initialValue: entry.vessel)
-            _rig = State(initialValue: entry.rig)
-            _vesselType = State(initialValue: entry.vesselType)
-            _dpClass = State(initialValue: entry.dpClass)
-            _modeText = State(initialValue: entry.mode ?? "")
+            let started = entry.startTime ?? entry.date
+            let ended = entry.endTime ?? started.addingTimeInterval(entry.durationHours * 3600)
+            _start = State(initialValue: started)
+            _stop = State(initialValue: ended)
+            _shipName = State(initialValue: entry.vessel == "Vessel" ? "" : entry.vessel)
+            _locationName = State(initialValue: entry.locationName)
+            _latitudeText = State(initialValue: entry.latitudeText)
+            _longitudeText = State(initialValue: entry.longitudeText)
             _activityCode = State(initialValue: entry.activityCode ?? "")
-            _masterInitials = State(initialValue: entry.masterInitials ?? "")
             _notes = State(initialValue: entry.notes ?? "")
         }
+    }
+
+    private var hours: Double {
+        max(0, stop.timeIntervalSince(start) / 3600)
     }
 
     var body: some View {
@@ -61,18 +70,35 @@ struct DPEntryFieldsSheet: View {
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.textSecondary)
                 }
-                Section("Logbook line") {
-                    field("Vessel", text: $vessel)
-                    field("Rig", text: $rig)
-                    field("Vessel type", text: $vesselType)
-                    field("DP class", text: $dpClass)
+                Section("Times") {
+                    DatePicker("Start", selection: $start)
+                    DatePicker("Stop", selection: $stop)
+                    LabeledContent("Hours") {
+                        Text(AppFormatters.hoursString(hours))
+                            .foregroundStyle(AppTheme.teal)
+                    }
                 }
-                Section("Optional") {
-                    TextField("Mode", text: $modeText)
+                Section("Ship") {
+                    TextField("Ship name", text: $shipName)
+                        .textInputAutocapitalization(.words)
+                }
+                Section("Location") {
+                    TextField("Location name", text: $locationName)
+                    TextField("Latitude N/S xx° xx.x'", text: $latitudeText)
+                        .textInputAutocapitalization(.characters)
+                    TextField("Longitude E/W xxx° xx.x'", text: $longitudeText)
+                        .textInputAutocapitalization(.characters)
+                    Button("Use phone GPS") { locator.request() }
+                    if let gpsNote {
+                        Text(gpsNote)
+                            .font(.footnote)
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+                }
+                Section("Log") {
                     TextField("Activity code", text: $activityCode)
-                    TextField("Master’s initials", text: $masterInitials)
                     TextField("Notes", text: $notes, axis: .vertical)
-                        .lineLimit(2...5)
+                        .lineLimit(3...6)
                 }
                 if let fieldError {
                     Section {
@@ -105,6 +131,19 @@ struct DPEntryFieldsSheet: View {
                 }
             }
             .interactiveDismissDisabled(isConfirm)
+            .onAppear {
+                locator.onFix = { location in
+                    latitudeText = CoordinateFormat.latitude(location.coordinate.latitude)
+                    longitudeText = CoordinateFormat.longitude(location.coordinate.longitude)
+                    gpsNote = "GPS filled. You can edit it."
+                }
+                locator.onDenied = {
+                    if latitudeText.isEmpty && longitudeText.isEmpty {
+                        gpsNote = "No GPS fix. You can still save and type a position."
+                    }
+                }
+                locator.request()
+            }
         }
         .accessibilityIdentifier("dpEntryFieldsSheet")
     }
@@ -114,70 +153,47 @@ struct DPEntryFieldsSheet: View {
         return false
     }
 
-    private var title: String {
-        isConfirm ? "Save DP session" : "Edit entry"
-    }
-
-    private var skipTitle: String {
-        isConfirm ? "Skip" : "Cancel"
-    }
+    private var title: String { isConfirm ? "Save DP session" : "Edit entry" }
+    private var skipTitle: String { isConfirm ? "Skip" : "Cancel" }
 
     private var headerCopy: String {
         isConfirm
-            ? "Confirm the logbook line before this session is saved. Skip keeps the timer running and does not create an entry."
-            : "Finish the logbook fields. Source and times stay as they were."
-    }
-
-    private func field(_ title: String, text: Binding<String>) -> some View {
-        TextField(title, text: text)
-            .textInputAutocapitalization(.words)
+            ? "The timer set start and stop. Change them if you need to. Hours follow. Skip writes nothing and leaves the timer running."
+            : "Edit the DP line. Hours follow start and stop."
     }
 
     private func save() {
         fieldError = nil
-        let vessel = vessel.trimmingCharacters(in: .whitespacesAndNewlines)
-        let rig = rig.trimmingCharacters(in: .whitespacesAndNewlines)
-        let vesselType = vesselType.trimmingCharacters(in: .whitespacesAndNewlines)
-        let dpClass = dpClass.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if vessel.isEmpty || vessel.caseInsensitiveCompare("Vessel") == .orderedSame {
-            fieldError = "Vessel is required."
+        let ship = shipName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if ship.isEmpty || ship.caseInsensitiveCompare("Vessel") == .orderedSame {
+            fieldError = "Ship name is required."
             return
         }
-        if rig.isEmpty { fieldError = "Rig is required."; return }
-        if vesselType.isEmpty { fieldError = "Vessel type is required."; return }
-        if dpClass.isEmpty { fieldError = "DP class is required."; return }
+        if stop <= start {
+            fieldError = "Stop must be after start."
+            return
+        }
 
+        let hours = hours
         switch mode {
         case .confirmStop:
-            guard let session, let startedAt = session.startedAt else {
-                dismiss()
-                return
-            }
-            let endedAt = Date()
-            let hours = max(0, endedAt.timeIntervalSince(startedAt) / 3600.0)
+            guard let session else { dismiss(); return }
             let entry = DPEntry(
                 source: .timed,
-                date: startedAt,
-                startTime: startedAt,
-                endTime: endedAt,
+                date: start,
+                startTime: start,
+                endTime: stop,
                 durationHours: hours,
-                vessel: vessel,
-                rig: rig,
-                vesselType: vesselType,
-                dpClass: dpClass,
-                mode: optional(modeText),
+                vessel: ship,
                 activityCode: optional(activityCode),
                 notes: optional(notes),
-                masterInitials: optional(masterInitials)
+                locationName: locationName.trimmingCharacters(in: .whitespacesAndNewlines),
+                latitudeText: latitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
+                longitudeText: longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
             )
             modelContext.insert(entry)
             do {
                 try modelContext.save()
-                session.vessel = vessel
-                session.rig = rig
-                session.vesselType = vesselType
-                session.dpClass = dpClass
                 session.clear()
                 onSaved()
                 dismiss()
@@ -186,13 +202,15 @@ struct DPEntryFieldsSheet: View {
                 saveError = "Couldn’t save this DP session. Timer is still running — try Save again."
             }
         case .edit(let entry):
-            entry.vessel = vessel
-            entry.rig = rig
-            entry.vesselType = vesselType
-            entry.dpClass = dpClass
-            entry.mode = optional(modeText)
+            entry.date = start
+            entry.startTime = start
+            entry.endTime = stop
+            entry.durationHours = hours
+            entry.vessel = ship
+            entry.locationName = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
+            entry.latitudeText = latitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+            entry.longitudeText = longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
             entry.activityCode = optional(activityCode)
-            entry.masterInitials = optional(masterInitials)
             entry.notes = optional(notes)
             entry.updatedAt = .now
             do {

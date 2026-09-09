@@ -22,16 +22,10 @@ final class P0FlowUITests: XCTestCase {
         stop.tap()
 
         XCTAssertTrue(app.navigationBars["Save DP session"].waitForExistence(timeout: 5))
-        func fill(_ label: String, _ value: String) {
-            let field = app.textFields[label]
-            XCTAssertTrue(field.waitForExistence(timeout: 3), label)
-            field.tap()
-            field.typeText(value)
-        }
-        fill("Vessel", "QA Vessel")
-        fill("Rig", "QA Rig")
-        fill("Vessel type", "AH")
-        fill("DP class", "Class 2")
+        let ship = app.textFields["Ship name"]
+        XCTAssertTrue(ship.waitForExistence(timeout: 5))
+        ship.tap()
+        ship.typeText("QA Vessel")
         app.buttons["dpFieldsSave"].tap()
 
         // Back to Ready only after confirm
