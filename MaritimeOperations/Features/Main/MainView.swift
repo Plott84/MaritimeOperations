@@ -12,19 +12,21 @@ struct MainView: View {
     private var latestFive: [DPEntry] { Array(entries.prefix(5)) }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                timerCard
-                activityCard
+        ZStack {
+            AppCanvas()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    timerCard
+                    activityCard
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
         }
-        .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Main")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(AppTheme.background, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .alert("Save failed", isPresented: Binding(
             get: { saveErrorMessage != nil },
@@ -37,76 +39,72 @@ struct MainView: View {
     }
 
     private var timerCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Label {
-                    Text("DP TIMER")
-                        .font(.caption.weight(.semibold))
-                        .tracking(1.0)
-                        .foregroundStyle(AppTheme.teal)
-                } icon: {
-                    Image(systemName: "location.north.circle.fill")
-                        .foregroundStyle(AppTheme.teal)
-                }
-                Spacer()
-                statusPill
-            }
-
-            Group {
-                if let startedAt = session.startedAt {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Text(AppFormatters.timerString(from: session.elapsed(at: context.date)))
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(AppTheme.textPrimary)
-                            .accessibilityLabel("Elapsed \(AppFormatters.timerString(from: session.elapsed(at: context.date)))")
-                            .accessibilityHint("Started \(startedAt.formatted())")
+        GlassCard {
+            VStack(spacing: 16) {
+                HStack {
+                    Label {
+                        Text("DP TIMER")
+                            .font(.caption.weight(.semibold))
+                            .tracking(1.1)
+                            .foregroundStyle(AppTheme.teal)
+                    } icon: {
+                        Image(systemName: "scope")
+                            .foregroundStyle(AppTheme.teal)
                     }
-                } else {
-                    Text("00:00")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(AppTheme.textPrimary)
+                    Spacer()
+                    statusPill
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 12) {
+                Group {
+                    if session.startedAt != nil {
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            Text(AppFormatters.timerString(from: session.elapsed(at: context.date)))
+                                .font(.system(size: 88, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                                .foregroundStyle(timerGradient)
+                                .minimumScaleFactor(0.6)
+                                .lineLimit(1)
+                        }
+                    } else {
+                        Text("00:00")
+                            .font(.system(size: 88, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(timerGradient)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
                 Button(action: toggleTimer) {
                     Label(session.isRunning ? "Stop DP" : "Start DP", systemImage: session.isRunning ? "stop.fill" : "play.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.black.opacity(0.85))
+                .background(AppTheme.teal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: AppTheme.teal.opacity(0.35), radius: 10, y: 4)
+
+                Button(action: onOpenRigMoves) {
+                    Label("New Rig Move", systemImage: "ferry.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(Color.black)
-                .background(AppTheme.teal, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                Button(action: onOpenRigMoves) {
-                    Label("New Rig Move", systemImage: "ferry.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                }
-                .buttonStyle(.plain)
                 .foregroundStyle(AppTheme.textPrimary)
-                .background(AppTheme.surfaceElevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(AppTheme.border, lineWidth: 1)
                 }
-            }
 
-            Text("Start when the vessel goes on DP. Stop saves the session to Entries.")
-                .font(.footnote)
-                .foregroundStyle(AppTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(16)
-        .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppTheme.teal.opacity(0.35), lineWidth: 1)
+                Text("Start when the vessel goes on DP. Stop saves the session to Entries.")
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 
@@ -122,53 +120,64 @@ struct MainView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(Color.black.opacity(0.35), in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 
     private var activityCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("ACTIVITY")
-                        .font(.caption.weight(.semibold))
-                        .tracking(1.0)
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label {
+                            Text("ACTIVITY")
+                                .font(.caption.weight(.semibold))
+                                .tracking(1.1)
+                        } icon: {
+                            Image(systemName: "waveform.path.ecg")
+                        }
                         .foregroundStyle(AppTheme.teal)
-                    Text("Latest Activity")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                        Text("Latest Activity")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                    Spacer()
+                    Text("5 latest")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.3), in: Capsule())
+                        .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
                 }
-                Spacer()
-                Text("5 latest")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.black.opacity(0.3), in: Capsule())
-            }
 
-            Text("Newest 5 records across DP logs and rig moves.")
-                .font(.footnote)
-                .foregroundStyle(AppTheme.textSecondary)
-
-            if latestFive.isEmpty {
-                Text("No activity yet. Start DP or add a manual entry.")
-                    .font(.subheadline)
+                Text("Newest 5 records across DP logs and rig moves.")
+                    .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 20)
-            } else {
-                LazyVStack(spacing: 10) {
-                    ForEach(latestFive, id: \.id) { entry in
-                        ActivityRowView(entry: entry)
+
+                if latestFive.isEmpty {
+                    Text("No activity yet. Start DP or add a manual entry.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 12)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(latestFive, id: \.id) { entry in
+                            ActivityRowView(entry: entry)
+                        }
                     }
                 }
             }
         }
-        .padding(16)
-        .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
-        }
+    }
+
+
+    private var timerGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(white: 0.78), Color.white],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 
     private func toggleTimer() {

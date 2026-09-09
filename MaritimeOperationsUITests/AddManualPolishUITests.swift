@@ -7,9 +7,7 @@ final class AddManualPolishUITests: XCTestCase {
 
     private func openAddManual(_ app: XCUIApplication) {
         app.buttons["Entries"].tap()
-        let add = app.descendants(matching: .button)
-            .matching(NSPredicate(format: "label == %@", "Add Manual Entry"))
-            .element(boundBy: 0)
+        let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 8))
         add.tap()
         XCTAssertTrue(app.navigationBars["Add Manual Entry"].waitForExistence(timeout: 5))
@@ -20,8 +18,8 @@ final class AddManualPolishUITests: XCTestCase {
         app.launch()
         app.buttons["Entries"].tap()
         XCTAssertTrue(
-            app.navigationBars["Entries"].buttons["Add Manual Entry"].waitForExistence(timeout: 8)
-            || app.buttons.matching(NSPredicate(format: "label == %@", "Add Manual Entry")).count > 0
+            app.buttons["addManualEntryPill"].waitForExistence(timeout: 8)
+            || app.buttons["navAddEntry"].waitForExistence(timeout: 2)
         )
     }
 

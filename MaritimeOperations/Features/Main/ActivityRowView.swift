@@ -4,68 +4,65 @@ struct ActivityRowView: View {
     let entry: DPEntry
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text("DP")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        HStack(alignment: .top, spacing: 10) {
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(AppTheme.teal.opacity(0.9))
+                    .frame(width: 7, height: 7)
+                    .padding(.top, 12)
+                Rectangle()
+                    .fill(AppTheme.teal.opacity(0.28))
+                    .frame(width: 1)
+                    .frame(maxHeight: .infinity)
+            }
+            .frame(width: 10)
 
-            VStack(alignment: .leading, spacing: 6) {
+            Text("DP")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .frame(width: 32, height: 32)
+                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("DP session")
-                        .font(.body.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.textPrimary)
                     Spacer(minLength: 8)
                     Text(AppFormatters.activityDate.string(from: entry.date))
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.trailing)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
-
-                // BUG-002: stack metadata on two lines; duration on its own row
-                if !lineOne.isEmpty {
-                    Text(lineOne)
-                        .font(.subheadline)
+                if !meta.isEmpty {
+                    Text(meta)
+                        .font(.caption)
                         .foregroundStyle(AppTheme.teal)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if !lineTwo.isEmpty {
-                    Text(lineTwo)
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.teal)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            }
 
-                Label(AppFormatters.hoursString(entry.durationHours), systemImage: "clock")
-                    .font(.caption)
+            VStack(alignment: .trailing, spacing: 2) {
+                Image(systemName: "clock")
+                    .font(.caption2)
+                    .foregroundStyle(AppTheme.textSecondary)
+                Text(AppFormatters.hoursString(entry.durationHours))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(AppTheme.textSecondary)
             }
 
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AppTheme.textSecondary)
-                .padding(.top, 4)
         }
-        .padding(12)
-        .background(AppTheme.surfaceElevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
-        }
+        .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
     }
 
-    private var lineOne: String {
-        [entry.vesselType, entry.dpClass]
+    private var meta: String {
+        [entry.vesselType, entry.dpClass, entry.vessel]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-            .joined(separator: " • ")
-    }
-
-    private var lineTwo: String {
-        entry.vessel.trimmingCharacters(in: .whitespacesAndNewlines)
+            .joined(separator: " · ")
     }
 }
