@@ -40,8 +40,8 @@ struct AddManualEntryView: View {
         !durationText.isEmpty
             || !vessel.isEmpty
             || !rig.isEmpty
-            || vesselType != "AH"
-            || dpClass != "Class 2"
+            || !vesselType.isEmpty
+            || !dpClass.isEmpty
             || modeSelection != .unspecified
             || !activityCode.isEmpty
             || !masterInitials.isEmpty
