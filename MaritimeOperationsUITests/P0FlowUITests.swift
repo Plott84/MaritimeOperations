@@ -21,7 +21,14 @@ final class P0FlowUITests: XCTestCase {
         sleep(2)
         stop.tap()
 
-        // Back to Ready
+        XCTAssertTrue(app.navigationBars["Save DP session"].waitForExistence(timeout: 5))
+        let rig = app.textFields["Rig"]
+        XCTAssertTrue(rig.waitForExistence(timeout: 3))
+        rig.tap()
+        rig.typeText("QA Rig")
+        app.buttons["dpFieldsSave"].tap()
+
+        // Back to Ready only after confirm
         XCTAssertTrue(app.buttons["Start DP"].waitForExistence(timeout: 5))
 
         let entriesTab = app.buttons["Entries"]

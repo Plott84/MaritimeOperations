@@ -8,6 +8,8 @@ struct MainView: View {
     var onOpenRigMoves: () -> Void
 
     @State private var saveErrorMessage: String?
+    @State private var showingConfirm = false
+    @State private var editingEntry: DPEntry?
 
     private var latestFive: [DPEntry] { Array(entries.prefix(5)) }
 
@@ -28,6 +30,12 @@ struct MainView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .sheet(isPresented: $showingConfirm) {
+            DPEntryFieldsSheet(mode: .confirmStop, session: session)
+        }
+        .sheet(item: $editingEntry) { entry in
+            DPEntryFieldsSheet(mode: .edit(entry))
+        }
         .alert("Save failed", isPresented: Binding(
             get: { saveErrorMessage != nil },
             set: { if !$0 { saveErrorMessage = nil } }
@@ -163,7 +171,12 @@ struct MainView: View {
                 } else {
                     VStack(spacing: 0) {
                         ForEach(latestFive, id: \.id) { entry in
-                            ActivityRowView(entry: entry)
+                            Button {
+                                editingEntry = entry
+                            } label: {
+                                ActivityRowView(entry: entry)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -182,7 +195,7 @@ struct MainView: View {
 
     private func toggleTimer() {
         if session.isRunning {
-            stopAndSave()
+            showingConfirm = true
         } else {
             session.start()
         }

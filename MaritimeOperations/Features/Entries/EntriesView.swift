@@ -4,6 +4,7 @@ import SwiftData
 struct EntriesView: View {
     @Query(sort: \DPEntry.date, order: .reverse) private var entries: [DPEntry]
     @State private var showingAdd = false
+    @State private var editingEntry: DPEntry?
 
     private var editableCount: Int { entries.count }
 
@@ -47,6 +48,9 @@ struct EntriesView: View {
         }
         .sheet(isPresented: $showingAdd) {
             AddManualEntryView()
+        }
+        .sheet(item: $editingEntry) { entry in
+            DPEntryFieldsSheet(mode: .edit(entry))
         }
     }
 
