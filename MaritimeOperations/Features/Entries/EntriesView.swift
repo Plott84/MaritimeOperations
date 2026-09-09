@@ -122,7 +122,7 @@ struct EntriesView: View {
     private func counterTile(title: String, value: Int, systemImage: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: systemImage)
-                .foregroundStyle(AppTheme.primaryBlue)
+                .foregroundStyle(AppTheme.teal)
             Text("\(value)")
                 .font(.title.weight(.bold))
                 .foregroundStyle(AppTheme.textPrimary)
@@ -171,7 +171,7 @@ struct EntriesView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(AppFormatters.hoursString(entry.durationHours))
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(AppTheme.primaryBlue)
+                    .foregroundStyle(AppTheme.teal)
                 Text("Duration")
                     .font(.caption2)
                     .foregroundStyle(AppTheme.textSecondary)
