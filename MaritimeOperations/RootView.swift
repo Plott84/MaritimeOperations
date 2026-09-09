@@ -4,6 +4,7 @@ import SwiftData
 struct RootView: View {
     @State private var tab: AppTab = .main
     @State private var session = ActiveDPSessionStore()
+    @State private var showingAddRigMove = false
 
     var body: some View {
         NavigationStack {
@@ -12,11 +13,12 @@ struct RootView: View {
                 case .main:
                     MainView(session: session) {
                         tab = .rigMoves
+                        showingAddRigMove = true
                     }
                 case .entries:
                     EntriesView()
                 case .rigMoves:
-                    PlaceholderTabView(title: "Rig Moves", subtitle: "Coming next — use this tab as a stub for now.")
+                    RigMovesView(showingAdd: $showingAddRigMove)
                 case .tools:
                     PlaceholderTabView(title: "Tools", subtitle: "Extra tools land after Entries MVP.")
                 case .export:
@@ -35,5 +37,5 @@ struct RootView: View {
 
 #Preview {
     RootView()
-        .modelContainer(for: DPEntry.self, inMemory: true)
+        .modelContainer(for: [DPEntry.self, RigMove.self], inMemory: true)
 }
