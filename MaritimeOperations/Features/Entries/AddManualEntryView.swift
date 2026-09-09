@@ -9,8 +9,8 @@ struct AddManualEntryView: View {
     @State private var durationText = ""
     @State private var vessel = ""
     @State private var rig = ""
-    @State private var vesselType = "AH"
-    @State private var dpClass = "Class 2"
+    @State private var vesselType = ""
+    @State private var dpClass = ""
     @State private var modeSelection: ModeOption = .unspecified
     @State private var activityCode = ""
     @State private var masterInitials = ""

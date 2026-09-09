@@ -32,10 +32,11 @@ struct DPEntryFieldsSheet: View {
         self.onSaved = onSaved
         switch mode {
         case .confirmStop:
-            _vessel = State(initialValue: session?.vessel ?? "")
-            _rig = State(initialValue: session?.rig ?? "")
-            _vesselType = State(initialValue: session?.vesselType ?? "")
-            _dpClass = State(initialValue: session?.dpClass ?? "")
+            // A new line starts empty. Sample row values are not standing defaults.
+            _vessel = State(initialValue: "")
+            _rig = State(initialValue: "")
+            _vesselType = State(initialValue: "")
+            _dpClass = State(initialValue: "")
             _modeText = State(initialValue: "")
             _activityCode = State(initialValue: "")
             _masterInitials = State(initialValue: "")
@@ -139,7 +140,10 @@ struct DPEntryFieldsSheet: View {
         let vesselType = vesselType.trimmingCharacters(in: .whitespacesAndNewlines)
         let dpClass = dpClass.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if vessel.isEmpty { fieldError = "Vessel is required."; return }
+        if vessel.isEmpty || vessel.caseInsensitiveCompare("Vessel") == .orderedSame {
+            fieldError = "Vessel is required."
+            return
+        }
         if rig.isEmpty { fieldError = "Rig is required."; return }
         if vesselType.isEmpty { fieldError = "Vessel type is required."; return }
         if dpClass.isEmpty { fieldError = "DP class is required."; return }

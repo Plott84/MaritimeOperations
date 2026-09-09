@@ -22,10 +22,16 @@ final class P0FlowUITests: XCTestCase {
         stop.tap()
 
         XCTAssertTrue(app.navigationBars["Save DP session"].waitForExistence(timeout: 5))
-        let rig = app.textFields["Rig"]
-        XCTAssertTrue(rig.waitForExistence(timeout: 3))
-        rig.tap()
-        rig.typeText("QA Rig")
+        func fill(_ label: String, _ value: String) {
+            let field = app.textFields[label]
+            XCTAssertTrue(field.waitForExistence(timeout: 3), label)
+            field.tap()
+            field.typeText(value)
+        }
+        fill("Vessel", "QA Vessel")
+        fill("Rig", "QA Rig")
+        fill("Vessel type", "AH")
+        fill("DP class", "Class 2")
         app.buttons["dpFieldsSave"].tap()
 
         // Back to Ready only after confirm
@@ -37,7 +43,7 @@ final class P0FlowUITests: XCTestCase {
 
         // Timed source label or vessel default
         let timed = app.staticTexts["Timed session"]
-        let vessel = app.staticTexts["Vessel"]
+        let vessel = app.staticTexts["QA Vessel"]
         XCTAssertTrue(
             timed.waitForExistence(timeout: 6) || vessel.waitForExistence(timeout: 2),
             "Expected a timed entry on Entries after Stop"
