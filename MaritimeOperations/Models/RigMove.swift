@@ -6,6 +6,14 @@ enum RigMoveOperation: String, CaseIterable, Identifiable {
     case prelay = "Prelay"
 
     var id: String { rawValue }
+
+    /// Display copy. Stored value stays "Prelay" so existing rows still match.
+    var label: String {
+        switch self {
+        case .anchorHandling: return "Anchor Handling"
+        case .prelay: return "Pre-lay"
+        }
+    }
 }
 
 @Model

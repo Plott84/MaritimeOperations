@@ -155,7 +155,7 @@ struct RigMovesView: View {
                 Text(dateLine(move))
                     .font(.caption)
                     .foregroundStyle(AppTheme.textSecondary)
-                Text(move.operation.rawValue)
+                Text(move.operation.label)
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 8)

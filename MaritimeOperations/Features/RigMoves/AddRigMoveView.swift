@@ -38,7 +38,7 @@ struct AddRigMoveView: View {
                     }
                     Picker("Operation", selection: $operation) {
                         ForEach(RigMoveOperation.allCases) { option in
-                            Text(option.rawValue).tag(option)
+                            Text(option.label).tag(option)
                         }
                     }
                     Toggle("Done", isOn: $isDone)
