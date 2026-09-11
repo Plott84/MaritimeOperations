@@ -21,7 +21,14 @@ final class P0FlowUITests: XCTestCase {
         sleep(2)
         stop.tap()
 
-        // Back to Ready
+        XCTAssertTrue(app.navigationBars["DP log line"].waitForExistence(timeout: 5))
+        let ship = app.textFields["Ship name"]
+        XCTAssertTrue(ship.waitForExistence(timeout: 5))
+        ship.tap()
+        ship.typeText("QA Vessel")
+        app.buttons["dpFieldsSave"].tap()
+
+        // Back to Ready only after confirm
         XCTAssertTrue(app.buttons["Start DP"].waitForExistence(timeout: 5))
 
         let entriesTab = app.buttons["Entries"]
@@ -30,7 +37,7 @@ final class P0FlowUITests: XCTestCase {
 
         // Timed source label or vessel default
         let timed = app.staticTexts["Timed session"]
-        let vessel = app.staticTexts["Vessel"]
+        let vessel = app.staticTexts["QA Vessel"]
         XCTAssertTrue(
             timed.waitForExistence(timeout: 6) || vessel.waitForExistence(timeout: 2),
             "Expected a timed entry on Entries after Stop"
@@ -49,17 +56,16 @@ final class P0FlowUITests: XCTestCase {
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()
 
-        let vesselField = app.textFields["Vessel"]
-        XCTAssertTrue(vesselField.waitForExistence(timeout: 5))
-        vesselField.tap()
-        vesselField.typeText("QA Manual Vessel")
+        XCTAssertTrue(app.navigationBars["DP log line"].waitForExistence(timeout: 5))
+        app.buttons["dpStartTime"].tap()
+        app.buttons["dpStopTime"].tap()
 
-        let durationField = app.textFields["Duration (hours)"]
-        XCTAssertTrue(durationField.waitForExistence(timeout: 3))
-        durationField.tap()
-        durationField.typeText("3,2")
+        let ship = app.textFields["Ship name"]
+        XCTAssertTrue(ship.waitForExistence(timeout: 5))
+        ship.tap()
+        ship.typeText("QA Manual Vessel")
 
-        app.buttons["Save"].tap()
+        app.buttons["dpFieldsSave"].tap()
 
         XCTAssertTrue(app.staticTexts["QA Manual Vessel"].waitForExistence(timeout: 6))
         XCTAssertTrue(app.staticTexts["Manual"].waitForExistence(timeout: 3) || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Manual")).firstMatch.exists)
@@ -74,16 +80,12 @@ final class P0FlowUITests: XCTestCase {
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()
 
-        let durationField = app.textFields["Duration (hours)"]
-        XCTAssertTrue(durationField.waitForExistence(timeout: 5))
-        durationField.tap()
-        durationField.typeText("1")
+        app.buttons["dpStartTime"].tap()
+        app.buttons["dpStopTime"].tap()
+        app.buttons["dpFieldsSave"].tap()
 
-        app.buttons["Save"].tap()
-
-        XCTAssertTrue(app.staticTexts["Vessel is required."].waitForExistence(timeout: 5))
-        // Sheet should still be up
-        XCTAssertTrue(app.navigationBars["Add Manual Entry"].exists)
+        XCTAssertTrue(app.staticTexts["Ship name is required."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["DP log line"].exists)
     }
 
     func testE3_timerSurvivesRelaunch() throws {

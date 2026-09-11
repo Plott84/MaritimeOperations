@@ -4,6 +4,7 @@ import SwiftData
 struct EntriesView: View {
     @Query(sort: \DPEntry.date, order: .reverse) private var entries: [DPEntry]
     @State private var showingAdd = false
+    @State private var editingEntry: DPEntry?
 
     private var editableCount: Int { entries.count }
 
@@ -14,7 +15,7 @@ struct EntriesView: View {
                 VStack(spacing: 16) {
                     summaryCard
                     if entries.isEmpty {
-                        Text("No entries yet. Stop a DP timer or add a line from your old book.")
+                        Text("No entries yet. Add a DP log line, or stop the timer on Main.")
                             .font(.subheadline)
                             .foregroundStyle(AppTheme.textSecondary)
                             .multilineTextAlignment(.center)
@@ -46,7 +47,10 @@ struct EntriesView: View {
             }
         }
         .sheet(isPresented: $showingAdd) {
-            AddManualEntryView()
+            DPEntryFieldsSheet(mode: .add)
+        }
+        .sheet(item: $editingEntry) { entry in
+            DPEntryFieldsSheet(mode: .edit(entry))
         }
     }
 
@@ -91,7 +95,7 @@ struct EntriesView: View {
                     Button {
                         showingAdd = true
                     } label: {
-                        Label("Add Manual Entry", systemImage: "plus")
+                        Label("Add", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
