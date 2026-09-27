@@ -7,9 +7,7 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE1_startStopCreatesTimedEntry() throws {
-        let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        let app = XCUIApplication.launchedClean(extraArguments: ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"])
 
         let start = app.buttons["Start DP"]
         XCTAssertTrue(start.waitForExistence(timeout: 8), "Start DP missing")
@@ -45,8 +43,7 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE2_addManualEntry() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
 
         let entriesTab = app.buttons["Entries"]
         XCTAssertTrue(entriesTab.waitForExistence(timeout: 8))
@@ -72,8 +69,7 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE4_validationBlocksEmptyVessel() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
 
         app.buttons["Entries"].tap()
         let add = app.buttons["addManualEntryPill"]
@@ -89,8 +85,7 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE3_timerSurvivesRelaunch() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
 
         let start = app.buttons["Start DP"]
         XCTAssertTrue(start.waitForExistence(timeout: 8))
@@ -98,8 +93,7 @@ final class P0FlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Stop DP"].waitForExistence(timeout: 5))
         sleep(2)
 
-        app.terminate()
-        app.launch()
+        app.relaunchKeepingState()
 
         XCTAssertTrue(app.buttons["Stop DP"].waitForExistence(timeout: 8), "Timer should still be running after relaunch")
         // Elapsed should not be 00:00

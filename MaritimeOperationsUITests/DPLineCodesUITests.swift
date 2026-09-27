@@ -25,8 +25,7 @@ final class DPLineCodesUITests: XCTestCase {
     }
 
     func testOTNeedsSpecifyThenSaves() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
 
         let ship = app.textFields["Ship name"]
@@ -64,8 +63,7 @@ final class DPLineCodesUITests: XCTestCase {
     }
 
     func testPickLoggedShipFillsName() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
         let ship = app.textFields["Ship name"]
         XCTAssertTrue(ship.waitForExistence(timeout: 5))

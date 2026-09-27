@@ -270,11 +270,11 @@ struct DPEntryFieldsSheet: View {
         ShipNameSuggestions.names(from: savedEntries)
     }
 
-    /// New lines take the rank from the most recent saved line. Ship name is never prefilled.
+    /// New lines take the rank from the line with the latest DP date (see RankPrefill). Ship name is never prefilled.
     private func prefillRankFromLatest() {
         guard !didPrefillRank else { return }
         didPrefillRank = true
-        rank = savedEntries.first?.rank ?? ""
+        rank = RankPrefill.rank(from: savedEntries)
     }
 
     private var isConfirm: Bool {
