@@ -20,12 +20,22 @@ final class DPEntry {
     var locationName: String = ""
     var latitudeText: String = ""
     var longitudeText: String = ""
+    /// IMO DP class 1 / 2 / 3. Nil on lines saved before this field existed.
+    var dpClassLevel: Int? = nil
+    /// Optional rank (CrewRank raw value). Nil on older lines.
+    var rank: String? = nil
     var createdAt: Date
     var updatedAt: Date
 
     var source: DPEntrySource {
         get { DPEntrySource(rawValue: sourceRaw) ?? .manual }
         set { sourceRaw = newValue.rawValue }
+    }
+
+    /// "Class 2" from the picker, else the older free-text class if any.
+    var dpClassLabel: String {
+        if let dpClassLevel { return "Class \(dpClassLevel)" }
+        return dpClass
     }
 
     var isEligibleUnderCurrentRule: Bool {
@@ -50,6 +60,8 @@ final class DPEntry {
         locationName: String = "",
         latitudeText: String = "",
         longitudeText: String = "",
+        dpClassLevel: Int? = nil,
+        rank: String? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -70,6 +82,8 @@ final class DPEntry {
         self.locationName = locationName
         self.latitudeText = latitudeText
         self.longitudeText = longitudeText
+        self.dpClassLevel = dpClassLevel
+        self.rank = rank
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
