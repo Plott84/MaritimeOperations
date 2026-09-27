@@ -12,6 +12,7 @@ struct DPEntryFieldsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \DPEntry.createdAt, order: .reverse) private var savedEntries: [DPEntry]
 
     let mode: Mode
     var session: ActiveDPSessionStore?
@@ -23,7 +24,11 @@ struct DPEntryFieldsSheet: View {
     @State private var locationName: String
     @State private var latitudeText: String
     @State private var longitudeText: String
-    @State private var activityCode: String
+    @State private var activity: ActivityCodeSelection
+    @State private var dpClassLevel: Int?
+    @State private var rank: String
+    @State private var showingShipPicker = false
+    @State private var didPrefillRank = false
     @State private var notes: String
     @State private var fieldError: String?
     @State private var saveError: String?
@@ -43,7 +48,9 @@ struct DPEntryFieldsSheet: View {
             _locationName = State(initialValue: "")
             _latitudeText = State(initialValue: "")
             _longitudeText = State(initialValue: "")
-            _activityCode = State(initialValue: "")
+            _activity = State(initialValue: ActivityCodeSelection())
+            _dpClassLevel = State(initialValue: 2)
+            _rank = State(initialValue: "")
             _notes = State(initialValue: "")
         case .add:
             _start = State(initialValue: nil)
@@ -52,7 +59,9 @@ struct DPEntryFieldsSheet: View {
             _locationName = State(initialValue: "")
             _latitudeText = State(initialValue: "")
             _longitudeText = State(initialValue: "")
-            _activityCode = State(initialValue: "")
+            _activity = State(initialValue: ActivityCodeSelection())
+            _dpClassLevel = State(initialValue: 2)
+            _rank = State(initialValue: "")
             _notes = State(initialValue: "")
         case .edit(let entry):
             let started = entry.startTime ?? entry.date
@@ -63,7 +72,10 @@ struct DPEntryFieldsSheet: View {
             _locationName = State(initialValue: entry.locationName)
             _latitudeText = State(initialValue: entry.latitudeText)
             _longitudeText = State(initialValue: entry.longitudeText)
-            _activityCode = State(initialValue: entry.activityCode ?? "")
+            _activity = State(initialValue: ActivityCodeSelection(stored: entry.activityCode))
+            _dpClassLevel = State(initialValue: entry.dpClassLevel)
+            _rank = State(initialValue: entry.rank ?? "")
+            _didPrefillRank = State(initialValue: true)
             _notes = State(initialValue: entry.notes ?? "")
         }
     }
@@ -114,7 +126,13 @@ struct DPEntryFieldsSheet: View {
                 }
             }
             .interactiveDismissDisabled(isConfirm)
-            .onAppear(perform: wireLocator)
+            .onAppear {
+                wireLocator()
+                prefillRankFromLatest()
+            }
+            .sheet(isPresented: $showingShipPicker) {
+                ShipPickerSheet(names: loggedShipNames) { shipName = $0 }
+            }
         }
         .accessibilityIdentifier("dpEntryFieldsSheet")
     }
@@ -142,7 +160,20 @@ struct DPEntryFieldsSheet: View {
                 }
 
                 labeledField("Ship name", text: $shipName, capitalize: .words)
-                labeledField("Location name", text: $locationName, capitalize: .words)
+                if !loggedShipNames.isEmpty {
+                    Button {
+                        showingShipPicker = true
+                    } label: {
+                        Label("Pick a logged ship", systemImage: "list.bullet")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AppTheme.teal)
+                    .accessibilityIdentifier("pickLoggedShip")
+                }
+                DPClassPicker(level: $dpClassLevel)
+                RankPicker(rank: $rank)
+                labeledField("Remarks / location / client", text: $locationName, capitalize: .words)
 
                 labeledField("Latitude N/S xx° xx.x'", text: $latitudeText, capitalize: .characters)
                 labeledField("Longitude E/W xxx° xx.x'", text: $longitudeText, capitalize: .characters)
@@ -165,7 +196,7 @@ struct DPEntryFieldsSheet: View {
                         .foregroundStyle(AppTheme.textSecondary)
                 }
 
-                labeledField("Activity code", text: $activityCode, capitalize: .characters)
+                ActivityCodePicker(selection: $activity)
                 labeledField("Notes", text: $notes, capitalize: .sentences, axis: .vertical)
             }
         }
@@ -235,6 +266,17 @@ struct DPEntryFieldsSheet: View {
         }
     }
 
+    private var loggedShipNames: [String] {
+        ShipNameSuggestions.names(from: savedEntries)
+    }
+
+    /// New lines take the rank from the most recent saved line. Ship name is never prefilled.
+    private func prefillRankFromLatest() {
+        guard !didPrefillRank else { return }
+        didPrefillRank = true
+        rank = savedEntries.first?.rank ?? ""
+    }
+
     private var isConfirm: Bool {
         if case .confirmStop = mode { return true }
         return false
@@ -290,6 +332,10 @@ struct DPEntryFieldsSheet: View {
         let ship = shipName.trimmingCharacters(in: .whitespacesAndNewlines)
         if ship.isEmpty || ship.caseInsensitiveCompare("Vessel") == .orderedSame {
             fieldError = "Ship name is required."
+            return
+        }
+        if let activityError = activity.validationError {
+            fieldError = activityError
             return
         }
         guard let start, let stop else {
@@ -355,11 +401,13 @@ struct DPEntryFieldsSheet: View {
             endTime: stop,
             durationHours: hours,
             vessel: ship,
-            activityCode: optional(activityCode),
+            activityCode: activity.storedValue,
             notes: optional(notes),
             locationName: locationName.trimmingCharacters(in: .whitespacesAndNewlines),
             latitudeText: latitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
-            longitudeText: longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+            longitudeText: longitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
+            dpClassLevel: dpClassLevel,
+            rank: optional(rank)
         )
         modelContext.insert(entry)
         do {
@@ -379,7 +427,9 @@ struct DPEntryFieldsSheet: View {
         entry.locationName = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.latitudeText = latitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.longitudeText = longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        entry.activityCode = optional(activityCode)
+        entry.activityCode = activity.storedValue
+        entry.dpClassLevel = dpClassLevel
+        entry.rank = optional(rank)
         entry.notes = optional(notes)
     }
 

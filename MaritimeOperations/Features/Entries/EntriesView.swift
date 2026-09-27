@@ -203,7 +203,7 @@ struct EntriesView: View {
     }
 
     private func metaLine(_ entry: DPEntry) -> String {
-        [entry.rig, entry.vesselType, entry.dpClass]
+        [entry.rig, entry.vesselType, entry.dpClassLabel]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " · ")

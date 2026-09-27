@@ -60,7 +60,7 @@ struct ActivityRowView: View {
     }
 
     private var meta: String {
-        [entry.vesselType, entry.dpClass, entry.vessel]
+        [entry.vesselType, entry.dpClassLabel, entry.vessel]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " · ")
