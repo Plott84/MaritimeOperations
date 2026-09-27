@@ -33,6 +33,8 @@ struct DPEntryFieldsSheet: View {
     @State private var fieldError: String?
     @State private var saveError: String?
     @State private var gpsNote: String?
+    /// Title of the focused text field; nil hides the keyboard.
+    @FocusState private var focusedField: String?
     @State private var locator = WhenInUseLocation()
 
     init(mode: Mode, session: ActiveDPSessionStore? = nil, onSaved: @escaping () -> Void = {}) {
@@ -196,7 +198,7 @@ struct DPEntryFieldsSheet: View {
                         .foregroundStyle(AppTheme.textSecondary)
                 }
 
-                ActivityCodePicker(selection: $activity)
+                ActivityCodePicker(selection: $activity) { focusedField = nil }
                 labeledField("Notes", text: $notes, capitalize: .sentences, axis: .vertical)
             }
         }
@@ -252,6 +254,7 @@ struct DPEntryFieldsSheet: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AppTheme.textSecondary)
             TextField(title, text: text, axis: axis)
+                .focused($focusedField, equals: title)
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(capitalize)
                 .lineLimit(axis == .vertical ? 3...6 : 1...1)

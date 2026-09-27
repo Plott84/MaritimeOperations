@@ -16,6 +16,13 @@ final class DPLineCodesUITests: XCTestCase {
         app.buttons["dpStopTime"].tap()
     }
 
+    private func attachScreenshot(named name: String) {
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         var tries = 0
         while !element.isHittable && tries < 5 {
@@ -60,6 +67,42 @@ final class DPLineCodesUITests: XCTestCase {
         save.tap()
         XCTAssertFalse(app.navigationBars["DP log line"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["QA Codes Vessel"].waitForExistence(timeout: 5))
+    }
+
+    func testActivityPickerHidesKeyboardAndListsAnchorHandlingLast() throws {
+        let app = XCUIApplication.launchedClean()
+        openAdd(app)
+
+        let notes = app.textFields["Notes"]
+        reveal(notes, in: app)
+        XCTAssertTrue(notes.waitForExistence(timeout: 5))
+        notes.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Keyboard should be up while typing notes")
+
+        let picker = app.buttons["dpActivityCode"]
+        reveal(picker, in: app)
+        picker.tap()
+
+        let ot = app.buttons["OT"]
+        XCTAssertTrue(ot.waitForExistence(timeout: 5))
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, "Opening the activity code menu must hide the keyboard")
+
+        XCTAssertFalse(app.staticTexts["My codes"].exists, "No My codes section header")
+        XCTAssertFalse(app.buttons["AH – Anchor handling"].exists)
+        let anchor = app.buttons["OT – Anchor handling"]
+        XCTAssertTrue(anchor.exists)
+        XCTAssertGreaterThan(anchor.frame.minY, ot.frame.minY, "Anchor handling must be listed after OT")
+        attachScreenshot(named: "Activity code menu, keyboard hidden")
+
+        anchor.tap()
+        XCTAssertFalse(app.textFields["dpActivitySpecify"].waitForExistence(timeout: 2), "Anchor handling needs no Specify")
+
+        // Reopen with Anchor handling selected; the menu shows the bottom of the list.
+        picker.tap()
+        XCTAssertTrue(anchor.waitForExistence(timeout: 5))
+        attachScreenshot(named: "Activity code menu, anchor handling selected")
+        anchor.tap()
     }
 
     func testPickLoggedShipFillsName() throws {

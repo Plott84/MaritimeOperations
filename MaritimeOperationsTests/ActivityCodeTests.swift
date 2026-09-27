@@ -43,6 +43,33 @@ struct ActivityCodeTests {
         #expect(ActivityCodeExport.text(for: nil) == "")
     }
 
+    @Test func menuListsBookCodesThenAnchorHandlingLast() {
+        let options = ActivityCodeMenu.options
+        #expect(options.count == 16)
+        #expect(options.dropLast().map(\.tag) == ActivityCode.allCases.map(\.rawValue))
+        #expect(options.dropLast().last?.tag == "OT")
+        #expect(options.last == ActivityCodeMenu.Option(tag: "AH", label: "OT – Anchor handling"))
+        #expect(!options.contains { $0.label.contains("AH –") || $0.label.contains("My codes") })
+    }
+
+    @Test func anchorHandlingItemStaysStoredAsAHAndNeedsNoSpecify() {
+        let ah = ActivityCodeSelection(code: "AH")
+        #expect(!ah.isOT)
+        #expect(ah.validationError == nil)
+        #expect(ah.storedValue == "AH")
+        #expect(ActivityCodeSelection(stored: "AH").code == "AH")
+        #expect(ActivityCodeExport.text(for: ah.storedValue) == "OT – Anchor handling")
+        #expect(ActivityCodeSelection(code: "OT").validationError == "Specify the OT activity.")
+    }
+
+    @Test func bookCodeLabelIsCodeUntilTitleIsSet() {
+        for code in ActivityCode.allCases {
+            #expect(code.title == nil, "No IMCA meanings until wording is verified")
+            #expect(code.menuLabel == code.rawValue)
+        }
+        #expect(ActivityCodeMenu.options.dropLast().map(\.label) == ActivityCode.allCases.map(\.rawValue))
+    }
+
     @Test func storedValuesRoundTrip() {
         #expect(ActivityCodeSelection(stored: "PSV").code == "PSV")
         #expect(ActivityCodeSelection(stored: "PSV").legacyValue == nil)
