@@ -5,15 +5,15 @@ final class AddManualPolishUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    private func openAddManual(_ app: XCUIApplication) {
+    private func openAdd(_ app: XCUIApplication) {
         app.buttons["Entries"].tap()
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 8))
         add.tap()
-        XCTAssertTrue(app.navigationBars["Add Manual Entry"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["DP log line"].waitForExistence(timeout: 5))
     }
 
-    func testEmptyEntriesShowsAddManualCTA() throws {
+    func testEmptyEntriesShowsAddCTA() throws {
         let app = XCUIApplication()
         app.launch()
         app.buttons["Entries"].tap()
@@ -23,44 +23,36 @@ final class AddManualPolishUITests: XCTestCase {
         )
     }
 
-    func testDurationRequiredError() throws {
+    func testTimesRequiredError() throws {
         let app = XCUIApplication()
         app.launch()
-        openAddManual(app)
-        let vessel = app.textFields["Vessel"]
-        XCTAssertTrue(vessel.waitForExistence(timeout: 5))
-        vessel.tap()
-        vessel.typeText("QA Vessel")
-        app.buttons["Save"].tap()
-        XCTAssertTrue(app.staticTexts["Duration is required."].waitForExistence(timeout: 5))
+        openAdd(app)
+        let ship = app.textFields["Ship name"]
+        XCTAssertTrue(ship.waitForExistence(timeout: 5))
+        ship.tap()
+        ship.typeText("QA Vessel")
+        app.buttons["dpFieldsSave"].tap()
+        XCTAssertTrue(app.staticTexts["Start and stop are required."].waitForExistence(timeout: 5))
     }
 
-    func testDirtyCancelShowsDiscard() throws {
+    func testCancelWritesNothing() throws {
         let app = XCUIApplication()
         app.launch()
-        openAddManual(app)
-        let vessel = app.textFields["Vessel"]
-        XCTAssertTrue(vessel.waitForExistence(timeout: 5))
-        vessel.tap()
-        vessel.typeText("Dirty")
-        // Dismiss keyboard so dialog buttons are hittable
-        app.navigationBars["Add Manual Entry"].tap()
-        app.buttons["Cancel"].tap()
-        let discard = app.buttons["Discard Changes"]
-        XCTAssertTrue(discard.waitForExistence(timeout: 5), "Expected discard confirm when dirty")
-        // Prefer Keep Editing if present; else Discard to close
-        if app.buttons["Keep Editing"].waitForExistence(timeout: 2) {
-            app.buttons["Keep Editing"].tap()
-            XCTAssertTrue(app.navigationBars["Add Manual Entry"].exists)
-        } else {
-            discard.tap()
-        }
+        openAdd(app)
+        let ship = app.textFields["Ship name"]
+        XCTAssertTrue(ship.waitForExistence(timeout: 5))
+        ship.tap()
+        ship.typeText("Dirty")
+        app.buttons["dpFieldsCancel"].tap()
+        XCTAssertFalse(app.navigationBars["DP log line"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.staticTexts["Dirty"].exists)
     }
 
-    func testTranscribeCopyPresent() throws {
+    func testUsePhoneLocationDoesNotPromptOnOpen() throws {
         let app = XCUIApplication()
         app.launch()
-        openAddManual(app)
-        XCTAssertTrue(app.staticTexts["Transcribe a line from your old logbook."].waitForExistence(timeout: 5))
+        openAdd(app)
+        XCTAssertTrue(app.buttons["usePhoneLocation"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.alerts.element.exists)
     }
 }

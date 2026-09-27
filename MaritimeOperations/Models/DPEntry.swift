@@ -17,6 +17,9 @@ final class DPEntry {
     var activityCode: String?
     var notes: String?
     var masterInitials: String?
+    var locationName: String = ""
+    var latitudeText: String = ""
+    var longitudeText: String = ""
     var createdAt: Date
     var updatedAt: Date
 
@@ -44,6 +47,9 @@ final class DPEntry {
         activityCode: String? = nil,
         notes: String? = nil,
         masterInitials: String? = nil,
+        locationName: String = "",
+        latitudeText: String = "",
+        longitudeText: String = "",
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -61,6 +67,9 @@ final class DPEntry {
         self.activityCode = activityCode
         self.notes = notes
         self.masterInitials = masterInitials
+        self.locationName = locationName
+        self.latitudeText = latitudeText
+        self.longitudeText = longitudeText
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

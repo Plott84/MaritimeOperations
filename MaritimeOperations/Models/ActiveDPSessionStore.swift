@@ -15,7 +15,7 @@ final class ActiveDPSessionStore {
         didSet { persist() }
     }
 
-    var vessel: String = "Vessel" {
+    var vessel: String = "" {
         didSet { UserDefaults.standard.set(vessel, forKey: Self.vesselKey) }
     }
 
@@ -23,11 +23,11 @@ final class ActiveDPSessionStore {
         didSet { UserDefaults.standard.set(rig, forKey: Self.rigKey) }
     }
 
-    var vesselType: String = "AH" {
+    var vesselType: String = "" {
         didSet { UserDefaults.standard.set(vesselType, forKey: Self.vesselTypeKey) }
     }
 
-    var dpClass: String = "Class 2" {
+    var dpClass: String = "" {
         didSet { UserDefaults.standard.set(dpClass, forKey: Self.dpClassKey) }
     }
 
@@ -38,10 +38,10 @@ final class ActiveDPSessionStore {
         if let interval = defaults.object(forKey: Self.startedAtKey) as? Double {
             startedAt = Date(timeIntervalSince1970: interval)
         }
-        vessel = defaults.string(forKey: Self.vesselKey) ?? "Vessel"
+        vessel = defaults.string(forKey: Self.vesselKey) ?? ""
         rig = defaults.string(forKey: Self.rigKey) ?? ""
-        vesselType = defaults.string(forKey: Self.vesselTypeKey) ?? "AH"
-        dpClass = defaults.string(forKey: Self.dpClassKey) ?? "Class 2"
+        vesselType = defaults.string(forKey: Self.vesselTypeKey) ?? ""
+        dpClass = defaults.string(forKey: Self.dpClassKey) ?? ""
     }
 
     func start(at date: Date = .now) {
