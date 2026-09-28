@@ -6,8 +6,7 @@ final class RigMovesUITests: XCTestCase {
     }
 
     func testEmptyRegisterAndRequiredRigName() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         app.buttons["Rig Moves"].tap()
         XCTAssertTrue(app.staticTexts["No rig moves yet."].waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Rig Move Register"].waitForExistence(timeout: 3))
@@ -22,8 +21,7 @@ final class RigMovesUITests: XCTestCase {
     }
 
     func testAddOpenMoveThenDoneIncrementsCounters() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         app.buttons["Rig Moves"].tap()
         app.buttons["addRigMovePill"].tap()
         let name = app.textFields["Rig name"]
@@ -37,8 +35,7 @@ final class RigMovesUITests: XCTestCase {
     }
 
     func testNewRigMoveOnMainOpensForm() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         let open = app.buttons["New Rig Move"]
         XCTAssertTrue(open.waitForExistence(timeout: 8))
         open.tap()

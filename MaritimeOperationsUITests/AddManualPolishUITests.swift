@@ -6,7 +6,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     private func openAdd(_ app: XCUIApplication) {
-        app.buttons["Entries"].tap()
+        app.buttons["DP Entries"].tap()
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 8))
         add.tap()
@@ -14,9 +14,8 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testEmptyEntriesShowsAddCTA() throws {
-        let app = XCUIApplication()
-        app.launch()
-        app.buttons["Entries"].tap()
+        let app = XCUIApplication.launchedClean()
+        app.buttons["DP Entries"].tap()
         XCTAssertTrue(
             app.buttons["addManualEntryPill"].waitForExistence(timeout: 8)
             || app.buttons["navAddEntry"].waitForExistence(timeout: 2)
@@ -24,8 +23,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testTimesRequiredError() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
         let ship = app.textFields["Ship name"]
         XCTAssertTrue(ship.waitForExistence(timeout: 5))
@@ -36,8 +34,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testCancelWritesNothing() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
         let ship = app.textFields["Ship name"]
         XCTAssertTrue(ship.waitForExistence(timeout: 5))
@@ -49,8 +46,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testUsePhoneLocationDoesNotPromptOnOpen() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
         XCTAssertTrue(app.buttons["usePhoneLocation"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.alerts.element.exists)
