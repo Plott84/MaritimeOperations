@@ -217,28 +217,49 @@ struct DPEntryFieldsSheet: View {
         .accessibilityIdentifier("dpFieldsSave")
     }
 
+    /// Full-width Start/Stop row styled like the other fields. The whole row is the tap target (min 44 pt).
     private func timeRow(title: String, date: Binding<Date?>, identifier: String, onSet: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(AppTheme.textSecondary)
+        Group {
             if let value = date.wrappedValue {
-                DatePicker(
-                    title,
-                    selection: Binding(
-                        get: { value },
-                        set: { date.wrappedValue = $0 }
-                    ),
-                    displayedComponents: [.date, .hourAndMinute]
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .accessibilityIdentifier(identifier)
-            } else {
-                Button("Set \(title.lowercased())", action: onSet)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(AppTheme.teal)
+                HStack(spacing: 12) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Spacer(minLength: 8)
+                    DatePicker(
+                        title,
+                        selection: Binding(
+                            get: { value },
+                            set: { date.wrappedValue = $0 }
+                        ),
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .accessibilityLabel(title)
                     .accessibilityIdentifier(identifier)
+                }
+                .timeRowBox()
+            } else {
+                Button(action: onSet) {
+                    HStack(spacing: 12) {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Spacer(minLength: 8)
+                        Label("Set \(title.lowercased())", systemImage: "clock")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.teal)
+                    }
+                    .timeRowBox()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(title), not set")
+                .accessibilityHint("Sets \(title.lowercased()) time")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier(identifier)
             }
         }
     }
@@ -439,5 +460,19 @@ struct DPEntryFieldsSheet: View {
     private func optional(_ value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+private extension View {
+    /// Same dark rounded box as the text fields, at least 44 pt tall.
+    func timeRowBox() -> some View {
+        self
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            }
     }
 }

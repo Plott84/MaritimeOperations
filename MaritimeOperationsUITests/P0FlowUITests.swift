@@ -29,7 +29,7 @@ final class P0FlowUITests: XCTestCase {
         // Back to Ready only after confirm
         XCTAssertTrue(app.buttons["Start DP"].waitForExistence(timeout: 5))
 
-        let entriesTab = app.buttons["Entries"]
+        let entriesTab = app.buttons["DP Entries"]
         XCTAssertTrue(entriesTab.waitForExistence(timeout: 5))
         entriesTab.tap()
 
@@ -45,7 +45,7 @@ final class P0FlowUITests: XCTestCase {
     func testE2_addManualEntry() throws {
         let app = XCUIApplication.launchedClean()
 
-        let entriesTab = app.buttons["Entries"]
+        let entriesTab = app.buttons["DP Entries"]
         XCTAssertTrue(entriesTab.waitForExistence(timeout: 8))
         entriesTab.tap()
 
@@ -71,7 +71,7 @@ final class P0FlowUITests: XCTestCase {
     func testE4_validationBlocksEmptyVessel() throws {
         let app = XCUIApplication.launchedClean()
 
-        app.buttons["Entries"].tap()
+        app.buttons["DP Entries"].tap()
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()

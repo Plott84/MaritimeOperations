@@ -12,7 +12,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .main: return "Main"
-        case .entries: return "Entries"
+        case .entries: return "DP Entries"
         case .rigMoves: return "Rig Moves"
         case .tools: return "Tools"
         case .export: return "Export"

@@ -6,7 +6,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     private func openAdd(_ app: XCUIApplication) {
-        app.buttons["Entries"].tap()
+        app.buttons["DP Entries"].tap()
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 8))
         add.tap()
@@ -15,7 +15,7 @@ final class AddManualPolishUITests: XCTestCase {
 
     func testEmptyEntriesShowsAddCTA() throws {
         let app = XCUIApplication.launchedClean()
-        app.buttons["Entries"].tap()
+        app.buttons["DP Entries"].tap()
         XCTAssertTrue(
             app.buttons["addManualEntryPill"].waitForExistence(timeout: 8)
             || app.buttons["navAddEntry"].waitForExistence(timeout: 2)
