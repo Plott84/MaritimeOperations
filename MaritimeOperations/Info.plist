@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Maritime Operations uses your location to fill the DP line position. You can change it before saving.</string>
+	<string>Maritime Operations reads the phone position only when you turn on Phone position. That is not the ship's DP position. You can type a place instead.</string>
 </dict>
 </plist>

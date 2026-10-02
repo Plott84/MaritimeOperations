@@ -3,10 +3,23 @@ import SwiftData
 
 struct EntriesView: View {
     @Query(sort: \DPEntry.date, order: .reverse) private var entries: [DPEntry]
+    @AppStorage("dp.oldHoursText") private var oldHoursText = ""
+    @FocusState private var oldHoursFocused: Bool
     @State private var showingAdd = false
     @State private var editingEntry: DPEntry?
 
-    private var editableCount: Int { entries.count }
+    private var appHours: Double {
+        entries.reduce(0) { $0 + $1.durationHours }
+    }
+
+    /// Empty Old DP hours counts as zero.
+    private var oldHours: Double {
+        let trimmed = oldHoursText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return 0 }
+        return Double(trimmed.replacingOccurrences(of: ",", with: ".")) ?? 0
+    }
+
+    private var totalHours: Double { appHours + oldHours }
 
     var body: some View {
         ZStack {
@@ -24,7 +37,12 @@ struct EntriesView: View {
                     } else {
                         VStack(spacing: 10) {
                             ForEach(entries, id: \.id) { entry in
-                                entryRow(entry)
+                                Button {
+                                    editingEntry = entry
+                                } label: {
+                                    entryRow(entry)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -44,6 +62,10 @@ struct EntriesView: View {
                 }
                 .accessibilityLabel("Add entry")
                 .accessibilityIdentifier("navAddEntry")
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { oldHoursFocused = false }
             }
         }
         .sheet(isPresented: $showingAdd) {
@@ -86,9 +108,40 @@ struct EntriesView: View {
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: 10) {
-                    counterTile(title: "Total entries", value: entries.count, systemImage: "list.clipboard")
-                    counterTile(title: "Editable", value: editableCount, systemImage: "square.and.pencil")
+                VStack(spacing: 6) {
+                    Text(AppFormatters.hoursString(totalHours))
+                        .font(.title.weight(.bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .accessibilityIdentifier("totalDPHours")
+                    Text("Total hours")
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Old DP hours")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                    TextField("Old DP hours", text: $oldHoursText)
+                        .focused($oldHoursFocused)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                        .padding(12)
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(AppTheme.border, lineWidth: 1)
+                        }
+                        .accessibilityLabel("Old DP hours")
+                        .accessibilityIdentifier("oldDPHours")
+                    Text("Hours already in the book, not in the app. Empty counts as zero.")
+                        .font(.caption2)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: 10) {
@@ -123,22 +176,6 @@ struct EntriesView: View {
         }
     }
 
-    private func counterTile(title: String, value: Int, systemImage: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: systemImage)
-                .foregroundStyle(AppTheme.teal)
-            Text("\(value)")
-                .font(.title.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(AppTheme.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
     private func entryRow(_ entry: DPEntry) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(spacing: 4) {
@@ -153,7 +190,7 @@ struct EntriesView: View {
             .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.vessel.isEmpty ? "Untitled vessel" : entry.vessel)
+                Text(entry.vessel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Needs details" : entry.vessel)
                     .font(.headline)
                     .foregroundStyle(AppTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -203,9 +240,15 @@ struct EntriesView: View {
     }
 
     private func metaLine(_ entry: DPEntry) -> String {
-        [entry.rig, entry.vesselType, entry.dpClassLabel]
+        var parts = [entry.rig, entry.vesselType, entry.dpClassLabel]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-            .joined(separator: " · ")
+        if entry.locationFromPhone {
+            parts.append("Phone position")
+        } else {
+            let place = entry.locationName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !place.isEmpty { parts.append(place) }
+        }
+        return parts.joined(separator: " · ")
     }
 }

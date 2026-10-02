@@ -45,10 +45,13 @@ final class AddManualPolishUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Dirty"].exists)
     }
 
-    func testUsePhoneLocationDoesNotPromptOnOpen() throws {
+    func testPhonePositionSwitchStaysOffOnOpen() throws {
         let app = XCUIApplication.launchedClean()
         openAdd(app)
-        XCTAssertTrue(app.buttons["usePhoneLocation"].waitForExistence(timeout: 5))
+        let phoneSwitch = app.switches["phonePositionSwitch"]
+        XCTAssertTrue(phoneSwitch.waitForExistence(timeout: 5))
+        XCTAssertEqual(phoneSwitch.value as? String, "0")
+        XCTAssertTrue(app.textFields["Location"].exists)
         XCTAssertFalse(app.alerts.element.exists)
     }
 }

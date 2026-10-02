@@ -30,6 +30,10 @@ struct DPEntryFieldsSheet: View {
     @State private var showingShipPicker = false
     @State private var didPrefillRank = false
     @State private var notes: String
+    @State private var client: String
+    @State private var usePhonePosition: Bool
+    @State private var locationFromPhone: Bool
+    @State private var applyingPhoneFix = false
     @State private var fieldError: String?
     @State private var saveError: String?
     @State private var gpsNote: String?
@@ -54,6 +58,9 @@ struct DPEntryFieldsSheet: View {
             _dpClassLevel = State(initialValue: 2)
             _rank = State(initialValue: "")
             _notes = State(initialValue: "")
+            _client = State(initialValue: "")
+            _usePhonePosition = State(initialValue: false)
+            _locationFromPhone = State(initialValue: false)
         case .add:
             _start = State(initialValue: nil)
             _stop = State(initialValue: nil)
@@ -65,6 +72,9 @@ struct DPEntryFieldsSheet: View {
             _dpClassLevel = State(initialValue: 2)
             _rank = State(initialValue: "")
             _notes = State(initialValue: "")
+            _client = State(initialValue: "")
+            _usePhonePosition = State(initialValue: false)
+            _locationFromPhone = State(initialValue: false)
         case .edit(let entry):
             let started = entry.startTime ?? entry.date
             let ended = entry.endTime ?? started.addingTimeInterval(entry.durationHours * 3600)
@@ -79,6 +89,9 @@ struct DPEntryFieldsSheet: View {
             _rank = State(initialValue: entry.rank ?? "")
             _didPrefillRank = State(initialValue: true)
             _notes = State(initialValue: entry.notes ?? "")
+            _client = State(initialValue: entry.client)
+            _usePhonePosition = State(initialValue: entry.locationFromPhone)
+            _locationFromPhone = State(initialValue: entry.locationFromPhone)
         }
     }
 
@@ -175,22 +188,46 @@ struct DPEntryFieldsSheet: View {
                 }
                 DPClassPicker(level: $dpClassLevel)
                 RankPicker(rank: $rank)
-                labeledField("Remarks / location / client", text: $locationName, capitalize: .words)
+                labeledField("Client", text: $client, capitalize: .words)
+
+                Toggle(isOn: $usePhonePosition) {
+                    Text(usePhonePosition ? "Phone position" : "Location")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+                .tint(AppTheme.teal)
+                .accessibilityIdentifier("phonePositionSwitch")
+                .onChange(of: usePhonePosition) { _, isOn in
+                    if isOn {
+                        usePhoneLocation()
+                    } else {
+                        locator.wantsFix = false
+                        if locationFromPhone {
+                            applyingPhoneFix = true
+                            locationName = ""
+                            latitudeText = ""
+                            longitudeText = ""
+                            applyingPhoneFix = false
+                        }
+                        locationFromPhone = false
+                        gpsNote = nil
+                    }
+                }
+
+                labeledField(
+                    usePhonePosition ? "Phone position" : "Location",
+                    text: Binding(
+                        get: { locationName },
+                        set: { newValue in
+                            if !applyingPhoneFix { locationFromPhone = false }
+                            locationName = newValue
+                        }
+                    ),
+                    capitalize: .words
+                )
 
                 labeledField("Latitude N/S xx° xx.x'", text: $latitudeText, capitalize: .characters)
                 labeledField("Longitude E/W xxx° xx.x'", text: $longitudeText, capitalize: .characters)
-
-                Button(action: usePhoneLocation) {
-                    Label("Use phone location", systemImage: "location")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(AppTheme.textPrimary)
-                .background(Color.black.opacity(0.28), in: Capsule())
-                .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
-                .accessibilityIdentifier("usePhoneLocation")
 
                 if let gpsNote {
                     Text(gpsNote)
@@ -337,12 +374,17 @@ struct DPEntryFieldsSheet: View {
 
     private func wireLocator() {
         locator.onFix = { location in
+            applyingPhoneFix = true
             latitudeText = CoordinateFormat.latitude(location.coordinate.latitude)
             longitudeText = CoordinateFormat.longitude(location.coordinate.longitude)
-            gpsNote = "GPS filled. You can edit it."
+            locationName = "\(latitudeText) \(longitudeText)"
+            locationFromPhone = true
+            applyingPhoneFix = false
+            gpsNote = "Phone position. Not the DP desk. You can still type a place."
         }
         locator.onDenied = {
-            gpsNote = "No GPS fix. You can still save and type a position."
+            locationFromPhone = false
+            gpsNote = "Location is off. You can still type the place."
         }
     }
 
@@ -428,6 +470,8 @@ struct DPEntryFieldsSheet: View {
             activityCode: activity.storedValue,
             notes: optional(notes),
             locationName: locationName.trimmingCharacters(in: .whitespacesAndNewlines),
+            client: client.trimmingCharacters(in: .whitespacesAndNewlines),
+            locationFromPhone: locationFromPhone,
             latitudeText: latitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
             longitudeText: longitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
             dpClassLevel: dpClassLevel,
@@ -449,6 +493,8 @@ struct DPEntryFieldsSheet: View {
 
     private func applyOptionalFields(to entry: DPEntry) {
         entry.locationName = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.client = client.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.locationFromPhone = locationFromPhone
         entry.latitudeText = latitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.longitudeText = longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.activityCode = activity.storedValue

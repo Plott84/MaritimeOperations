@@ -18,6 +18,10 @@ final class DPEntry {
     var notes: String?
     var masterInitials: String?
     var locationName: String = ""
+    /// Typed client. Empty on lines saved before this field existed.
+    var client: String = ""
+    /// True only when this place was filled from the phone, not typed.
+    var locationFromPhone: Bool = false
     var latitudeText: String = ""
     var longitudeText: String = ""
     /// IMO DP class 1 / 2 / 3. Nil on lines saved before this field existed.
@@ -58,6 +62,8 @@ final class DPEntry {
         notes: String? = nil,
         masterInitials: String? = nil,
         locationName: String = "",
+        client: String = "",
+        locationFromPhone: Bool = false,
         latitudeText: String = "",
         longitudeText: String = "",
         dpClassLevel: Int? = nil,
@@ -80,6 +86,8 @@ final class DPEntry {
         self.notes = notes
         self.masterInitials = masterInitials
         self.locationName = locationName
+        self.client = client
+        self.locationFromPhone = locationFromPhone
         self.latitudeText = latitudeText
         self.longitudeText = longitudeText
         self.dpClassLevel = dpClassLevel

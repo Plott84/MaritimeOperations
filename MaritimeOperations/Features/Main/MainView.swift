@@ -8,7 +8,6 @@ struct MainView: View {
     var onOpenRigMoves: () -> Void
 
     @State private var saveErrorMessage: String?
-    @State private var showingConfirm = false
     @State private var editingEntry: DPEntry?
 
     private var latestFive: [DPEntry] { Array(entries.prefix(5)) }
@@ -30,9 +29,6 @@ struct MainView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .sheet(isPresented: $showingConfirm) {
-            DPEntryFieldsSheet(mode: .confirmStop, session: session)
-        }
         .sheet(item: $editingEntry) { entry in
             DPEntryFieldsSheet(mode: .edit(entry))
         }
@@ -81,12 +77,14 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .allowsHitTesting(false)
 
                 Button(action: toggleTimer) {
                     Label(session.isRunning ? "Stop DP" : "Start DP", systemImage: session.isRunning ? "stop.fill" : "play.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.black.opacity(0.85))
@@ -107,7 +105,7 @@ struct MainView: View {
                         .stroke(AppTheme.border, lineWidth: 1)
                 }
 
-                Text("Start when the vessel goes on DP. Stop saves the session to Entries.")
+                Text("Start when the vessel goes on DP. Stop saves the line right away. Add the ship later from DP Entries.")
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -195,7 +193,7 @@ struct MainView: View {
 
     private func toggleTimer() {
         if session.isRunning {
-            showingConfirm = true
+            stopAndSave()
         } else {
             session.start()
         }
@@ -211,7 +209,7 @@ struct MainView: View {
             startTime: startedAt,
             endTime: endedAt,
             durationHours: hours,
-            vessel: session.vessel,
+            vessel: "",
             rig: session.rig,
             vesselType: session.vesselType,
             dpClass: session.dpClass

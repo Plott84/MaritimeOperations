@@ -60,9 +60,14 @@ struct ActivityRowView: View {
     }
 
     private var meta: String {
-        [entry.vesselType, entry.dpClassLabel, entry.vessel]
+        var parts = [entry.vesselType, entry.dpClassLabel]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-            .joined(separator: " · ")
+        let ship = entry.vessel.trimmingCharacters(in: .whitespacesAndNewlines)
+        parts.append(ship.isEmpty ? "Needs details" : ship)
+        if entry.locationFromPhone {
+            parts.append("Phone position")
+        }
+        return parts.joined(separator: " · ")
     }
 }

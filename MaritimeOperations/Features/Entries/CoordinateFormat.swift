@@ -26,6 +26,8 @@ final class WhenInUseLocation: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     var onFix: ((CLLocation) -> Void)?
     var onDenied: (() -> Void)?
+    /// GPS is read only while this is true. The location switch sets it.
+    var wantsFix = false
 
     override init() {
         super.init()
@@ -34,6 +36,7 @@ final class WhenInUseLocation: NSObject, CLLocationManagerDelegate {
     }
 
     func request() {
+        wantsFix = true
         switch manager.authorizationStatus {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()
@@ -48,6 +51,7 @@ final class WhenInUseLocation: NSObject, CLLocationManagerDelegate {
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
+            guard wantsFix else { return }
             switch manager.authorizationStatus {
             case .authorizedWhenInUse, .authorizedAlways:
                 manager.requestLocation()
@@ -62,12 +66,14 @@ final class WhenInUseLocation: NSObject, CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         Task { @MainActor in
+            guard wantsFix else { return }
             onFix?(location)
         }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
+            guard wantsFix else { return }
             onDenied?()
         }
     }
