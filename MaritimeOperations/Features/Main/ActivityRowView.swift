@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ActivityRowView: View {
     let entry: DPEntry
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -17,22 +18,38 @@ struct ActivityRowView: View {
             }
             .frame(width: 10)
 
-            Text("DP")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .frame(width: 32, height: 32)
-                .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            // Accessibility sizes: fixed-size DP icon instead of letters (row already reads "DP session").
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    Image(systemName: "scope")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppTheme.teal)
+                } else {
+                    Text("DP")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+            }
+            .frame(width: 32, height: 32)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline) {
+                // Accessibility sizes: title above the date so "DP session" never breaks mid-word.
+                titleDateLayout {
                     Text("DP session")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.textPrimary)
-                    Spacer(minLength: 8)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                        .layoutPriority(1)
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        Spacer(minLength: 8)
+                    }
                     Text(AppFormatters.activityDate.string(from: entry.date))
                         .font(.caption2)
                         .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.trailing)
+                        .multilineTextAlignment(dynamicTypeSize.isAccessibilitySize ? .leading : .trailing)
                 }
                 if !meta.isEmpty {
                     Text(meta)
@@ -59,10 +76,21 @@ struct ActivityRowView: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var titleDateLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+    }
+
     private var meta: String {
-        [entry.vesselType, entry.dpClass, entry.vessel]
+        var parts = [entry.vesselType, entry.dpClassLabel]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-            .joined(separator: " · ")
+        let ship = entry.vessel.trimmingCharacters(in: .whitespacesAndNewlines)
+        parts.append(ship.isEmpty ? "Needs details" : ship)
+        if entry.locationFromPhone {
+            parts.append("Phone position")
+        }
+        return parts.joined(separator: " · ")
     }
 }

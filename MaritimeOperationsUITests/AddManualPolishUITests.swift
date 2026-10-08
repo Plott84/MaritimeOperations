@@ -6,7 +6,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     private func openAdd(_ app: XCUIApplication) {
-        app.buttons["Entries"].tap()
+        app.openLogBook(.dp)
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 8))
         add.tap()
@@ -14,9 +14,8 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testEmptyEntriesShowsAddCTA() throws {
-        let app = XCUIApplication()
-        app.launch()
-        app.buttons["Entries"].tap()
+        let app = XCUIApplication.launchedClean()
+        app.openLogBook(.dp)
         XCTAssertTrue(
             app.buttons["addManualEntryPill"].waitForExistence(timeout: 8)
             || app.buttons["navAddEntry"].waitForExistence(timeout: 2)
@@ -24,8 +23,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testTimesRequiredError() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
         let ship = app.textFields["Ship name"]
         XCTAssertTrue(ship.waitForExistence(timeout: 5))
@@ -36,8 +34,7 @@ final class AddManualPolishUITests: XCTestCase {
     }
 
     func testCancelWritesNothing() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
         let ship = app.textFields["Ship name"]
         XCTAssertTrue(ship.waitForExistence(timeout: 5))
@@ -48,11 +45,13 @@ final class AddManualPolishUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Dirty"].exists)
     }
 
-    func testUsePhoneLocationDoesNotPromptOnOpen() throws {
-        let app = XCUIApplication()
-        app.launch()
+    func testPhonePositionSwitchStaysOffOnOpen() throws {
+        let app = XCUIApplication.launchedClean()
         openAdd(app)
-        XCTAssertTrue(app.buttons["usePhoneLocation"].waitForExistence(timeout: 5))
+        let phoneSwitch = app.switches["phonePositionSwitch"]
+        XCTAssertTrue(phoneSwitch.waitForExistence(timeout: 5))
+        XCTAssertEqual(phoneSwitch.value as? String, "0")
+        XCTAssertTrue(app.textFields["Location"].exists)
         XCTAssertFalse(app.alerts.element.exists)
     }
 }

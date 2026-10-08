@@ -7,9 +7,7 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE1_startStopCreatesTimedEntry() throws {
-        let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        let app = XCUIApplication.launchedClean(extraArguments: ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"])
 
         let start = app.buttons["Start DP"]
         XCTAssertTrue(start.waitForExistence(timeout: 8), "Start DP missing")
@@ -21,36 +19,39 @@ final class P0FlowUITests: XCTestCase {
         sleep(2)
         stop.tap()
 
-        XCTAssertTrue(app.navigationBars["DP log line"].waitForExistence(timeout: 5))
-        let ship = app.textFields["Ship name"]
-        XCTAssertTrue(ship.waitForExistence(timeout: 5))
-        ship.tap()
-        ship.typeText("QA Vessel")
-        app.buttons["dpFieldsSave"].tap()
-
-        // Back to Ready only after confirm
+        // Stop saves immediately. No card, and the ship can be empty.
+        XCTAssertFalse(app.navigationBars["DP log line"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.buttons["Start DP"].waitForExistence(timeout: 5))
 
-        let entriesTab = app.buttons["Entries"]
-        XCTAssertTrue(entriesTab.waitForExistence(timeout: 5))
-        entriesTab.tap()
+        app.openLogBook(.dp)
 
-        // Timed source label or vessel default
-        let timed = app.staticTexts["Timed session"]
-        let vessel = app.staticTexts["QA Vessel"]
-        XCTAssertTrue(
-            timed.waitForExistence(timeout: 6) || vessel.waitForExistence(timeout: 2),
-            "Expected a timed entry on Entries after Stop"
-        )
+        XCTAssertTrue(app.staticTexts["Needs details"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.staticTexts["Timed session"].waitForExistence(timeout: 3))
+        let total = app.staticTexts["totalDPHours"]
+        XCTAssertTrue(total.waitForExistence(timeout: 3))
+        // A stop of a couple of seconds rounds to 0 h. Old hours still add.
+
+        let oldHours = app.textFields["oldDPHours"]
+        XCTAssertTrue(oldHours.waitForExistence(timeout: 3))
+        oldHours.tap()
+        oldHours.typeText("10")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.staticTexts["totalDPHours"].label.contains("10"))
+
+        app.buttons["addManualEntryPill"].tap()
+        XCTAssertTrue(app.navigationBars["DP log line"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.textFields["Remarks / location / client"].exists)
+        XCTAssertTrue(app.textFields["Client"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["Location"].exists)
+        let phoneSwitch = app.switches["phonePositionSwitch"]
+        XCTAssertTrue(phoneSwitch.waitForExistence(timeout: 3))
+        XCTAssertEqual(phoneSwitch.value as? String, "0")
     }
 
     func testE2_addManualEntry() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
 
-        let entriesTab = app.buttons["Entries"]
-        XCTAssertTrue(entriesTab.waitForExistence(timeout: 8))
-        entriesTab.tap()
+        app.openLogBook(.dp)
 
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
@@ -72,10 +73,9 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE4_validationBlocksEmptyVessel() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
 
-        app.buttons["Entries"].tap()
+        app.openLogBook(.dp)
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()
@@ -89,8 +89,7 @@ final class P0FlowUITests: XCTestCase {
     }
 
     func testE3_timerSurvivesRelaunch() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = XCUIApplication.launchedClean()
 
         let start = app.buttons["Start DP"]
         XCTAssertTrue(start.waitForExistence(timeout: 8))
@@ -98,8 +97,7 @@ final class P0FlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Stop DP"].waitForExistence(timeout: 5))
         sleep(2)
 
-        app.terminate()
-        app.launch()
+        app.relaunchKeepingState()
 
         XCTAssertTrue(app.buttons["Stop DP"].waitForExistence(timeout: 8), "Timer should still be running after relaunch")
         // Elapsed should not be 00:00

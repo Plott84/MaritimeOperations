@@ -12,6 +12,7 @@ struct DPEntryFieldsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \DPEntry.createdAt, order: .reverse) private var savedEntries: [DPEntry]
 
     let mode: Mode
     var session: ActiveDPSessionStore?
@@ -23,11 +24,21 @@ struct DPEntryFieldsSheet: View {
     @State private var locationName: String
     @State private var latitudeText: String
     @State private var longitudeText: String
-    @State private var activityCode: String
+    @State private var activity: ActivityCodeSelection
+    @State private var dpClassLevel: Int?
+    @State private var rank: String
+    @State private var showingShipPicker = false
+    @State private var didPrefillRank = false
     @State private var notes: String
+    @State private var client: String
+    @State private var usePhonePosition: Bool
+    @State private var locationFromPhone: Bool
+    @State private var applyingPhoneFix = false
     @State private var fieldError: String?
     @State private var saveError: String?
     @State private var gpsNote: String?
+    /// Title of the focused text field; nil hides the keyboard.
+    @FocusState private var focusedField: String?
     @State private var locator = WhenInUseLocation()
 
     init(mode: Mode, session: ActiveDPSessionStore? = nil, onSaved: @escaping () -> Void = {}) {
@@ -43,8 +54,13 @@ struct DPEntryFieldsSheet: View {
             _locationName = State(initialValue: "")
             _latitudeText = State(initialValue: "")
             _longitudeText = State(initialValue: "")
-            _activityCode = State(initialValue: "")
+            _activity = State(initialValue: ActivityCodeSelection())
+            _dpClassLevel = State(initialValue: 2)
+            _rank = State(initialValue: "")
             _notes = State(initialValue: "")
+            _client = State(initialValue: "")
+            _usePhonePosition = State(initialValue: false)
+            _locationFromPhone = State(initialValue: false)
         case .add:
             _start = State(initialValue: nil)
             _stop = State(initialValue: nil)
@@ -52,8 +68,13 @@ struct DPEntryFieldsSheet: View {
             _locationName = State(initialValue: "")
             _latitudeText = State(initialValue: "")
             _longitudeText = State(initialValue: "")
-            _activityCode = State(initialValue: "")
+            _activity = State(initialValue: ActivityCodeSelection())
+            _dpClassLevel = State(initialValue: 2)
+            _rank = State(initialValue: "")
             _notes = State(initialValue: "")
+            _client = State(initialValue: "")
+            _usePhonePosition = State(initialValue: false)
+            _locationFromPhone = State(initialValue: false)
         case .edit(let entry):
             let started = entry.startTime ?? entry.date
             let ended = entry.endTime ?? started.addingTimeInterval(entry.durationHours * 3600)
@@ -63,8 +84,14 @@ struct DPEntryFieldsSheet: View {
             _locationName = State(initialValue: entry.locationName)
             _latitudeText = State(initialValue: entry.latitudeText)
             _longitudeText = State(initialValue: entry.longitudeText)
-            _activityCode = State(initialValue: entry.activityCode ?? "")
+            _activity = State(initialValue: ActivityCodeSelection(stored: entry.activityCode))
+            _dpClassLevel = State(initialValue: entry.dpClassLevel)
+            _rank = State(initialValue: entry.rank ?? "")
+            _didPrefillRank = State(initialValue: true)
             _notes = State(initialValue: entry.notes ?? "")
+            _client = State(initialValue: entry.client)
+            _usePhonePosition = State(initialValue: entry.locationFromPhone)
+            _locationFromPhone = State(initialValue: entry.locationFromPhone)
         }
     }
 
@@ -114,7 +141,13 @@ struct DPEntryFieldsSheet: View {
                 }
             }
             .interactiveDismissDisabled(isConfirm)
-            .onAppear(perform: wireLocator)
+            .onAppear {
+                wireLocator()
+                prefillRankFromLatest()
+            }
+            .sheet(isPresented: $showingShipPicker) {
+                ShipPickerSheet(names: loggedShipNames) { shipName = $0 }
+            }
         }
         .accessibilityIdentifier("dpEntryFieldsSheet")
     }
@@ -142,22 +175,59 @@ struct DPEntryFieldsSheet: View {
                 }
 
                 labeledField("Ship name", text: $shipName, capitalize: .words)
-                labeledField("Location name", text: $locationName, capitalize: .words)
+                if !loggedShipNames.isEmpty {
+                    Button {
+                        showingShipPicker = true
+                    } label: {
+                        Label("Pick a logged ship", systemImage: "list.bullet")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AppTheme.teal)
+                    .accessibilityIdentifier("pickLoggedShip")
+                }
+                DPClassPicker(level: $dpClassLevel)
+                RankPicker(rank: $rank)
+                labeledField("Client", text: $client, capitalize: .words)
+
+                Toggle(isOn: $usePhonePosition) {
+                    Text(usePhonePosition ? "Phone position" : "Location")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+                .tint(AppTheme.teal)
+                .accessibilityIdentifier("phonePositionSwitch")
+                .onChange(of: usePhonePosition) { _, isOn in
+                    if isOn {
+                        usePhoneLocation()
+                    } else {
+                        locator.wantsFix = false
+                        if locationFromPhone {
+                            applyingPhoneFix = true
+                            locationName = ""
+                            latitudeText = ""
+                            longitudeText = ""
+                            applyingPhoneFix = false
+                        }
+                        locationFromPhone = false
+                        gpsNote = nil
+                    }
+                }
+
+                labeledField(
+                    usePhonePosition ? "Phone position" : "Location",
+                    text: Binding(
+                        get: { locationName },
+                        set: { newValue in
+                            if !applyingPhoneFix { locationFromPhone = false }
+                            locationName = newValue
+                        }
+                    ),
+                    capitalize: .words
+                )
 
                 labeledField("Latitude N/S xx° xx.x'", text: $latitudeText, capitalize: .characters)
                 labeledField("Longitude E/W xxx° xx.x'", text: $longitudeText, capitalize: .characters)
-
-                Button(action: usePhoneLocation) {
-                    Label("Use phone location", systemImage: "location")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(AppTheme.textPrimary)
-                .background(Color.black.opacity(0.28), in: Capsule())
-                .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
-                .accessibilityIdentifier("usePhoneLocation")
 
                 if let gpsNote {
                     Text(gpsNote)
@@ -165,7 +235,7 @@ struct DPEntryFieldsSheet: View {
                         .foregroundStyle(AppTheme.textSecondary)
                 }
 
-                labeledField("Activity code", text: $activityCode, capitalize: .characters)
+                ActivityCodePicker(selection: $activity) { focusedField = nil }
                 labeledField("Notes", text: $notes, capitalize: .sentences, axis: .vertical)
             }
         }
@@ -184,28 +254,49 @@ struct DPEntryFieldsSheet: View {
         .accessibilityIdentifier("dpFieldsSave")
     }
 
+    /// Full-width Start/Stop row styled like the other fields. The whole row is the tap target (min 44 pt).
     private func timeRow(title: String, date: Binding<Date?>, identifier: String, onSet: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(AppTheme.textSecondary)
+        Group {
             if let value = date.wrappedValue {
-                DatePicker(
-                    title,
-                    selection: Binding(
-                        get: { value },
-                        set: { date.wrappedValue = $0 }
-                    ),
-                    displayedComponents: [.date, .hourAndMinute]
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .accessibilityIdentifier(identifier)
-            } else {
-                Button("Set \(title.lowercased())", action: onSet)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(AppTheme.teal)
+                HStack(spacing: 12) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Spacer(minLength: 8)
+                    DatePicker(
+                        title,
+                        selection: Binding(
+                            get: { value },
+                            set: { date.wrappedValue = $0 }
+                        ),
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .accessibilityLabel(title)
                     .accessibilityIdentifier(identifier)
+                }
+                .timeRowBox()
+            } else {
+                Button(action: onSet) {
+                    HStack(spacing: 12) {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Spacer(minLength: 8)
+                        Label("Set \(title.lowercased())", systemImage: "clock")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppTheme.teal)
+                    }
+                    .timeRowBox()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(title), not set")
+                .accessibilityHint("Sets \(title.lowercased()) time")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier(identifier)
             }
         }
     }
@@ -221,6 +312,7 @@ struct DPEntryFieldsSheet: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AppTheme.textSecondary)
             TextField(title, text: text, axis: axis)
+                .focused($focusedField, equals: title)
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(capitalize)
                 .lineLimit(axis == .vertical ? 3...6 : 1...1)
@@ -233,6 +325,17 @@ struct DPEntryFieldsSheet: View {
                 }
                 .accessibilityLabel(title)
         }
+    }
+
+    private var loggedShipNames: [String] {
+        ShipNameSuggestions.names(from: savedEntries)
+    }
+
+    /// New lines take the rank from the line with the latest DP date (see RankPrefill). Ship name is never prefilled.
+    private func prefillRankFromLatest() {
+        guard !didPrefillRank else { return }
+        didPrefillRank = true
+        rank = RankPrefill.rank(from: savedEntries)
     }
 
     private var isConfirm: Bool {
@@ -271,12 +374,17 @@ struct DPEntryFieldsSheet: View {
 
     private func wireLocator() {
         locator.onFix = { location in
+            applyingPhoneFix = true
             latitudeText = CoordinateFormat.latitude(location.coordinate.latitude)
             longitudeText = CoordinateFormat.longitude(location.coordinate.longitude)
-            gpsNote = "GPS filled. You can edit it."
+            locationName = "\(latitudeText) \(longitudeText)"
+            locationFromPhone = true
+            applyingPhoneFix = false
+            gpsNote = "Phone position. Not the DP desk. You can still type a place."
         }
         locator.onDenied = {
-            gpsNote = "No GPS fix. You can still save and type a position."
+            locationFromPhone = false
+            gpsNote = "Location is off. You can still type the place."
         }
     }
 
@@ -290,6 +398,10 @@ struct DPEntryFieldsSheet: View {
         let ship = shipName.trimmingCharacters(in: .whitespacesAndNewlines)
         if ship.isEmpty || ship.caseInsensitiveCompare("Vessel") == .orderedSame {
             fieldError = "Ship name is required."
+            return
+        }
+        if let activityError = activity.validationError {
+            fieldError = activityError
             return
         }
         guard let start, let stop else {
@@ -355,11 +467,15 @@ struct DPEntryFieldsSheet: View {
             endTime: stop,
             durationHours: hours,
             vessel: ship,
-            activityCode: optional(activityCode),
+            activityCode: activity.storedValue,
             notes: optional(notes),
             locationName: locationName.trimmingCharacters(in: .whitespacesAndNewlines),
+            client: client.trimmingCharacters(in: .whitespacesAndNewlines),
+            locationFromPhone: locationFromPhone,
             latitudeText: latitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
-            longitudeText: longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+            longitudeText: longitudeText.trimmingCharacters(in: .whitespacesAndNewlines),
+            dpClassLevel: dpClassLevel,
+            rank: optional(rank)
         )
         modelContext.insert(entry)
         do {
@@ -377,14 +493,32 @@ struct DPEntryFieldsSheet: View {
 
     private func applyOptionalFields(to entry: DPEntry) {
         entry.locationName = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.client = client.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.locationFromPhone = locationFromPhone
         entry.latitudeText = latitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.longitudeText = longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        entry.activityCode = optional(activityCode)
+        entry.activityCode = activity.storedValue
+        entry.dpClassLevel = dpClassLevel
+        entry.rank = optional(rank)
         entry.notes = optional(notes)
     }
 
     private func optional(_ value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+private extension View {
+    /// Same dark rounded box as the text fields, at least 44 pt tall.
+    func timeRowBox() -> some View {
+        self
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            }
     }
 }
