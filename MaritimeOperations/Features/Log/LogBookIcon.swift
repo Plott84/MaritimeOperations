@@ -53,22 +53,26 @@ struct CraneIcon: View {
     }
 }
 
-/// Small 36-point book badge (Main's "Your books" rows and the ROV / Crane book rows).
-/// Default sizes: the book's letters ("DP", "AH", "ROV", "CR"), unchanged.
-/// Accessibility sizes: ROV and Crane show their drawn icon at a fixed 18 points instead
-/// (like the DP crosshair badge in ActivityRowView); DP and AH keep their letters.
+/// Book badge (Main's "Your books" rows and the ROV / Crane book rows in Log).
+/// Default sizes: the book's letters ("DP", "AH", "ROV", "CR") on a 36-point badge, unchanged.
+/// Accessibility sizes: every book shows its icon instead — DP the `scope` crosshair, AH the
+/// drawn anchor, ROV and Crane their drawn icons — in teal, at about 60% of the badge.
+/// The badge grows with Dynamic Type through @ScaledMetric, damped so it lands near 44 points
+/// (icon near 26) at AX-L instead of the ~70 points a plain body-relative metric would give.
 /// Always hidden from VoiceOver: every row that shows it already names the book or sits in it.
 struct LogBookBadge: View {
     let book: LogBook
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var scaledSide: CGFloat = 36
+
+    /// 36 at the default size; +23.6% of the body-relative growth above that (AX-L ≈ 44, AX5 ≈ 54).
+    private var side: CGFloat { (36 + max(0, scaledSide - 36) * 0.236).rounded() }
+    private var iconSide: CGFloat { (side * 0.6).rounded() }
 
     var body: some View {
         Group {
-            if dynamicTypeSize.isAccessibilitySize, book == .rov {
-                ROVIcon(fixedSize: 18)
-                    .foregroundStyle(AppTheme.teal)
-            } else if dynamicTypeSize.isAccessibilitySize, book == .crane {
-                CraneIcon(fixedSize: 18)
+            if dynamicTypeSize.isAccessibilitySize {
+                icon
                     .foregroundStyle(AppTheme.teal)
             } else {
                 Text(book.badge)
@@ -76,9 +80,28 @@ struct LogBookBadge: View {
                     .foregroundStyle(AppTheme.textPrimary)
             }
         }
-        .frame(width: 36, height: 36)
-        .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .frame(width: side, height: side)
+        .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: side * 8 / 36, style: .continuous))
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder private var icon: some View {
+        switch book {
+        case .dp:
+            Image(systemName: "scope")
+                .resizable()
+                .scaledToFit()
+                .fontWeight(.semibold)
+                .frame(width: iconSide, height: iconSide)
+        case .anchorHandling:
+            AnchorShape()
+                .stroke(style: StrokeStyle(lineWidth: max(1.4, iconSide * 0.11), lineCap: .round, lineJoin: .round))
+                .frame(width: iconSide, height: iconSide)
+        case .rov:
+            ROVIcon(fixedSize: iconSide)
+        case .crane:
+            CraneIcon(fixedSize: iconSide)
+        }
     }
 }
 

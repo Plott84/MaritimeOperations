@@ -268,16 +268,26 @@ struct CraneHeelView: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(active ? AppTheme.gold : AppTheme.textSecondary)
                     .frame(width: 22)
-                Text(pos.rowTitle)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .frame(minWidth: 40, alignment: .leading)
-                Text(text)
-                    .font(.subheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(active ? AppTheme.textPrimary : AppTheme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                // Accessibility sizes: the value goes on its own line under "Start"/"End" and wraps
+                // freely (no line limit); other sizes keep the single line.
+                let stacked = dynamicTypeSize.isAccessibilitySize
+                let titleValue = stacked
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: 9))
+                titleValue {
+                    Text(pos.rowTitle)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .frame(minWidth: 40, alignment: .leading)
+                    Text(text)
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(active ? AppTheme.textPrimary : AppTheme.textSecondary)
+                        .lineLimit(stacked ? nil : 1)
+                        .minimumScaleFactor(stacked ? 1 : 0.7)
+                        .fixedSize(horizontal: false, vertical: stacked)
+                        .multilineTextAlignment(.leading)
+                }
                 Spacer(minLength: 4)
                 if let heel {
                     Text(heel)
