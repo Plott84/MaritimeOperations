@@ -7,7 +7,7 @@ final class DPLineCodesUITests: XCTestCase {
     }
 
     private func openAdd(_ app: XCUIApplication) {
-        app.buttons["DP Entries"].tap()
+        app.openLogBook(.dp)
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 8))
         add.tap()

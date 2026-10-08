@@ -3,10 +3,13 @@ import SwiftData
 
 struct EntriesView: View {
     @Query(sort: \DPEntry.date, order: .reverse) private var entries: [DPEntry]
+    @Environment(\.modelContext) private var modelContext
+    var session: ActiveDPSessionStore
     @AppStorage("dp.oldHoursText") private var oldHoursText = ""
     @FocusState private var oldHoursFocused: Bool
     @State private var showingAdd = false
     @State private var editingEntry: DPEntry?
+    @State private var pendingDelete: DPEntry?
 
     private var appHours: Double {
         entries.reduce(0) { $0 + $1.durationHours }
@@ -24,32 +27,51 @@ struct EntriesView: View {
     var body: some View {
         ZStack {
             AppCanvas()
-            ScrollView {
-                VStack(spacing: 16) {
+            List {
+                Section {
                     summaryCard
-                    if entries.isEmpty {
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+
+                if entries.isEmpty {
+                    Section {
                         Text("No entries yet. Add a DP log line, or stop the timer on Main.")
                             .font(.subheadline)
                             .foregroundStyle(AppTheme.textSecondary)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 8)
                             .padding(.top, 8)
-                    } else {
-                        VStack(spacing: 10) {
-                            ForEach(entries, id: \.id) { entry in
-                                Button {
-                                    editingEntry = entry
-                                } label: {
-                                    entryRow(entry)
-                                }
-                                .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+                } else {
+                    Section {
+                        ForEach(entries, id: \.id) { entry in
+                            Button {
+                                editingEntry = entry
+                            } label: {
+                                entryRow(entry)
                             }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 5, leading: 16, bottom: 5, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .modifier(DPEntrySwipeDelete(
+                                isEnabled: !entry.isRunningTimerEntry(sessionStartedAt: session.startedAt),
+                                onDelete: { pendingDelete = entry }
+                            ))
+                            .accessibilityIdentifier("dpEntryRow-\(entry.id.uuidString)")
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .padding(.bottom, 8)
         }
         .navigationTitle("DP Entries")
         .navigationBarTitleDisplayMode(.inline)
@@ -73,6 +95,25 @@ struct EntriesView: View {
         }
         .sheet(item: $editingEntry) { entry in
             DPEntryFieldsSheet(mode: .edit(entry))
+        }
+        .alert(
+            DeleteEntryPrompt.confirm,
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            )
+        ) {
+            Button("Delete", role: .destructive) {
+                guard let entry = pendingDelete else { return }
+                modelContext.delete(entry)
+                try? modelContext.save()
+                pendingDelete = nil
+            }
+            .accessibilityIdentifier("confirmDeleteEntry")
+            Button("Cancel", role: .cancel) {
+                pendingDelete = nil
+            }
+            .accessibilityIdentifier("cancelDeleteEntry")
         }
     }
 
@@ -250,5 +291,24 @@ struct EntriesView: View {
             if !place.isEmpty { parts.append(place) }
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// Trailing destructive swipe that only arms confirmation — never deletes immediately.
+private struct DPEntrySwipeDelete: ViewModifier {
+    let isEnabled: Bool
+    let onDelete: () -> Void
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button("Delete", role: .destructive, action: onDelete)
+                        .tint(.red)
+                        .accessibilityIdentifier("swipeDeleteDPEntry")
+                }
+        } else {
+            content
+        }
     }
 }

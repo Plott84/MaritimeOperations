@@ -4,5 +4,9 @@
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Maritime Operations reads the phone position only when you turn on Phone position. That is not the ship's DP position. You can type a place instead.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Maritime Operations uses the camera only when you add a photo to a rig move. Photos stay on that move and are not part of any hours export.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Maritime Operations reads your photo library only when you pick a photo for a rig move. Photos stay on that move and are not part of any hours export.</string>
 </dict>
 </plist>

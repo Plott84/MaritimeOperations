@@ -28,10 +28,10 @@ struct RankPicker: View {
         DPLineFieldRow(title: "Rank (optional)") {
             Picker("Rank", selection: $rank) {
                 Text("None").tag("")
-                if !rank.isEmpty, CrewRank(rawValue: rank) == nil {
+                if !rank.isEmpty, !CrewRank.dpPickerCases.contains(where: { $0.rawValue == rank }) {
                     Text("Current: \(rank)").tag(rank)
                 }
-                ForEach(CrewRank.allCases) { value in
+                ForEach(CrewRank.dpPickerCases) { value in
                     Text(value.rawValue).tag(value.rawValue)
                 }
             }

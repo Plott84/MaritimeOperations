@@ -1,37 +1,73 @@
 import SwiftUI
 import SwiftData
 
+/// Anchor handling book (Log → Anchor handling). Rows are the existing RigMove records, newest first.
 struct RigMovesView: View {
     @Query(sort: \RigMove.date, order: .reverse) private var moves: [RigMove]
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Binding var showingAdd: Bool
-
-    private var completed: Int { moves.filter(\.isDone).count }
-    private var open: Int { moves.filter { !$0.isDone }.count }
+    @State private var editingMove: RigMove?
+    @State private var pendingDelete: RigMove?
 
     var body: some View {
         ZStack {
             AppCanvas()
-            ScrollView {
-                VStack(spacing: 16) {
-                    summaryCard
-                    if moves.isEmpty {
+            List {
+                Section {
+                    headerCard
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+
+                if moves.isEmpty {
+                    Section {
                         Text("No rig moves yet.")
                             .font(.subheadline)
                             .foregroundStyle(AppTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
                             .padding(.top, 8)
-                    } else {
-                        VStack(spacing: 10) {
-                            ForEach(moves, id: \.id) { move in
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+                } else {
+                    Section {
+                        ForEach(moves, id: \.id) { move in
+                            Button {
+                                editingMove = move
+                            } label: {
                                 row(move)
                             }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button("Delete", role: .destructive) {
+                                    pendingDelete = move
+                                }
+                                .tint(.red)
+                                .accessibilityIdentifier("swipeDeleteRigMove")
+                            }
+                            .accessibilityIdentifier("rigMoveRow-\(move.id.uuidString)")
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+
+                Section {
+                    exportRow
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .padding(.bottom, 8)
         }
-        .navigationTitle("Rig Moves")
+        .navigationTitle("Anchor handling")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -40,149 +76,136 @@ struct RigMovesView: View {
                 TealCircleButton(systemImage: "plus") {
                     showingAdd = true
                 }
-                .accessibilityLabel("Add Rig Move")
+                .accessibilityLabel("New anchor handling entry")
                 .accessibilityIdentifier("navAddRigMove")
             }
         }
         .sheet(isPresented: $showingAdd) {
             AddRigMoveView()
         }
+        .sheet(item: $editingMove) { move in
+            AddRigMoveView(existing: move)
+        }
+        .alert(
+            DeleteEntryPrompt.confirm,
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            )
+        ) {
+            Button("Delete", role: .destructive) {
+                guard let move = pendingDelete else { return }
+                modelContext.delete(move)
+                try? modelContext.save()
+                pendingDelete = nil
+            }
+            .accessibilityIdentifier("confirmDeleteRigMove")
+            Button("Cancel", role: .cancel) {
+                pendingDelete = nil
+            }
+            .accessibilityIdentifier("cancelDeleteRigMove")
+        }
     }
 
-    private var summaryCard: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label {
-                            Text("FIELD MOVES")
-                                .font(.caption.weight(.semibold))
-                                .tracking(1.1)
-                        } icon: {
-                            Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
-                        }
-                        .foregroundStyle(AppTheme.teal)
-                        Text("Rig Move Register")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(AppTheme.textPrimary)
+    private var headerCard: some View {
+        VStack(spacing: 12) {
+            AHTag(title: "Rig Moves")
+                .accessibilityLabel("Filter: Rig Moves")
+            GlassCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label {
+                        Text("ANCHOR HANDLING")
+                            .font(.caption.weight(.semibold))
+                            .tracking(1.1)
+                    } icon: {
+                        AnchorIcon(scale: 0.75)
                     }
-                    Spacer()
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.body.weight(.semibold))
+                    .foregroundStyle(AppTheme.teal)
+                    .accessibilityAddTraits(.isHeader)
+
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Rig moves")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .accessibilityAddTraits(.isHeader)
+                        Spacer(minLength: 8)
+                        Text(moves.count == 1 ? "1 row" : "\(moves.count) rows")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.3), in: Capsule())
+                            .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                            .accessibilityIdentifier("ahRowCount")
+                    }
+                    Text("Newest first.")
+                        .font(.footnote)
                         .foregroundStyle(AppTheme.textSecondary)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.black.opacity(0.25)))
-                        .overlay(Circle().stroke(AppTheme.border, lineWidth: 1))
-                        .accessibilityHidden(true)
-                }
 
-                Text("Capture each move fast with route, distance, equipment, water depth, and completion state.")
-                    .font(.footnote)
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 8) {
-                    counter(title: "Completed", value: completed, systemImage: "checkmark.circle.fill", tint: AppTheme.teal)
-                    counter(title: "Open", value: open, systemImage: "circle.circle", tint: AppTheme.gold)
-                    counter(title: "Total", value: moves.count, systemImage: "sum", tint: AppTheme.teal)
-                }
-
-                HStack(spacing: 10) {
                     Button {
                         showingAdd = true
                     } label: {
-                        Label("Add Rig Move", systemImage: "plus")
+                        Label("New entry", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
+                            .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(AppTheme.textPrimary)
                     .background(Color.black.opacity(0.28), in: Capsule())
                     .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
+                    .accessibilityLabel("New anchor handling entry")
                     .accessibilityIdentifier("addRigMovePill")
-
-                    Button {} label: {
-                        Label("Share Rig Moves", systemImage: "square.and.arrow.up")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .background(Color.black.opacity(0.2), in: Capsule())
-                    .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
-                    .disabled(true)
                 }
-
-                Text("Open includes all in-progress moves until they are marked completed.")
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    private func counter(title: String, value: Int, systemImage: String, tint: Color) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: systemImage)
-                .foregroundStyle(tint)
-            Text("\(value)")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(AppTheme.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func row(_ move: RigMove) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text("RM")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .frame(width: 36, height: 36)
-                .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        return HStack(alignment: .center, spacing: 12) {
+            if !stacked {
+                Text("AH")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .frame(width: 36, height: 36)
+                    .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(move.rigName)
-                    .font(.headline)
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(dateLine(move))
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.textSecondary)
-                Text(move.operation.label)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.white.opacity(0.08), in: Capsule())
-                if !move.notes.isEmpty {
-                    Text(move.notes)
+                let layout = stacked
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                    : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+                layout {
+                    Text(move.ahJobType.label)
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !stacked { Spacer(minLength: 8) }
+                    Text(move.date.formatted(.dateTime.day().month(.abbreviated).year()))
                         .font(.caption)
                         .foregroundStyle(AppTheme.textSecondary)
+                }
+                layout {
+                    Text(move.rigVesselLine.isEmpty ? "Not set" : move.rigVesselLine)
+                        .font(.subheadline)
+                        .foregroundStyle(move.rigVesselLine.isEmpty ? AppTheme.textSecondary : AppTheme.teal)
                         .fixedSize(horizontal: false, vertical: true)
+                    if !stacked { Spacer(minLength: 8) }
+                    if let hours = move.workedHours {
+                        Label(AppFormatters.hoursString(hours), systemImage: "clock")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 8)
-
-            VStack(alignment: .trailing, spacing: 6) {
-                Text(move.isDone ? "Done" : "Open")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(move.isDone ? AppTheme.teal : AppTheme.gold)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.black.opacity(0.28), in: Capsule())
-                    .overlay(Capsule().stroke((move.isDone ? AppTheme.teal : AppTheme.gold).opacity(0.5), lineWidth: 1))
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
-                    .foregroundStyle(AppTheme.textSecondary)
-            }
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(AppTheme.textSecondary)
+                .accessibilityHidden(true)
         }
         .padding(12)
         .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -190,15 +213,52 @@ struct RigMovesView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(AppTheme.teal.opacity(0.28), lineWidth: 1)
         }
-        .accessibilityElement(children: .combine)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(rowSpokenLabel(move))
+        .accessibilityHint("Opens the entry.")
     }
 
-    private func dateLine(_ move: RigMove) -> String {
-        let day = move.date.formatted(date: .abbreviated, time: .omitted)
-        let tf = Date.FormatStyle(date: .omitted, time: .shortened)
-        if let start = move.startTime, let end = move.endTime {
-            return "\(day) · \(start.formatted(tf)) – \(end.formatted(tf))"
+    private func rowSpokenLabel(_ move: RigMove) -> String {
+        var parts = [move.ahJobType.spokenLabel]
+        if !move.rigName.isEmpty { parts.append(move.rigName) }
+        if !move.vessel.isEmpty { parts.append(move.vessel) }
+        parts.append(move.date.formatted(date: .long, time: .omitted))
+        if let hours = move.workedHours {
+            parts.append(AppFormatters.hoursString(hours).replacingOccurrences(of: " h", with: " hours"))
         }
-        return day
+        return parts.joined(separator: ", ")
+    }
+
+    private var exportRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(systemName: "doc.text")
+                    .accessibilityHidden(true)
+                Text("Export Anchor handling")
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .accessibilityHidden(true)
+            }
+            .foregroundStyle(AppTheme.textSecondary)
+            .padding(14)
+            .frame(minHeight: 44)
+            .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Export Anchor handling")
+            .accessibilityValue("Not available yet")
+            .accessibilityIdentifier("ahExportBook")
+            Text("Exports this book only. Export comes in a later build.")
+                .font(.caption)
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

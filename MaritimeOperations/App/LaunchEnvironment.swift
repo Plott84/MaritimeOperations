@@ -35,8 +35,14 @@ enum LaunchEnvironment {
         UserDefaults.standard.removePersistentDomain(forName: domain)
     }
 
+    /// Every SwiftData model in the app. ROVEntry and CraneEntry are new tables: SwiftData's
+    /// lightweight migration adds them to an existing store and keeps every DP line and rig move.
+    static var models: [any PersistentModel.Type] {
+        [DPEntry.self, RigMove.self, ROVEntry.self, CraneEntry.self]
+    }
+
     static func makeModelContainer() -> ModelContainer {
-        let schema = Schema([DPEntry.self, RigMove.self])
+        let schema = Schema(models)
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: usesInMemoryStore)
         do {
             return try ModelContainer(for: schema, configurations: [configuration])

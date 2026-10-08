@@ -23,9 +23,7 @@ final class P0FlowUITests: XCTestCase {
         XCTAssertFalse(app.navigationBars["DP log line"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.buttons["Start DP"].waitForExistence(timeout: 5))
 
-        let entriesTab = app.buttons["DP Entries"]
-        XCTAssertTrue(entriesTab.waitForExistence(timeout: 5))
-        entriesTab.tap()
+        app.openLogBook(.dp)
 
         XCTAssertTrue(app.staticTexts["Needs details"].waitForExistence(timeout: 6))
         XCTAssertTrue(app.staticTexts["Timed session"].waitForExistence(timeout: 3))
@@ -53,9 +51,7 @@ final class P0FlowUITests: XCTestCase {
     func testE2_addManualEntry() throws {
         let app = XCUIApplication.launchedClean()
 
-        let entriesTab = app.buttons["DP Entries"]
-        XCTAssertTrue(entriesTab.waitForExistence(timeout: 8))
-        entriesTab.tap()
+        app.openLogBook(.dp)
 
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
@@ -79,7 +75,7 @@ final class P0FlowUITests: XCTestCase {
     func testE4_validationBlocksEmptyVessel() throws {
         let app = XCUIApplication.launchedClean()
 
-        app.buttons["DP Entries"].tap()
+        app.openLogBook(.dp)
         let add = app.buttons["addManualEntryPill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()

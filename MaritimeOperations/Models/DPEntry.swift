@@ -96,3 +96,13 @@ final class DPEntry {
         self.updatedAt = updatedAt
     }
 }
+
+extension DPEntry {
+    /// Live Main timer owns this line until Stop — hide list swipe until then.
+    func isRunningTimerEntry(sessionStartedAt: Date?) -> Bool {
+        guard let sessionStartedAt else { return false }
+        guard endTime == nil, let startTime else { return false }
+        return abs(startTime.timeIntervalSince(sessionStartedAt)) < 1
+    }
+}
+

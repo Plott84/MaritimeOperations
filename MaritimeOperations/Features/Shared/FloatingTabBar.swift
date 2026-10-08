@@ -2,8 +2,7 @@ import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
     case main
-    case entries
-    case rigMoves
+    case log
     case tools
     case export
 
@@ -12,8 +11,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .main: return "Main"
-        case .entries: return "DP Entries"
-        case .rigMoves: return "Rig Moves"
+        case .log: return "Log"
         case .tools: return "Tools"
         case .export: return "Export"
         }
@@ -22,8 +20,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .main: return "house.fill"
-        case .entries: return "list.clipboard"
-        case .rigMoves: return "point.topleft.down.curvedto.point.bottomright.up"
+        case .log: return "book.closed"
         case .tools: return "wrench.and.screwdriver"
         case .export: return "doc.text"
         }
@@ -32,6 +29,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
 struct FloatingTabBar: View {
     @Binding var selection: AppTab
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(spacing: 0) {
@@ -51,10 +49,13 @@ struct FloatingTabBar: View {
                                 .foregroundStyle(selection == tab ? Color.black.opacity(0.85) : AppTheme.textPrimary.opacity(0.8))
                         }
                         .frame(height: 36)
-                        Text(tab.title)
-                            .font(.caption2.weight(.medium))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                        // Accessibility text sizes: icons only; long-press shows the name (Large Content Viewer).
+                        if !dynamicTypeSize.isAccessibilitySize {
+                            Text(tab.title)
+                                .font(.caption2.weight(.medium))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
                     }
                     .foregroundStyle(selection == tab ? AppTheme.teal : AppTheme.textPrimary.opacity(0.8))
                     .frame(maxWidth: .infinity)
@@ -63,6 +64,10 @@ struct FloatingTabBar: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(tab.title)
+                .accessibilityShowsLargeContentViewer {
+                    Label(tab.title, systemImage: tab.systemImage)
+                }
+                .accessibilityIdentifier("tab_\(tab.rawValue)")
                 .accessibilityAddTraits(selection == tab ? .isSelected : [])
             }
         }
