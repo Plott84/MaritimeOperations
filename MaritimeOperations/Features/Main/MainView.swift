@@ -33,6 +33,7 @@ struct MainView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollEdgeEffectStyle(.soft, for: .top)
         }
         .navigationTitle("Main")
         .navigationBarTitleDisplayMode(.inline)
@@ -197,7 +198,7 @@ struct MainView: View {
         let count = stats.mainCountText(for: book)
         let spokenCount = stats.mainSpokenValue(for: book)
         return HStack(spacing: 12) {
-            // Letters at default sizes; ROV / Crane switch to their fixed-size icon at accessibility sizes.
+            // Letters at default sizes; every book switches to its icon at accessibility sizes (badge scales).
             LogBookBadge(book: book)
             VStack(alignment: .leading, spacing: 2) {
                 Text(book.title)
