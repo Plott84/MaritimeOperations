@@ -1,3 +1,6 @@
 .DS_Store
 **/.DS_Store
 .hermes/
+
+# Pixel Export sheet reference (not part of the app target)
+_export-spec/

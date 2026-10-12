@@ -41,7 +41,7 @@ struct RootView: View {
                 }
             case .export:
                 NavigationStack {
-                    PlaceholderTabView(title: "Export", subtitle: "PDF date-range export comes after the logbook model is solid.")
+                    ExportView()
                 }
             }
         }
