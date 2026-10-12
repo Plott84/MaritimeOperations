@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import UniformTypeIdentifiers
 
 /// Import sheet. Solid navy cards — no Liquid Glass on this screen.
