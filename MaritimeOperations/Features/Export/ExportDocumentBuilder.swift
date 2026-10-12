@@ -11,10 +11,16 @@ enum ExportDocumentBuilder {
     }
 
     /// Builds PDF (desk card via ImageRenderer) + CSV in the system temp directory.
+    /// The CSV includes entry records. The same CSV is appended after the PDF `%%EOF`
+    /// so Import can read a PDF from this Share without changing the drawn page.
     static func makeArtifacts(
         snapshot: ExportSnapshot,
         books: ExportBookSelection,
-        filter: ExportDateFilter
+        filter: ExportDateFilter,
+        dp: [DPEntry],
+        moves: [RigMove],
+        rov: [ROVEntry],
+        crane: [CraneEntry]
     ) throws -> Artifacts {
         let stamp = ISO8601DateFormatter().string(from: .now)
             .replacingOccurrences(of: ":", with: "-")
@@ -24,56 +30,19 @@ enum ExportDocumentBuilder {
         let pdfURL = tmp.appendingPathComponent("\(base).pdf")
         let csvURL = tmp.appendingPathComponent("\(base).csv")
 
-        let csv = makeCSV(snapshot: snapshot, books: books, filter: filter)
+        let csv = try ImportExchange.encodeCSV(
+            books: books, filter: filter, dp: dp, moves: moves, rov: rov, crane: crane
+        )
         try csv.write(to: csvURL, atomically: true, encoding: .utf8)
 
         try renderPDF(
             to: pdfURL,
             content: ExportDeskCardView(snapshot: snapshot, books: books, filter: filter)
         )
+        let drawn = try Data(contentsOf: pdfURL)
+        try ImportExchange.embedCSV(csv, in: drawn).write(to: pdfURL, options: .atomic)
 
         return Artifacts(pdfURL: pdfURL, csvURL: csvURL)
-    }
-
-    static func makeCSV(
-        snapshot: ExportSnapshot,
-        books: ExportBookSelection,
-        filter: ExportDateFilter
-    ) -> String {
-        var rows: [String] = []
-        rows.append("book,count,hours,notes")
-        for book in books.selectedBooks {
-            let count = snapshot.count(for: book)
-            let hours: String
-            if book == .anchorHandling {
-                hours = String(format: "%.1f", snapshot.anchorHours)
-            } else if let h = snapshot.hours(for: book) {
-                hours = String(format: "%.1f", h)
-            } else {
-                hours = "0.0"
-            }
-            let note: String
-            switch book {
-            case .dp: note = "DP book only; ROV/Crane excluded"
-            case .anchorHandling: note = "count is rig moves"
-            case .rov: note = "piloting hours"
-            case .crane: note = "hours operated"
-            }
-            rows.append("\"\(book.title)\",\(count),\(hours),\"\(note)\"")
-        }
-        rows.append("")
-        rows.append("period,\"\(periodCSV(filter))\"")
-        rows.append("disclaimer,\"\(ExportDisclaimer.text)\"")
-        rows.append("rule,\"\(ExportDisclaimer.previewFooter)\"")
-        return rows.joined(separator: "\n") + "\n"
-    }
-
-    private static func periodCSV(_ filter: ExportDateFilter) -> String {
-        if filter.isAllTime { return "All time" }
-        let df = Date.FormatStyle(date: .abbreviated, time: .omitted)
-        let fromText = filter.from.map { $0.formatted(df) } ?? ""
-        let toText = filter.to.map { $0.formatted(df) } ?? ""
-        return "\(fromText) – \(toText)"
     }
 
     private static func renderPDF(to url: URL, content: some View) throws {

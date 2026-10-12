@@ -8,5 +8,23 @@
 	<string>Maritime Operations uses the camera only when you add a photo to a rig move. Photos stay on that move and are not part of any hours export.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Maritime Operations reads your photo library only when you pick a photo for a rig move. Photos stay on that move and are not part of any hours export.</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Maritime Operations export</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+				<string>public.comma-separated-values-text</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
