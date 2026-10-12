@@ -57,6 +57,7 @@ struct RootView: View {
         }
         .preferredColorScheme(.dark)
         .tint(AppTheme.teal)
+        .toggleStyle(TokenToggleStyle())
         .onOpenURL { url in
             openImport(from: url)
         }
@@ -67,7 +68,7 @@ struct RootView: View {
             if let importToast {
                 Text(importToast)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.black.opacity(0.85))
+                    .foregroundStyle(AppTheme.onTeal)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)

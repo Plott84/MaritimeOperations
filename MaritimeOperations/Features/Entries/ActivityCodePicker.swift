@@ -34,7 +34,7 @@ struct ActivityCodePicker: View {
                     Text("Specify (required for OT)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AppTheme.textSecondary)
-                    TextField("Specify", text: $selection.specify)
+                    TextField("Specify", text: $selection.specify, prompt: Text("Specify").foregroundStyle(AppTheme.textSecondary))
                         .focused($specifyFocused)
                         .textFieldStyle(.plain)
                         .textInputAutocapitalization(.sentences)
@@ -43,7 +43,7 @@ struct ActivityCodePicker: View {
                         .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(AppTheme.border, lineWidth: 1)
+                                .stroke(AppTheme.fieldBorder, lineWidth: 1)
                         }
                         .accessibilityLabel("Specify")
                         .accessibilityIdentifier("dpActivitySpecify")

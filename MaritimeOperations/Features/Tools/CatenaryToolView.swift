@@ -114,8 +114,7 @@ struct CatenaryToolView: View {
         }
         .navigationTitle("Catenary")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolsKeyboardDone()
     }
 

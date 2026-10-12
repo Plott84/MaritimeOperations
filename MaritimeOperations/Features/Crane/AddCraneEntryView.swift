@@ -84,8 +84,7 @@ struct AddCraneEntryView: View {
             }
             .navigationTitle(existing == nil ? "New crane entry" : "Edit crane entry")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .systemGlassNavigation()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -93,8 +92,7 @@ struct AddCraneEntryView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
-                        .fontWeight(.semibold)
-                        .tint(AppTheme.teal)
+                        .glassProminentSave()
                         .disabled(missingOther != nil)
                         .accessibilityIdentifier("craneSave")
                 }

@@ -17,13 +17,14 @@ struct PlaceholderTabView: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                TealCircleButton(systemImage: "plus") {}
-                    .disabled(true)
-                    .accessibilityLabel("Add")
+                Button {} label: {
+                    Image(systemName: "plus")
+                }
+                .disabled(true)
+                .accessibilityLabel("Add")
             }
         }
     }

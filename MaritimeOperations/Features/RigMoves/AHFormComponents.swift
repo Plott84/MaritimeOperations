@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Building blocks for the Anchor handling form and book. Same tokens as the rest of the app:
-// GlassCard, AppTheme navy/blue/teal/gold, dark rounded wells.
+// GlassCard (solid navy), AppTheme teal/gold, dark rounded wells.
 
 /// Card with a small teal caps header ("WHEN", "JOB", …).
 struct AHSectionCard<Content: View>: View {
@@ -113,7 +113,7 @@ struct AHSegmented<Option: Identifiable & Hashable>: View {
                         .frame(maxWidth: .infinity, minHeight: 36)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .foregroundStyle(selected ? Color.black.opacity(0.85) : AppTheme.textSecondary)
+                        .foregroundStyle(selected ? AppTheme.onTeal : AppTheme.textSecondary)
                         .background(
                             selected ? AppTheme.teal : Color.clear,
                             in: RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -131,7 +131,7 @@ struct AHSegmented<Option: Identifiable & Hashable>: View {
         .background(Color.black.opacity(0.3), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+                .stroke(AppTheme.fieldBorder, lineWidth: 1)
         }
     }
 }
@@ -158,9 +158,9 @@ struct AHChip: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
             .frame(minHeight: 34)
-            .foregroundStyle(isOn ? Color.black.opacity(0.85) : AppTheme.textPrimary.opacity(0.85))
-            .background(isOn ? AppTheme.teal : Color.black.opacity(0.28), in: Capsule())
-            .overlay(Capsule().stroke(isOn ? AppTheme.teal : AppTheme.border, lineWidth: 1))
+            .foregroundStyle(isOn ? AppTheme.onTeal : AppTheme.textPrimary)
+            .background(isOn ? AppTheme.teal : AppTheme.pickerFill, in: Capsule())
+            .overlay(Capsule().strokeBorder(isOn ? AppTheme.teal : AppTheme.fieldBorder, lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -242,7 +242,7 @@ struct AHValueTile<Field: View>: View {
         .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+                .stroke(AppTheme.fieldBorder, lineWidth: 1)
         }
     }
 }
@@ -284,8 +284,8 @@ struct AHTag: View {
             .foregroundStyle(AppTheme.teal)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(AppTheme.teal.opacity(0.12), in: Capsule())
-            .overlay(Capsule().stroke(AppTheme.teal.opacity(0.55), lineWidth: 1))
+            .background(AppTheme.pickerFill, in: Capsule())
+            .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
     }
 }
 

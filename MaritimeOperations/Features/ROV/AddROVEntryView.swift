@@ -83,8 +83,7 @@ struct AddROVEntryView: View {
             }
             .navigationTitle(existing == nil ? "New ROV entry" : "Edit ROV entry")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .systemGlassNavigation()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -92,8 +91,7 @@ struct AddROVEntryView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
-                        .fontWeight(.semibold)
-                        .tint(AppTheme.teal)
+                        .glassProminentSave()
                         .disabled(missingOther != nil)
                         .accessibilityIdentifier("rovSave")
                 }

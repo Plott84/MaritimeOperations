@@ -21,6 +21,7 @@ struct LogWhenCard: View {
                 DatePicker("Start", selection: $start, displayedComponents: [.date, .hourAndMinute])
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .datePickerChrome()
                     .accessibilityLabel("Start")
                     .accessibilityIdentifier("\(idPrefix)Start")
             }
@@ -28,6 +29,7 @@ struct LogWhenCard: View {
                 DatePicker("End", selection: $end, displayedComponents: [.date, .hourAndMinute])
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .datePickerChrome()
                     .accessibilityLabel("End")
                     .accessibilityIdentifier("\(idPrefix)End")
             }
@@ -59,7 +61,7 @@ struct LogWhenCard: View {
             .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(AppTheme.border, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .strokeBorder(AppTheme.fieldBorder, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
             }
             .padding(.top, 8)
             .accessibilityElement(children: .combine)
@@ -276,7 +278,7 @@ struct LogChoiceFlow<Option: Identifiable & Hashable>: View {
         .background(Color.black.opacity(0.3), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+                .stroke(AppTheme.fieldBorder, lineWidth: 1)
         }
     }
 
@@ -291,7 +293,7 @@ struct LogChoiceFlow<Option: Identifiable & Hashable>: View {
                 .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: 36)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 2)
-                .foregroundStyle(selected ? Color.black.opacity(0.85) : AppTheme.textSecondary)
+                .foregroundStyle(selected ? AppTheme.onTeal : AppTheme.textSecondary)
                 .background(
                     selected ? AppTheme.teal : Color.clear,
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -353,7 +355,7 @@ struct LogRemarksField: View {
                 .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 }
                 .accessibilityIdentifier(identifier)
         }
@@ -419,7 +421,7 @@ struct LogBookHeaderCard: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(Color.black.opacity(0.3), in: Capsule())
-                        .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                        .overlay(Capsule().stroke(AppTheme.fieldBorder, lineWidth: 1))
                         .accessibilityIdentifier("\(idPrefix)RowCount")
                 }
                 Text("Newest first.")
@@ -435,8 +437,8 @@ struct LogBookHeaderCard: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(AppTheme.textPrimary)
-                .background(Color.black.opacity(0.28), in: Capsule())
-                .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
+                .background(AppTheme.surfaceElevated, in: Capsule())
+                .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
                 .accessibilityLabel(addLabel)
                 .accessibilityIdentifier("\(idPrefix)AddEntryPill")
             }
@@ -497,10 +499,10 @@ struct LogBookRow: View {
                 .accessibilityHidden(true)
         }
         .padding(12)
-        .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.teal.opacity(0.28), lineWidth: 1)
+                .strokeBorder(AppTheme.cardBorder, lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .ignore)
@@ -533,7 +535,7 @@ struct LogBookExportRow: View {
             .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AppTheme.border, lineWidth: 1)
+                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Export \(book.spokenTitle)")

@@ -61,11 +61,17 @@ struct AddManualEntryView: View {
 
                 Section("Session") {
                     DatePicker("Date", selection: $date, displayedComponents: .date)
+                        .datePickerChrome()
 
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Duration (hours)", text: $durationText)
-                            .keyboardType(.decimalPad)
-                            .onChange(of: durationText) { _, _ in durationError = nil }
+                        TextField(
+                            "Duration (hours)",
+                            text: $durationText,
+                            prompt: Text("Duration (hours)").foregroundStyle(AppTheme.textSecondary)
+                        )
+                        .keyboardType(.decimalPad)
+                        .onChange(of: durationText) { _, _ in durationError = nil }
+                        .fieldChrome()
                         if let durationError {
                             Text(durationError)
                                 .font(.footnote)
@@ -74,9 +80,14 @@ struct AddManualEntryView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Vessel", text: $vessel)
-                            .textInputAutocapitalization(.words)
-                            .onChange(of: vessel) { _, _ in vesselError = nil }
+                        TextField(
+                            "Vessel",
+                            text: $vessel,
+                            prompt: Text("Vessel").foregroundStyle(AppTheme.textSecondary)
+                        )
+                        .textInputAutocapitalization(.words)
+                        .onChange(of: vessel) { _, _ in vesselError = nil }
+                        .fieldChrome()
                         if let vesselError {
                             Text(vesselError)
                                 .font(.footnote)
@@ -84,9 +95,12 @@ struct AddManualEntryView: View {
                         }
                     }
 
-                    TextField("Rig", text: $rig)
-                    TextField("Vessel type", text: $vesselType)
-                    TextField("DP class", text: $dpClass)
+                    TextField("Rig", text: $rig, prompt: Text("Rig").foregroundStyle(AppTheme.textSecondary))
+                        .fieldChrome()
+                    TextField("Vessel type", text: $vesselType, prompt: Text("Vessel type").foregroundStyle(AppTheme.textSecondary))
+                        .fieldChrome()
+                    TextField("DP class", text: $dpClass, prompt: Text("DP class").foregroundStyle(AppTheme.textSecondary))
+                        .fieldChrome()
                 }
 
                 Section("Optional (book fields)") {
@@ -96,10 +110,13 @@ struct AddManualEntryView: View {
                         }
                     }
 
-                    TextField("Activity code", text: $activityCode)
-                    TextField("Master’s initials", text: $masterInitials)
-                    TextField("Notes", text: $notes, axis: .vertical)
+                    TextField("Activity code", text: $activityCode, prompt: Text("Activity code").foregroundStyle(AppTheme.textSecondary))
+                        .fieldChrome()
+                    TextField("Master’s initials", text: $masterInitials, prompt: Text("Master’s initials").foregroundStyle(AppTheme.textSecondary))
+                        .fieldChrome()
+                    TextField("Notes", text: $notes, prompt: Text("Notes").foregroundStyle(AppTheme.textSecondary), axis: .vertical)
                         .lineLimit(3...6)
+                        .fieldChrome()
                 }
 
                 if let saveError {
@@ -114,13 +131,14 @@ struct AddManualEntryView: View {
             .background(AppTheme.background)
             .navigationTitle("Add Manual Entry")
             .navigationBarTitleDisplayMode(.inline)
+            .systemGlassNavigation()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { attemptDismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
-                        .fontWeight(.semibold)
+                        .glassProminentSave()
                 }
             }
             .confirmationDialog(

@@ -64,12 +64,11 @@ struct WinchDrumGeometryDiagram: View {
     /// Horizontal padding inside `calloutLabel` (kept in sync so the *text* edge is what gets pinned).
     private static let labelHPadding: CGFloat = 6
 
-    // Palette (app / mock)
-    private static let teal = Color(red: 0x5f / 255, green: 0xf0 / 255, blue: 0xc4 / 255)       // #5ff0c4
-    private static let tealAccent = Color(red: 0x5f / 255, green: 0xe0 / 255, blue: 0xc8 / 255) // #5fe0c8
-    private static let gold = Color(red: 0xff / 255, green: 0xd1 / 255, blue: 0x66 / 255)       // #ffd166
-    private static let labelLight = Color(red: 0xe8 / 255, green: 0xee / 255, blue: 0xf5 / 255) // #e8eef5
-    private static let labelMuted = Color(red: 0xa5 / 255, green: 0xad / 255, blue: 0xb2 / 255) // #a5adb2
+    // Palette — same teal, gold, and text as the rest of the app.
+    private static let teal = AppTheme.teal
+    private static let gold = AppTheme.gold
+    private static let labelLight = AppTheme.textPrimary
+    private static let labelMuted = AppTheme.textSecondary
     private static let flangeFill = Color(red: 0x3a / 255, green: 0x43 / 255, blue: 0x48 / 255)
     private static let flangeStroke = Color(red: 0xc9 / 255, green: 0xd4 / 255, blue: 0xe0 / 255)
     private static let barrelFill = Color(red: 0x1a / 255, green: 0x23 / 255, blue: 0x2d / 255)
@@ -424,22 +423,22 @@ struct WinchDrumGeometryDiagram_Previews: PreviewProvider {
         VStack(alignment: .leading, spacing: 8) {
             Text("HOW TO MEASURE")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color(red: 0x5f / 255, green: 0xe0 / 255, blue: 0xc8 / 255))
+                .foregroundStyle(AppTheme.teal)
                 .tracking(1.6)
             Text("Drum geometry")
                 .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(AppTheme.textPrimary)
             WinchDrumGeometryDiagram { callout in
                 print("select", callout.rawValue)
             }
             .frame(maxWidth: 360)
             Text("Where the measurements sit on the drum.")
                 .font(.caption)
-                .foregroundStyle(Color(red: 0xa5 / 255, green: 0xad / 255, blue: 0xb2 / 255))
+                .foregroundStyle(AppTheme.textSecondary)
                 .frame(maxWidth: .infinity)
         }
         .padding()
-        .background(Color(red: 0x0d / 255, green: 0x16 / 255, blue: 0x1d / 255))
+        .background(AppTheme.background)
         .preferredColorScheme(.dark)
     }
 }

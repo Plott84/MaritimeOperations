@@ -117,7 +117,6 @@ struct DPEntryFieldsSheet: View {
                                 .font(.footnote)
                                 .foregroundStyle(AppTheme.danger)
                         }
-                        saveButton
                     }
                     .padding(16)
                     .padding(.bottom, 24)
@@ -125,8 +124,7 @@ struct DPEntryFieldsSheet: View {
             }
             .navigationTitle("DP log line")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .systemGlassNavigation()
             .toolbar {
                 if isConfirm {
                     ToolbarItem(placement: .cancellationAction) {
@@ -138,6 +136,11 @@ struct DPEntryFieldsSheet: View {
                         Button("Cancel") { dismiss() }
                             .accessibilityIdentifier("dpFieldsCancel")
                     }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: save)
+                        .glassProminentSave()
+                        .accessibilityIdentifier("dpFieldsSave")
                 }
             }
             .interactiveDismissDisabled(isConfirm)
@@ -241,19 +244,6 @@ struct DPEntryFieldsSheet: View {
         }
     }
 
-    private var saveButton: some View {
-        Button(action: save) {
-            Text("Save")
-                .font(.headline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(Color.black.opacity(0.85))
-        .background(AppTheme.teal, in: Capsule())
-        .accessibilityIdentifier("dpFieldsSave")
-    }
-
     /// Full-width Start/Stop row styled like the other fields. The whole row is the tap target (min 44 pt).
     private func timeRow(title: String, date: Binding<Date?>, identifier: String, onSet: @escaping () -> Void) -> some View {
         Group {
@@ -311,7 +301,7 @@ struct DPEntryFieldsSheet: View {
             Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AppTheme.textSecondary)
-            TextField(title, text: text, axis: axis)
+            TextField(title, text: text, prompt: Text(title).foregroundStyle(AppTheme.textSecondary), axis: axis)
                 .focused($focusedField, equals: title)
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(capitalize)
@@ -321,7 +311,7 @@ struct DPEntryFieldsSheet: View {
                 .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 }
                 .accessibilityLabel(title)
         }
@@ -518,7 +508,7 @@ private extension View {
             .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppTheme.border, lineWidth: 1)
+                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
             }
     }
 }
