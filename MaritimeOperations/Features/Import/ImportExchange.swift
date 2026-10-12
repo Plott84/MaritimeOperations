@@ -11,6 +11,7 @@ enum ImportCopy {
     static let importButton = "Import\u{2026}"
     static let replaceAlertTitle = "Replace books?"
     static let replaceAlertButton = "Replace"
+    static let cancel = "Cancel"
 }
 
 enum ImportReadError: Error, Equatable {

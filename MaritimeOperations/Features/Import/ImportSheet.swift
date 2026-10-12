@@ -18,20 +18,28 @@ struct ImportSheet: View {
     @State private var showSaveError = false
 
     var body: some View {
+        sheetChrome
+    }
+
+    private var scrollContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sourceCard
+            previewCard
+            modeCard
+            disclaimerCard
+            importButton
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 24)
+    }
+
+    private var sheetChrome: some View {
         NavigationStack {
             ZStack {
                 AppCanvas()
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        sourceCard
-                        previewCard
-                        modeCard
-                        disclaimerCard
-                        importButton
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
+                    scrollContent
                 }
             }
             .navigationTitle("Import")
@@ -171,29 +179,14 @@ struct ImportSheet: View {
                         .foregroundStyle(ImportTokens.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    let snapshot = payload.exportSnapshot()
                     ForEach(payload.booksPresent) { book in
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(book.title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(ImportTokens.text)
-                            Spacer(minLength: 12)
-                            Text(snapshot.previewValue(for: book))
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(ImportTokens.secondary)
-                                .multilineTextAlignment(.trailing)
-                        }
-                        .padding(.vertical, 8)
-                        .overlay(alignment: .bottom) {
-                            if book != payload.booksPresent.last {
-                                Rectangle()
-                                    .fill(ImportTokens.cardBorder)
-                                    .frame(height: 1)
-                            }
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(snapshot.previewLine(for: book))
-                        .accessibilityIdentifier("importPreview_\(book.rawValue)")
+                        ImportPreviewRow(
+                            title: book.title,
+                            value: payload.exportSnapshot().previewValue(for: book),
+                            spoken: payload.exportSnapshot().previewLine(for: book),
+                            identifier: "importPreview_\(book.rawValue)",
+                            showsDivider: book != payload.booksPresent.last
+                        )
                     }
                 }
                 Text(ExportDisclaimer.booksCaption)
@@ -383,6 +376,38 @@ private struct ImportSolidCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(border, lineWidth: 1)
             )
+    }
+}
+
+private struct ImportPreviewRow: View {
+    let title: String
+    let value: String
+    let spoken: String
+    let identifier: String
+    let showsDivider: Bool
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(ImportTokens.text)
+            Spacer(minLength: 12)
+            Text(value)
+                .font(.subheadline.monospacedDigit())
+                .foregroundStyle(ImportTokens.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) {
+            if showsDivider {
+                Rectangle()
+                    .fill(ImportTokens.cardBorder)
+                    .frame(height: 1)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(spoken)
+        .accessibilityIdentifier(identifier)
     }
 }
 
