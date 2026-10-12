@@ -30,8 +30,7 @@ struct GyroCheckToolView: View {
         }
         .navigationTitle("Gyro check")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolsKeyboardDone()
     }
 
@@ -112,14 +111,14 @@ struct GyroCheckToolView: View {
 
     private func degField(_ text: Binding<String>, _ title: String) -> some View {
         HStack(spacing: 4) {
-            TextField("deg", text: text)
+            TextField("deg", text: text, prompt: Text("deg").foregroundStyle(AppTheme.textSecondary))
                 .keyboardType(.numberPad)
                 .textFieldStyle(.plain)
                 .padding(12)
                 .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 }
                 .accessibilityLabel("\(title) degrees")
             Text("°")
@@ -129,14 +128,14 @@ struct GyroCheckToolView: View {
 
     private func minField(_ text: Binding<String>, _ title: String) -> some View {
         HStack(spacing: 4) {
-            TextField("min", text: text)
+            TextField("min", text: text, prompt: Text("min").foregroundStyle(AppTheme.textSecondary))
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.plain)
                 .padding(12)
                 .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 }
                 .accessibilityLabel("\(title) minutes")
             Text("′")

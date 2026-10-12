@@ -270,8 +270,7 @@ struct WinchCapacityToolView: View {
         }
         .navigationTitle("Winch capacity")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolsKeyboardDone { recompute() }
         .onAppear { recompute() }
         .onChange(of: dText) { _, _ in recompute() }

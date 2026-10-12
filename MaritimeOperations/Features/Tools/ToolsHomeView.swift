@@ -61,8 +61,7 @@ struct ToolsHomeView: View {
         }
         .navigationTitle("Tools")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
     }
 
     @ViewBuilder
@@ -83,8 +82,8 @@ struct ToolsHomeView: View {
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(AppTheme.teal)
                     .frame(width: 36, height: 36)
-                    .background(Circle().fill(Color.black.opacity(0.28)))
-                    .overlay(Circle().stroke(AppTheme.teal.opacity(0.55), lineWidth: 1))
+                    .background(Circle().fill(AppTheme.surface))
+                    .overlay(Circle().strokeBorder(AppTheme.cardBorder, lineWidth: 1))
                 Text(tool.title)
                     .font(.headline)
                     .foregroundStyle(AppTheme.textPrimary)

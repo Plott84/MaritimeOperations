@@ -129,8 +129,7 @@ struct AddRigMoveView: View {
             }
             .navigationTitle(existing == nil ? "New entry" : "Edit entry")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .systemGlassNavigation()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -138,8 +137,7 @@ struct AddRigMoveView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
-                        .fontWeight(.semibold)
-                        .tint(AppTheme.teal)
+                        .glassProminentSave()
                         .accessibilityIdentifier("rigMoveSave")
                 }
                 ToolbarItemGroup(placement: .keyboard) {
@@ -216,6 +214,7 @@ struct AddRigMoveView: View {
                 DatePicker("Start", selection: $start, displayedComponents: [.date, .hourAndMinute])
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .datePickerChrome()
                     .accessibilityLabel("Start")
                     .accessibilityIdentifier("rigStart")
             }
@@ -223,6 +222,7 @@ struct AddRigMoveView: View {
                 DatePicker("End", selection: $finish, displayedComponents: [.date, .hourAndMinute])
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .datePickerChrome()
                     .accessibilityLabel("End")
                     .accessibilityIdentifier("rigFinish")
             }
@@ -254,7 +254,7 @@ struct AddRigMoveView: View {
             .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(AppTheme.border, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .strokeBorder(AppTheme.fieldBorder, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
             }
             .padding(.top, 8)
             .accessibilityElement(children: .combine)
@@ -419,7 +419,7 @@ struct AddRigMoveView: View {
                     .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(AppTheme.border, lineWidth: 1)
+                            .stroke(AppTheme.fieldBorder, lineWidth: 1)
                     }
                     .accessibilityIdentifier("ahRemarks")
             }
@@ -655,7 +655,7 @@ struct AddRigMoveView: View {
             Text(title)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(AppTheme.textSecondary)
-            TextField(title, text: text)
+            TextField(title, text: text, prompt: Text(title).foregroundStyle(AppTheme.textSecondary))
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(capitalize)
                 .focused($focusedField)
@@ -663,7 +663,7 @@ struct AddRigMoveView: View {
                 .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 }
         }
     }
@@ -683,7 +683,7 @@ struct AddRigMoveView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(AppTheme.border, lineWidth: 1)
+                            .stroke(AppTheme.fieldBorder, lineWidth: 1)
                     }
                     .accessibilityLabel("Photo for this move")
                     .accessibilityIdentifier("rigMovePhotoThumb")
@@ -708,7 +708,7 @@ struct AddRigMoveView: View {
                         .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(AppTheme.border, lineWidth: 1)
+                                .stroke(AppTheme.fieldBorder, lineWidth: 1)
                         }
                 }
                 .buttonStyle(.plain)

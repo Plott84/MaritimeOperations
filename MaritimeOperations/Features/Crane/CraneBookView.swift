@@ -83,12 +83,13 @@ struct CraneBookView: View {
         }
         .navigationTitle("Crane")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                TealCircleButton(systemImage: "plus") {
+                Button {
                     showingAdd = true
+                } label: {
+                    Image(systemName: "plus")
                 }
                 .accessibilityLabel("New crane entry")
                 .accessibilityIdentifier("navAddCraneEntry")

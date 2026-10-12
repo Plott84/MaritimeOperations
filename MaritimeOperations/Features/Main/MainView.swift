@@ -33,12 +33,11 @@ struct MainView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
-            .scrollEdgeEffectStyle(.soft, for: .top)
+            .scrollEdgeEffectStyle(.hard, for: .top)
         }
         .navigationTitle("Main")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .sheet(item: $editingEntry) { entry in
             DPEntryFieldsSheet(mode: .edit(entry))
         }
@@ -81,7 +80,7 @@ struct MainView: View {
                             Text(AppFormatters.timerString(from: session.elapsed(at: context.date)))
                                 .font(.system(size: 88, weight: .bold, design: .rounded))
                                 .monospacedDigit()
-                                .foregroundStyle(timerGradient)
+                                .foregroundStyle(AppTheme.textPrimary)
                                 .minimumScaleFactor(0.6)
                                 .lineLimit(1)
                         }
@@ -89,7 +88,7 @@ struct MainView: View {
                         Text("00:00")
                             .font(.system(size: 88, weight: .bold, design: .rounded))
                             .monospacedDigit()
-                            .foregroundStyle(timerGradient)
+                            .foregroundStyle(AppTheme.textPrimary)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -103,9 +102,8 @@ struct MainView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(Color.black.opacity(0.85))
+                .foregroundStyle(AppTheme.onTeal)
                 .background(AppTheme.teal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: AppTheme.teal.opacity(0.35), radius: 10, y: 4)
 
                 Button(action: onOpenRigMoves) {
                     Label("New Rig Move", systemImage: "ferry.fill")
@@ -115,10 +113,10 @@ struct MainView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(AppTheme.textPrimary)
-                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(AppTheme.surfaceElevated, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 }
 
                 Text("Start when the vessel goes on DP. Stop saves the session to Log.")
@@ -223,7 +221,7 @@ struct MainView: View {
         .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+                .stroke(AppTheme.fieldBorder, lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .accessibilityElement(children: .ignore)
@@ -241,7 +239,7 @@ struct MainView: View {
     private var statusPill: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(session.isRunning ? AppTheme.gold : Color.green)
+                .fill(session.isRunning ? AppTheme.gold : AppTheme.ready)
                 .frame(width: 8, height: 8)
             Text(session.isRunning ? "Running" : "Ready")
                 .font(.caption.weight(.semibold))
@@ -249,8 +247,8 @@ struct MainView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.black.opacity(0.35), in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
+        .background(AppTheme.badgeFill, in: Capsule())
+        .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
     }
 
     private var activityCard: some View {
@@ -277,7 +275,7 @@ struct MainView: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(Color.black.opacity(0.3), in: Capsule())
-                        .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                        .overlay(Capsule().stroke(AppTheme.fieldBorder, lineWidth: 1))
                 }
 
                 Text("Newest 5 records across DP logs and rig moves.")
@@ -306,14 +304,6 @@ struct MainView: View {
         }
     }
 
-
-    private var timerGradient: LinearGradient {
-        LinearGradient(
-            colors: [Color(white: 0.78), Color.white],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-    }
 
     private func toggleTimer() {
         if session.isRunning {

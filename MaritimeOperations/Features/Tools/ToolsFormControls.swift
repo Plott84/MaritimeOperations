@@ -42,7 +42,7 @@ struct ToolNumberField: View {
             .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(isError ? AppTheme.danger.opacity(0.85) : AppTheme.border, lineWidth: isError ? 1.5 : 1)
+                    .strokeBorder(isError ? AppTheme.danger : AppTheme.fieldBorder, lineWidth: isError ? 1.5 : 1)
             }
             if let errorReason, isError {
                 Text(errorReason)
@@ -113,7 +113,7 @@ struct ToolWarningPill: View {
     var body: some View {
         Label(text, systemImage: "exclamationmark.triangle.fill")
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.white)
+            .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
@@ -128,17 +128,14 @@ struct ToolClearPill: View {
     var body: some View {
         Text(text)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Color(red: 0.37, green: 0.94, blue: 0.77))
+            .foregroundStyle(AppTheme.teal)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
-            .background(
-                Color(red: 0.09, green: 0.19, blue: 0.17).opacity(0.95),
-                in: Capsule()
-            )
+            .background(AppTheme.surface, in: Capsule())
             .overlay {
                 Capsule()
-                    .stroke(Color(red: 0.18, green: 0.43, blue: 0.37).opacity(0.9), lineWidth: 1)
+                    .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
             }
     }
 }

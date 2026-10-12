@@ -14,7 +14,7 @@ import SwiftUI
 //   4. SHIP         — Δ, GM, distance between tanks, pivot off CL ("On CL").
 //
 // App helpers this file relies on (already in MaritimeOperations, see WIRING.md):
-//   AppCanvas, GlassCard, AppTheme.{primaryBlue, teal, gold, danger, surface, textPrimary, textSecondary, border},
+//   AppCanvas, GlassCard, AppTheme.{teal, gold, danger, surface, textPrimary, textSecondary, fieldBorder},
 //   ToolNumberField(title:text:placeholder:unit:keyboard:isError:errorReason:accessibilityName:fieldAccessibilityIdentifier:),
 //   ToolClearPill, ToolWarningPill, View.toolsKeyboardDone(onDone:)
 
@@ -60,8 +60,7 @@ struct CraneHeelView: View {
         }
         .navigationTitle(P.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolsKeyboardDone()
     }
 
@@ -157,7 +156,7 @@ struct CraneHeelView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 11)
                 .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(AppTheme.border, lineWidth: 1) }
+                .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(AppTheme.fieldBorder, lineWidth: 1) }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(b.accessibilityLabel)
                 .accessibilityIdentifier("craneResult.ballast")
@@ -195,8 +194,8 @@ struct CraneHeelView: View {
                             .minimumScaleFactor(0.75)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
-                            .foregroundStyle(position == pos ? Color.white : AppTheme.textSecondary)
-                            .background(position == pos ? AppTheme.primaryBlue : Color.clear,
+                            .foregroundStyle(position == pos ? AppTheme.onTeal : AppTheme.textSecondary)
+                            .background(position == pos ? AppTheme.teal : Color.clear,
                                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -220,7 +219,7 @@ struct CraneHeelView: View {
                     select(.end)
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(AppTheme.primaryBlue)
+                .foregroundStyle(AppTheme.teal)
                 .accessibilityIdentifier("craneLift.clearStart")
             }
 
@@ -298,11 +297,11 @@ struct CraneHeelView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 9)
-            .background(active ? AppTheme.primaryBlue.opacity(0.16) : AppTheme.surface,
+            .background(active ? AppTheme.teal.opacity(0.16) : AppTheme.surface,
                         in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(active ? AppTheme.primaryBlue.opacity(0.8) : AppTheme.border, lineWidth: 1)
+                    .strokeBorder(active ? AppTheme.teal : AppTheme.fieldBorder, lineWidth: 1)
             }
         }
         .buttonStyle(.plain)
@@ -359,12 +358,12 @@ struct CraneHeelView: View {
                                 Text(q.subtitle).font(.caption2).monospacedDigit()
                             }
                             .frame(maxWidth: .infinity, minHeight: 44)
-                            .foregroundStyle(on ? Color.white : AppTheme.textPrimary)
-                            .background(on ? AppTheme.primaryBlue : AppTheme.surface,
+                            .foregroundStyle(on ? AppTheme.onTeal : AppTheme.textPrimary)
+                            .background(on ? AppTheme.teal : AppTheme.surface,
                                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(on ? AppTheme.primaryBlue : AppTheme.border, lineWidth: 1)
+                                    .strokeBorder(on ? AppTheme.teal : AppTheme.fieldBorder, lineWidth: 1)
                             }
                         }
                         .buttonStyle(.plain)
@@ -764,14 +763,14 @@ private struct TopViewRing: View {
         if let a = startAzimuthDeg {
             let k = pt(a, rr)
             ctx.stroke(Path(ellipseIn: CGRect(x: k.x - 5.5, y: k.y - 5.5, width: 11, height: 11)),
-                       with: .color(active == .start ? AppTheme.primaryBlue : CraneColors.label2),
+                       with: .color(active == .start ? AppTheme.teal : CraneColors.label2),
                        style: StrokeStyle(lineWidth: active == .start ? 2.4 : 1.6, dash: [2, 2]))
         }
         if let a = endAzimuthDeg {
             let k = pt(a, rr)
             ctx.fill(Path(ellipseIn: CGRect(x: k.x - 7, y: k.y - 7, width: 14, height: 14)), with: .color(CraneColors.label1))
             ctx.stroke(Path(ellipseIn: CGRect(x: k.x - 7, y: k.y - 7, width: 14, height: 14)),
-                       with: .color(active == .end ? AppTheme.primaryBlue : CraneColors.ink), lineWidth: 2)
+                       with: .color(active == .end ? AppTheme.teal : CraneColors.ink), lineWidth: 2)
             ctx.fill(Path(ellipseIn: CGRect(x: k.x - 2.6, y: k.y - 2.6, width: 5.2, height: 5.2)), with: .color(AppTheme.teal))
         }
     }
@@ -792,7 +791,7 @@ private struct RingBand: Shape {
 
 // MARK: - Colours
 
-/// Sketch-only colours (navy hull, water). App colours (blue primary, teal, restrained gold, danger) come from AppTheme.
+/// Sketch-only colours (navy hull, water). Text and accents come from AppTheme.
 private enum CraneColors {
     static func rgb(_ hex: UInt32) -> Color {
         Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
@@ -800,11 +799,11 @@ private enum CraneColors {
     static let sternBackground = rgb(0x152129)
     static let ink = rgb(0x0d161d)
     static let goldInk = rgb(0x2a1f00)
-    static let label1 = rgb(0xe8eef5)
-    static let label2 = rgb(0xa5adb2)
-    static let caption = rgb(0x7f9aa8)
-    static let tickMajor = rgb(0xc9d4e0)
-    static let tickMinor = rgb(0x6f7a80)
+    static let label1 = AppTheme.textPrimary
+    static let label2 = AppTheme.textSecondary
+    static let caption = AppTheme.textSecondary
+    static let tickMajor = AppTheme.textPrimary
+    static let tickMinor = AppTheme.textSecondary
     static let centreline = rgb(0x7f8c96)
     static let hullFill = rgb(0x24323c)
     static let hullStroke = rgb(0xd3dde7)

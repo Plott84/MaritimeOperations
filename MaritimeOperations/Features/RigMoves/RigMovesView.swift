@@ -69,12 +69,13 @@ struct RigMovesView: View {
         }
         .navigationTitle("Anchor handling")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                TealCircleButton(systemImage: "plus") {
+                Button {
                     showingAdd = true
+                } label: {
+                    Image(systemName: "plus")
                 }
                 .accessibilityLabel("New anchor handling entry")
                 .accessibilityIdentifier("navAddRigMove")
@@ -135,7 +136,7 @@ struct RigMovesView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(Color.black.opacity(0.3), in: Capsule())
-                            .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                            .overlay(Capsule().stroke(AppTheme.fieldBorder, lineWidth: 1))
                             .accessibilityIdentifier("ahRowCount")
                     }
                     Text("Newest first.")
@@ -153,8 +154,8 @@ struct RigMovesView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(AppTheme.textPrimary)
-                    .background(Color.black.opacity(0.28), in: Capsule())
-                    .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
+                    .background(AppTheme.surfaceElevated, in: Capsule())
+                    .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
                     .accessibilityLabel("New anchor handling entry")
                     .accessibilityIdentifier("addRigMovePill")
                 }
@@ -208,10 +209,10 @@ struct RigMovesView: View {
                 .accessibilityHidden(true)
         }
         .padding(12)
-        .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.teal.opacity(0.28), lineWidth: 1)
+                .strokeBorder(AppTheme.cardBorder, lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .ignore)
@@ -249,7 +250,7 @@ struct RigMovesView: View {
             .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AppTheme.border, lineWidth: 1)
+                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Export Anchor handling")

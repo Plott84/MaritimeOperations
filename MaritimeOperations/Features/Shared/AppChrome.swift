@@ -53,6 +53,7 @@ private struct GridOverlay: View {
     }
 }
 
+/// Solid navy content card. Glass stays on floating chrome (tab bar, toolbars, sheets).
 struct GlassCard<Content: View>: View {
     var padding: CGFloat = 16
     @ViewBuilder var content: () -> Content
@@ -62,37 +63,77 @@ struct GlassCard<Content: View>: View {
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .fill(AppTheme.card)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [AppTheme.teal.opacity(0.75), AppTheme.teal.opacity(0.18)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.25
-                    )
+                    .strokeBorder(AppTheme.cardBorder, lineWidth: 1)
             }
-            .shadow(color: AppTheme.teal.opacity(0.16), radius: 14, y: 6)
     }
 }
 
-struct TealCircleButton: View {
-    let systemImage: String
-    var action: () -> Void
+extension View {
+    /// System navigation bar. A hard scroll-edge fade keeps content from being read under the title.
+    func systemGlassNavigation() -> some View {
+        self
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .scrollEdgeEffectStyle(.hard, for: .top)
+    }
 
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(AppTheme.teal)
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(Color.black.opacity(0.25)))
-                .overlay(Circle().stroke(AppTheme.teal.opacity(0.7), lineWidth: 1.2))
+    /// Prominent glass Save. Teal tint, label ink from `onTeal`.
+    func glassProminentSave() -> some View {
+        self
+            .buttonStyle(.glassProminent)
+            .tint(AppTheme.teal)
+            .foregroundStyle(AppTheme.onTeal)
+    }
+
+    /// 3:1 stroke for text fields and other boxed controls.
+    func fieldChrome(cornerRadius: CGFloat = 12) -> some View {
+        background(AppTheme.pickerFill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
+            }
+    }
+
+    /// Compact date/time pickers: same 3:1 field stroke as text fields.
+    func datePickerChrome() -> some View {
+        padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(AppTheme.pickerFill, in: Capsule())
+            .overlay {
+                Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
+            }
+    }
+}
+
+/// Off track is the field-border grey; the knob is primary text. On track is teal with on-teal knob.
+struct TokenToggleStyle: ToggleStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        let isOn = configuration.isOn
+        return HStack(alignment: .center, spacing: 12) {
+            configuration.label
+            Spacer(minLength: 12)
+            Capsule()
+                .fill(isOn ? AppTheme.teal : AppTheme.toggleOff)
+                .frame(width: 52, height: 32)
+                .overlay(alignment: isOn ? .trailing : .leading) {
+                    Circle()
+                        .fill(isOn ? AppTheme.onTeal : AppTheme.textPrimary)
+                        .frame(width: 26, height: 26)
+                        .padding(3)
+                        .shadow(color: .black.opacity(0.22), radius: 1, y: 1)
+                }
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: isOn)
+                .accessibilityHidden(true)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            configuration.isOn.toggle()
+        }
     }
 }

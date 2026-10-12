@@ -56,8 +56,7 @@ struct ExportView: View {
         }
         .navigationTitle("Export")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .onAppear {
             guard !didApplyInitialRange else { return }
             dateFilter = ExportDateFilter.defaults(earliestEntry: earliestEntry)
@@ -77,7 +76,7 @@ struct ExportView: View {
             if showCopyToast {
                 Text("Summary copied")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.black.opacity(0.85))
+                    .foregroundStyle(AppTheme.onTeal)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(AppTheme.teal, in: Capsule())
@@ -155,7 +154,7 @@ struct ExportView: View {
         .font(.body.weight(.semibold))
         .foregroundStyle(AppTheme.teal)
         .frame(width: 36, height: 36)
-        .background(Color(red: 0.157, green: 0.227, blue: 0.231), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(AppTheme.pickerFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .accessibilityHidden(true)
     }
 
@@ -215,6 +214,7 @@ struct ExportView: View {
                 )
                 .labelsHidden()
                 .colorScheme(.dark)
+                .datePickerChrome()
                 .accessibilityLabel(label)
                 .accessibilityIdentifier(isFrom ? "exportFromDate" : "exportToDate")
             } else {
@@ -240,7 +240,7 @@ struct ExportView: View {
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .foregroundStyle(on ? Color(red: 0.051, green: 0.165, blue: 0.149) : ExportTokens.secondary)
+                .foregroundStyle(on ? AppTheme.onTeal : ExportTokens.secondary)
                 .background(on ? AppTheme.teal : ExportTokens.chipFill, in: Capsule())
                 .overlay(Capsule().stroke(on ? AppTheme.teal : ExportTokens.fieldBorder, lineWidth: 1))
         }
@@ -336,7 +336,7 @@ struct ExportView: View {
                     .padding(.vertical, 14)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(books.canShare ? Color(red: 0.051, green: 0.165, blue: 0.149) : ExportTokens.secondary)
+            .foregroundStyle(books.canShare ? AppTheme.onTeal : ExportTokens.secondary)
             .background(books.canShare ? AppTheme.teal : ExportTokens.disabledFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .disabled(!books.canShare)
             .accessibilityLabel("Share")
@@ -353,7 +353,7 @@ struct ExportView: View {
             .foregroundStyle(books.canShare ? AppTheme.teal : ExportTokens.secondary)
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(books.canShare ? AppTheme.teal.opacity(0.45) : ExportTokens.cardBorder, lineWidth: 1)
+                    .strokeBorder(books.canShare ? AppTheme.fieldBorder : ExportTokens.cardBorder, lineWidth: 1)
             )
             .disabled(!books.canShare)
             .accessibilityLabel("Print")
@@ -445,17 +445,17 @@ struct ExportView: View {
     }
 }
 
-// MARK: - Solid navy tokens (Pixel sheet — no glass)
+// MARK: - Solid navy tokens (same set as AppTheme — no glass on content)
 
 private enum ExportTokens {
-    static let card = Color(red: 0.106, green: 0.137, blue: 0.153)       // #1B2327
-    static let cardBorder = Color(red: 0.227, green: 0.278, blue: 0.302) // #3A474D
-    static let text = Color(red: 0.933, green: 0.953, blue: 0.969)       // #EEF3F7
-    static let secondary = Color(red: 0.706, green: 0.745, blue: 0.769)  // #B4BEC4
-    static let fieldBorder = Color(red: 0.455, green: 0.514, blue: 0.537)
-    static let chipFill = Color(red: 0.125, green: 0.157, blue: 0.173)
-    static let disabledFill = Color(red: 0.227, green: 0.267, blue: 0.282)
-    static let goldBorder = Color(red: 0.851, green: 0.678, blue: 0.322).opacity(0.35)
+    static let card = AppTheme.card
+    static let cardBorder = AppTheme.cardBorder
+    static let text = AppTheme.textPrimary
+    static let secondary = AppTheme.textSecondary
+    static let fieldBorder = AppTheme.fieldBorder
+    static let chipFill = AppTheme.surface
+    static let disabledFill = AppTheme.surfaceElevated
+    static var goldBorder: Color { AppTheme.gold.opacity(0.35) }
 }
 
 private struct ExportSolidCard<Content: View>: View {
@@ -469,7 +469,7 @@ private struct ExportSolidCard<Content: View>: View {
             .background(ExportTokens.card, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(border, lineWidth: 1)
+                    .strokeBorder(border, lineWidth: 1)
             )
     }
 }

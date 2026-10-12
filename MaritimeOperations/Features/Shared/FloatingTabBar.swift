@@ -34,21 +34,14 @@ struct FloatingTabBar: View {
     var body: some View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases) { tab in
+                let selected = selection == tab
                 Button {
                     selection = tab
                 } label: {
                     VStack(spacing: 4) {
-                        ZStack {
-                            if selection == tab {
-                                Circle()
-                                    .fill(AppTheme.teal)
-                                    .frame(width: 36, height: 36)
-                            }
-                            Image(systemName: tab.systemImage)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(selection == tab ? Color.black.opacity(0.85) : AppTheme.textPrimary.opacity(0.8))
-                        }
-                        .frame(height: 36)
+                        Image(systemName: tab.systemImage)
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(height: 22)
                         // Accessibility text sizes: icons only; long-press shows the name (Large Content Viewer).
                         if !dynamicTypeSize.isAccessibilitySize {
                             Text(tab.title)
@@ -57,9 +50,11 @@ struct FloatingTabBar: View {
                                 .minimumScaleFactor(0.8)
                         }
                     }
-                    .foregroundStyle(selection == tab ? AppTheme.teal : AppTheme.textPrimary.opacity(0.8))
+                    .foregroundStyle(selected ? AppTheme.teal : AppTheme.textSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
+                    .padding(.horizontal, 2)
+                    .modifier(SelectedTabGlass(isSelected: selected))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -68,20 +63,27 @@ struct FloatingTabBar: View {
                     Label(tab.title, systemImage: tab.systemImage)
                 }
                 .accessibilityIdentifier("tab_\(tab.rawValue)")
-                .accessibilityAddTraits(selection == tab ? .isSelected : [])
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 6)
-        .background {
-            Capsule(style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Capsule(style: .continuous)
-                        .stroke(AppTheme.teal.opacity(0.35), lineWidth: 1)
-                }
-        }
+        .glassEffect(.regular, in: .capsule)
         .padding(.horizontal, 12)
         .padding(.bottom, 6)
+    }
+}
+
+/// Glass pill behind the selected tab. Unselected tabs stay on the bar's regular glass.
+private struct SelectedTabGlass: ViewModifier {
+    var isSelected: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isSelected {
+            content.glassEffect(.regular.tint(AppTheme.teal), in: .capsule)
+        } else {
+            content
+        }
     }
 }

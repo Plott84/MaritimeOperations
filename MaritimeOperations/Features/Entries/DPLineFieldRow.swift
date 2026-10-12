@@ -20,7 +20,7 @@ struct DPLineFieldRow<Content: View>: View {
             .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppTheme.border, lineWidth: 1)
+                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
             }
         }
     }

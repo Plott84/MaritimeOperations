@@ -68,8 +68,7 @@ struct LogView: View {
         }
         .navigationTitle("Log")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
     }
 
     private func bookCard(_ book: LogBook) -> some View {
@@ -164,9 +163,9 @@ struct LogView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .frame(minHeight: 44)
-                .foregroundStyle(starred ? Color.black.opacity(0.85) : AppTheme.textPrimary.opacity(0.85))
-                .background(starred ? AppTheme.teal : Color.black.opacity(0.28), in: Capsule())
-                .overlay(Capsule().stroke(starred ? AppTheme.teal : AppTheme.border, lineWidth: 1))
+                .foregroundStyle(starred ? AppTheme.onTeal : AppTheme.textPrimary)
+                .background(starred ? AppTheme.teal : AppTheme.pickerFill, in: Capsule())
+                .overlay(Capsule().strokeBorder(starred ? AppTheme.teal : AppTheme.fieldBorder, lineWidth: 1))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)

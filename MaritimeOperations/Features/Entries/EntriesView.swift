@@ -75,12 +75,13 @@ struct EntriesView: View {
         }
         .navigationTitle("DP Entries")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .systemGlassNavigation()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                TealCircleButton(systemImage: "plus") {
+                Button {
                     showingAdd = true
+                } label: {
+                    Image(systemName: "plus")
                 }
                 .accessibilityLabel("Add entry")
                 .accessibilityIdentifier("navAddEntry")
@@ -140,7 +141,7 @@ struct EntriesView: View {
                         .foregroundStyle(AppTheme.textSecondary)
                         .frame(width: 36, height: 36)
                         .background(Circle().fill(Color.black.opacity(0.25)))
-                        .overlay(Circle().stroke(AppTheme.border, lineWidth: 1))
+                        .overlay(Circle().stroke(AppTheme.fieldBorder, lineWidth: 1))
                         .accessibilityHidden(true)
                 }
 
@@ -166,7 +167,11 @@ struct EntriesView: View {
                     Text("Old DP hours")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AppTheme.textSecondary)
-                    TextField("Old DP hours", text: $oldHoursText)
+                    TextField(
+                        "Old DP hours",
+                        text: $oldHoursText,
+                        prompt: Text("Old DP hours").foregroundStyle(AppTheme.textSecondary)
+                    )
                         .focused($oldHoursFocused)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(.plain)
@@ -175,7 +180,7 @@ struct EntriesView: View {
                         .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(AppTheme.border, lineWidth: 1)
+                                .stroke(AppTheme.fieldBorder, lineWidth: 1)
                         }
                         .accessibilityLabel("Old DP hours")
                         .accessibilityIdentifier("oldDPHours")
@@ -196,8 +201,8 @@ struct EntriesView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(AppTheme.textPrimary)
-                    .background(Color.black.opacity(0.28), in: Capsule())
-                    .overlay(Capsule().stroke(AppTheme.teal.opacity(0.45), lineWidth: 1))
+                    .background(AppTheme.surfaceElevated, in: Capsule())
+                    .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
                     .accessibilityIdentifier("addManualEntryPill")
 
                     Button {} label: {
@@ -209,7 +214,7 @@ struct EntriesView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(AppTheme.textSecondary)
                     .background(Color.black.opacity(0.2), in: Capsule())
-                    .overlay(Capsule().stroke(AppTheme.border, lineWidth: 1))
+                    .overlay(Capsule().stroke(AppTheme.fieldBorder, lineWidth: 1))
                     .disabled(true)
                     .accessibilityLabel("Share DP Entries")
                 }
@@ -224,7 +229,7 @@ struct EntriesView: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(AppTheme.textPrimary)
                 Circle()
-                    .fill(Color.green)
+                    .fill(AppTheme.ready)
                     .frame(width: 6, height: 6)
             }
             .frame(width: 36, height: 36)
@@ -263,10 +268,10 @@ struct EntriesView: View {
             }
         }
         .padding(12)
-        .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.teal.opacity(0.28), lineWidth: 1)
+                .strokeBorder(AppTheme.cardBorder, lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }

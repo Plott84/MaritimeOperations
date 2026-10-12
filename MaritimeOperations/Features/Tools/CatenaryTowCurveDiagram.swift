@@ -146,20 +146,20 @@ struct CatenaryTowCurveDiagram: View {
             seaLine.addLine(to: CGPoint(x: w, y: seaY))
             context.stroke(
                 seaLine,
-                with: .color(Color(red: 0.54, green: 0.59, blue: 0.66)),
+                with: .color(AppTheme.textSecondary),
                 style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])
             )
             let seabedLabel = Text("Seabed \(ToolsParse.format(d, decimals: 0)) m")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color(red: 0.54, green: 0.59, blue: 0.66))
+                .foregroundStyle(AppTheme.textSecondary)
             context.draw(seabedLabel, at: CGPoint(x: w - 6, y: seaY + 12), anchor: .trailing)
             let caption = Text("Depth drawn 2× for clarity")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color(red: 0.54, green: 0.59, blue: 0.66))
+                .foregroundStyle(AppTheme.textSecondary)
             context.draw(caption, at: CGPoint(x: 6, y: seaY + 12), anchor: .leading)
         }
 
-        let teal = Color(red: 0.37, green: 0.94, blue: 0.77)
+        let teal = AppTheme.teal
         let hot = Color(red: 1.0, green: 0.35, blue: 0.37)
         if let seaY = seabedY, r.seabedWarning {
             strokeSplit(context: &context, points: points, seabedY: seaY, above: teal, below: hot)
@@ -185,17 +185,17 @@ struct CatenaryTowCurveDiagram: View {
         sagLine.addLine(to: CGPoint(x: midX, y: lowY))
         context.stroke(
             sagLine,
-            with: .color(Color(red: 1.0, green: 0.82, blue: 0.40)),
+            with: .color(AppTheme.gold),
             style: StrokeStyle(lineWidth: 1.2, dash: [3, 3])
         )
         let sagLabel = Text("Sag \(ToolsParse.format(r.sag, decimals: 1)) m")
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.40))
+            .foregroundStyle(AppTheme.gold)
         context.draw(sagLabel, at: CGPoint(x: midX + 6, y: (sy + lowY) / 2), anchor: .leading)
 
         let rollerLabel = Text("Stern roller")
             .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.40))
+            .foregroundStyle(AppTheme.gold)
         context.draw(rollerLabel, at: CGPoint(x: sx - 2, y: sy + 18), anchor: .trailing)
     }
 
@@ -262,16 +262,16 @@ struct CatenaryTowCurveDiagram: View {
         var dim = Path()
         dim.move(to: CGPoint(x: sx, y: y))
         dim.addLine(to: CGPoint(x: ex, y: y))
-        context.stroke(dim, with: .color(Color(red: 0.54, green: 0.59, blue: 0.66)), lineWidth: 1)
+        context.stroke(dim, with: .color(AppTheme.textSecondary), lineWidth: 1)
         var t0 = Path(); t0.move(to: CGPoint(x: sx, y: y - 4)); t0.addLine(to: CGPoint(x: sx, y: y + 4))
         var t1 = Path(); t1.move(to: CGPoint(x: ex, y: y - 4)); t1.addLine(to: CGPoint(x: ex, y: y + 4))
-        context.stroke(t0, with: .color(Color(red: 0.54, green: 0.59, blue: 0.66)), lineWidth: 1)
-        context.stroke(t1, with: .color(Color(red: 0.54, green: 0.59, blue: 0.66)), lineWidth: 1)
+        context.stroke(t0, with: .color(AppTheme.textSecondary), lineWidth: 1)
+        context.stroke(t1, with: .color(AppTheme.textSecondary), lineWidth: 1)
 
         let mid = (sx + ex) / 2
         let label = Text(text)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(Color.white)
+            .foregroundStyle(AppTheme.textPrimary)
         let pillW: CGFloat = max(CGFloat(text.count) * 7.2, 56)
         let pillRect = CGRect(x: mid - pillW / 2, y: y - 10, width: pillW, height: 16)
         context.fill(Path(roundedRect: pillRect, cornerRadius: 8), with: .color(Color(red: 0.07, green: 0.16, blue: 0.23)))
@@ -306,7 +306,7 @@ struct CatenaryTowCurveDiagram: View {
         context.fill(Path(CGRect(x: x - 68, y: sy - 48, width: 2, height: 8)), with: .color(Color(red: 0.91, green: 0.93, blue: 0.96)))
         context.fill(Path(CGRect(x: x - 50, y: sy - 17, width: 8, height: 8)), with: .color(Color(red: 0.62, green: 0.69, blue: 0.76)))
         let roller = Path(ellipseIn: CGRect(x: x - 5, y: sy - 9, width: 6, height: 6))
-        context.fill(roller, with: .color(Color(red: 1.0, green: 0.82, blue: 0.40)))
+        context.fill(roller, with: .color(AppTheme.gold))
     }
 
     private func drawRig(context: inout GraphicsContext, x: CGFloat, sy: CGFloat) {

@@ -18,7 +18,7 @@ struct ShipPickerSheet: View {
             List {
                 if filtered.isEmpty {
                     Text(names.isEmpty ? "No ships logged yet. Type a name on the line." : "No match. Cancel and type the new name.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.textSecondary)
                 } else {
                     ForEach(filtered, id: \.self) { name in
                         Button {
@@ -31,9 +31,14 @@ struct ShipPickerSheet: View {
                     }
                 }
             }
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ships")
+            .searchable(
+                text: $query,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text("Search ships").foregroundStyle(AppTheme.textSecondary)
+            )
             .navigationTitle("Logged ships")
             .navigationBarTitleDisplayMode(.inline)
+            .systemGlassNavigation()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
