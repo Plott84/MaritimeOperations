@@ -10,6 +10,8 @@ struct ExportView: View {
     @Query private var rovEntries: [ROVEntry]
     @Query private var craneEntries: [CraneEntry]
 
+    var onImport: () -> Void = {}
+
     @State private var books = ExportBookSelection()
     @State private var dateFilter = ExportDateFilter.defaults(earliestEntry: nil)
     @State private var didApplyInitialRange = false
@@ -368,6 +370,18 @@ struct ExportView: View {
             .foregroundStyle(ExportTokens.secondary)
             .accessibilityLabel("Copy summary")
             .accessibilityIdentifier("exportCopySummary")
+
+            Button(action: onImport) {
+                Text(ImportCopy.importButton)
+                    .font(.subheadline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(AppTheme.teal)
+            .accessibilityLabel("Import")
+            .accessibilityHint("Opens Import for an export PDF or CSV.")
+            .accessibilityIdentifier("exportImport")
         }
         .padding(.horizontal, 16)
         .padding(.top, 14)
@@ -390,7 +404,8 @@ struct ExportView: View {
         }
         do {
             let artifacts = try ExportDocumentBuilder.makeArtifacts(
-                snapshot: snapshot, books: books, filter: dateFilter
+                snapshot: snapshot, books: books, filter: dateFilter,
+                dp: dpEntries, moves: moves, rov: rovEntries, crane: craneEntries
             )
             guard let presenter = ExportDocumentBuilder.topViewController() else { return }
             ExportDocumentBuilder.presentShare(
@@ -409,7 +424,8 @@ struct ExportView: View {
         }
         do {
             let artifacts = try ExportDocumentBuilder.makeArtifacts(
-                snapshot: snapshot, books: books, filter: dateFilter
+                snapshot: snapshot, books: books, filter: dateFilter,
+                dp: dpEntries, moves: moves, rov: rovEntries, crane: craneEntries
             )
             guard let presenter = ExportDocumentBuilder.topViewController() else { return }
             ExportDocumentBuilder.presentPrint(pdfURL: artifacts.pdfURL, from: presenter)
