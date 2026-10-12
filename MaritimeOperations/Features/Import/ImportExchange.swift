@@ -934,7 +934,7 @@ struct ImportSession: Equatable {
         } catch let error as ImportReadError {
             source = .invalid(name: name, byteCount: data.count, message: error.inlineMessage)
         } catch {
-            source = .invalid(name: name, byteCount: data.count, message: ImportReadError.userFacingMessage)
+            source = .invalid(name: name, byteCount: data.count, message: ImportCopy.inlineError)
         }
     }
 
