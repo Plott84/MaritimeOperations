@@ -74,14 +74,15 @@ struct FloatingTabBar: View {
     }
 }
 
-/// Glass pill behind the selected tab. Unselected tabs stay on the bar's regular glass.
+/// Glass pill behind the selected tab. A full teal tint paints an opaque pill and hides the teal icon.
+/// This wash stays translucent so the teal accent reads on glass.
 private struct SelectedTabGlass: ViewModifier {
     var isSelected: Bool
 
     @ViewBuilder
     func body(content: Content) -> some View {
         if isSelected {
-            content.glassEffect(.regular.tint(AppTheme.teal), in: .capsule)
+            content.glassEffect(.regular.tint(AppTheme.teal.opacity(0.18)), in: .capsule)
         } else {
             content
         }
