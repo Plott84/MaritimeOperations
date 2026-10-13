@@ -10,6 +10,7 @@ final class ActiveDPSessionStore {
     private static let rigKey = "activeDPSession.rig"
     private static let vesselTypeKey = "activeDPSession.vesselType"
     private static let dpClassKey = "activeDPSession.dpClass"
+    private static let dpClassLevelKey = "activeDPSession.dpClassLevel"
 
     var startedAt: Date? {
         didSet { persist() }
@@ -31,6 +32,17 @@ final class ActiveDPSessionStore {
         didSet { UserDefaults.standard.set(dpClass, forKey: Self.dpClassKey) }
     }
 
+    /// Class 1, 2 or 3 for the watch that is running. Nil when the new watch has no class.
+    var dpClassLevel: Int? = nil {
+        didSet {
+            if let dpClassLevel, (1...3).contains(dpClassLevel) {
+                UserDefaults.standard.set(dpClassLevel, forKey: Self.dpClassLevelKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.dpClassLevelKey)
+            }
+        }
+    }
+
     var isRunning: Bool { startedAt != nil }
 
     init() {
@@ -42,6 +54,9 @@ final class ActiveDPSessionStore {
         rig = defaults.string(forKey: Self.rigKey) ?? ""
         vesselType = defaults.string(forKey: Self.vesselTypeKey) ?? ""
         dpClass = defaults.string(forKey: Self.dpClassKey) ?? ""
+        if let stored = defaults.object(forKey: Self.dpClassLevelKey) as? Int, (1...3).contains(stored) {
+            dpClassLevel = stored
+        }
     }
 
     func start(at date: Date = .now) {

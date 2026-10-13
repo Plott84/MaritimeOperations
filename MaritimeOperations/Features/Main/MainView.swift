@@ -9,6 +9,8 @@ struct MainView: View {
     @Query private var craneEntries: [CraneEntry]
     @AppStorage("dp.oldHoursText") private var oldHoursText = ""
     @AppStorage(StarredBooks.storageKey) private var starredRaw = StarredBooks.defaultRaw
+    @AppStorage(DPDaysSettings.targetTextKey) private var dayTargetText = DPDaysSettings.defaultTargetText
+    @AppStorage(DPDaysSettings.certificateKey) private var certificateISO = ""
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var session: ActiveDPSessionStore
     var onOpenRigMoves: () -> Void
@@ -17,6 +19,11 @@ struct MainView: View {
 
     @State private var saveErrorMessage: String?
     @State private var editingEntry: DPEntry?
+    @State private var showDPDaysSettings = false
+    /// True after the user edits the new-watch chips. The draft is a copy; the last line is never written.
+    @State private var didEditPrefill = false
+    @State private var vesselDraft = ""
+    @State private var classDraft: Int?
 
     private var latestFive: [DPEntry] { Array(entries.prefix(5)) }
 
@@ -26,6 +33,10 @@ struct MainView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     timerCard
+                    if !session.isRunning {
+                        startDPPrefillCard
+                    }
+                    dpDaysCard
                     starredBooksCard
                     activityCard
                 }
@@ -38,6 +49,20 @@ struct MainView: View {
         .navigationTitle("Main")
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showDPDaysSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel("Settings")
+                .accessibilityIdentifier("mainSettings")
+            }
+        }
+        .navigationDestination(isPresented: $showDPDaysSettings) {
+            DPDaysSettingsView()
+        }
         .sheet(item: $editingEntry) { entry in
             DPEntryFieldsSheet(mode: .edit(entry))
         }
@@ -126,6 +151,64 @@ struct MainView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    private var prefill: DPStartPrefill.Draft {
+        DPStartPrefill.make(from: entries)
+    }
+
+    private var shownVessel: String {
+        didEditPrefill ? vesselDraft : prefill.vessel
+    }
+
+    private var shownClass: Int? {
+        didEditPrefill ? classDraft : prefill.dpClassLevel
+    }
+
+    private var dpDaysResult: DPDaysCount.Result {
+        DPDaysCount.count(
+            intervals: entries.map(\.dpDaysInterval),
+            asOf: .now,
+            timeZone: .current,
+            target: DPDaysSettings.parsedTarget(dayTargetText),
+            certificateIssued: DPDaysSettings.parsedCertificate(certificateISO)
+        )
+    }
+
+    private var dpDaysCard: some View {
+        DPDaysCard(result: dpDaysResult, timeZone: .current) {
+            showDPDaysSettings = true
+        }
+    }
+
+    private var startDPPrefillCard: some View {
+        StartDPPrefillCard(
+            vessel: shownVessel,
+            dpClassLevel: shownClass,
+            hasPreviousEntry: prefill.hasPreviousEntry,
+            prefilledVessel: prefill.vessel,
+            prefilledClass: prefill.dpClassLevel,
+            suggestions: ShipNameSuggestions.names(from: entries),
+            onVessel: setDraftVessel,
+            onClass: setDraftClass
+        )
+    }
+
+    private func setDraftVessel(_ vessel: String) {
+        snapshotDraftIfNeeded()
+        vesselDraft = DPStartPrefill.cleanedVessel(vessel)
+    }
+
+    private func setDraftClass(_ level: Int?) {
+        snapshotDraftIfNeeded()
+        classDraft = level
+    }
+
+    private func snapshotDraftIfNeeded() {
+        guard !didEditPrefill else { return }
+        vesselDraft = prefill.vessel
+        classDraft = prefill.dpClassLevel
+        didEditPrefill = true
     }
 
     private var starredBooksCard: some View {
@@ -309,6 +392,12 @@ struct MainView: View {
         if session.isRunning {
             stopAndSave()
         } else {
+            // Chips are the new watch only. Times and hours come from the timer.
+            session.vessel = shownVessel
+            session.dpClassLevel = shownClass
+            session.dpClass = shownClass.map { "Class \($0)" } ?? ""
+            session.rig = ""
+            session.vesselType = ""
             session.start()
         }
     }
@@ -323,15 +412,17 @@ struct MainView: View {
             startTime: startedAt,
             endTime: endedAt,
             durationHours: hours,
-            vessel: "",
+            vessel: session.vessel,
             rig: session.rig,
             vesselType: session.vesselType,
-            dpClass: session.dpClass
+            dpClass: session.dpClass,
+            dpClassLevel: session.dpClassLevel
         )
         modelContext.insert(entry)
         do {
             try modelContext.save()
             session.clear()
+            didEditPrefill = false
         } catch {
             modelContext.delete(entry)
             saveErrorMessage = "Couldn’t save this DP session. Timer is still running — try Stop again."
