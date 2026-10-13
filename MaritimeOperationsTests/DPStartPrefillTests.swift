@@ -77,8 +77,8 @@ final class DPStartPrefillTests: XCTestCase {
             durationHours: 3,
             vessel: "Seven Falcon",
             dpClass: "Class 2",
-            notes: "keep me",
             activityCode: "kept-activity",
+            notes: "keep me",
             dpClassLevel: 2,
             createdAt: started
         )
