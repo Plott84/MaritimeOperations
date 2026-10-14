@@ -37,6 +37,12 @@ struct ToolsHomeView: View {
             title: "Crane heel",
             subtitle: "Static heel and ballast to level",
             systemImage: "ferry"
+        ),
+        .init(
+            kind: .portUnlocode,
+            title: "Port UN/LOCODE",
+            subtitle: "Offline UNECE port codes",
+            systemImage: "mappin.and.ellipse"
         )
     ]
 
@@ -72,6 +78,7 @@ struct ToolsHomeView: View {
         case .gyro: GyroCheckToolView()
         case .chainLocker: ChainLockerToolView()
         case .craneHeel: CraneHeelView()
+        case .portUnlocode: PortUnlocodeToolView()
         }
     }
 
@@ -104,7 +111,7 @@ struct ToolsHomeView: View {
 }
 
 private struct ToolTile: Identifiable {
-    enum Kind: String { case catenary, winch, gyro, chainLocker, craneHeel }
+    enum Kind: String { case catenary, winch, gyro, chainLocker, craneHeel, portUnlocode }
     var id: String { kind.rawValue }
     let kind: Kind
     let title: String
