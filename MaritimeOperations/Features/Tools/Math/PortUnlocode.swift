@@ -110,8 +110,8 @@ nonisolated enum PortUnlocodeCatalog {
         guard (latH == "N" || latH == "S"), chars[5] == " ", (lonH == "E" || lonH == "W") else {
             return nil
         }
-        let latDigits = chars[0..<4]
-        let lonDigits = chars[6..<11]
+        let latDigits = Array(chars[0..<4])
+        let lonDigits = Array(chars[6..<11])
         guard latDigits.allSatisfy(\.isNumber), lonDigits.allSatisfy(\.isNumber) else { return nil }
         let latDeg = Int(String(latDigits[0..<2])) ?? 0
         let latMin = String(latDigits[2..<4])
@@ -202,6 +202,9 @@ nonisolated enum PortUnlocodeCatalog {
         if source.hasPrefix("\u{feff}") {
             source.removeFirst()
         }
+        // Swift Character merges U+000D U+000A into one grapheme; normalize so row splits work.
+        source = source.replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
         let chars = Array(source)
         var records: [[String]] = []
         var field = ""
