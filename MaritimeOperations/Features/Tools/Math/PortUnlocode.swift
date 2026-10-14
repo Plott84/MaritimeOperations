@@ -341,7 +341,7 @@ nonisolated enum PortUnlocodeCatalog {
             guard let base = raw.bindMemory(to: Bytef.self).baseAddress else {
                 throw LoadError.gzip
             }
-            try ZLIB_VERSION.withCString { version in
+            return try ZLIB_VERSION.withCString { version in
                 var stream = z_stream()
                 stream.next_in = UnsafeMutablePointer(mutating: base)
                 stream.avail_in = uInt(raw.count)
