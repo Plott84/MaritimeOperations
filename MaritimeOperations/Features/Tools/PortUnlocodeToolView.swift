@@ -26,6 +26,11 @@ struct PortUnlocodeToolView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone()
+        .onDisappear {
+            // Marks "searched" for the Tools tab status line (spec: "· no searches yet" until first search).
+            let q = model.query.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !q.isEmpty { ToolLastResultStore().save("Searched", for: .portUnlocode) }
+        }
         .task { model.loadIfNeeded() }
         .onChange(of: searchFocused) { _, focused in
             if focused { model.selectedID = nil }

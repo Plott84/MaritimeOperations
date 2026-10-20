@@ -69,19 +69,61 @@ struct AmplitudeMathTests {
     @Test func modelStates() {
         let m = CompassErrorModel()
         #expect(m.outcome == .incomplete)
-        m.latitude = "60"; m.declination = "20"; m.compass = "49"
+        m.latDeg = "60"; m.decDeg = "20"; m.compass = "49"
         guard case .result(let r) = m.outcome else { Issue.record("expected result"); return }
         #expect(r.deviation == nil)
         #expect(m.lastResultSummary == "Last: 2.2° W · true 046.8°")
         m.variation = "1.5"
         guard case .result(let r2) = m.outcome else { Issue.record("expected result"); return }
         #expect(AmplitudeMath.eastWest(r2.deviation ?? .nan) == "3.7° W")
-        m.latitude = "75"
+        m.latDeg = "75"
         #expect(m.outcome == .polar)
         #expect(m.lastResultSummary == nil)
-        m.latitude = "91"
+        m.latDeg = "91"
         if case .invalid(let f, _) = m.outcome { #expect(f == .latitude) } else { Issue.record("expected invalid") }
-        m.latitude = "60"; m.declination = "24"
+        m.latDeg = "60"; m.decDeg = "24"
         if case .invalid(let f, _) = m.outcome { #expect(f == .declination) } else { Issue.record("expected invalid") }
+    }
+
+    // Degrees + minutes input
+    @Test func dmToDecimal() {
+        if case .value(let v) = CompassErrorModel.parseDM(degrees: "20", minutes: "15.3", maxDegrees: 23.5) {
+            #expect(abs(v - 20.255) < 1e-9)
+        } else { Issue.record("expected value") }
+        #expect(CompassErrorModel.parseDM(degrees: "60", minutes: "", maxDegrees: 90) == .value(60))
+        #expect(CompassErrorModel.parseDM(degrees: "", minutes: "", maxDegrees: 90) == .empty)
+        #expect(CompassErrorModel.dmText(20.255, "N") == "20°15.3′ N")
+        #expect(CompassErrorModel.dmText(59.99999, "S") == "60°00.0′ S")
+    }
+
+    @Test func dmBounds() {
+        func invalid(_ d: String, _ m: String, _ max: Double) -> Bool {
+            if case .invalid = CompassErrorModel.parseDM(degrees: d, minutes: m, maxDegrees: max) { return true }
+            return false
+        }
+        #expect(invalid("20", "60", 90))        // minutes must be < 60
+        #expect(!invalid("20", "59.9", 90))
+        #expect(invalid("20", "-1", 90))
+        #expect(invalid("20.5", "0", 90))       // whole degrees only
+        #expect(invalid("", "10", 90))          // minutes without degrees
+        #expect(!invalid("90", "0", 90))
+        #expect(invalid("90", "0.1", 90))       // 90° needs 0′
+        #expect(invalid("91", "", 90))
+        #expect(!invalid("23", "30", 23.5))     // 23°30′ is the limit
+        #expect(invalid("23", "30.1", 23.5))
+        #expect(invalid("24", "", 23.5))
+    }
+
+    @Test func modelUsesDegreesMinutes() {
+        let m = CompassErrorModel()
+        m.latDeg = "60"; m.latMin = "0"; m.decDeg = "20"; m.decMin = "0"; m.compass = "49"
+        #expect(m.latitudeEcho == "= 60°00.0′ N")
+        m.decNS = .s
+        #expect(m.declinationEcho == "= 20°00.0′ S")
+        guard case .result(let r) = m.outcome else { Issue.record("expected result"); return }
+        #expect(AmplitudeMath.bearing(r.trueBearing) == "133.2°")
+        m.decMin = "60"
+        if case .invalid(let f, _) = m.outcome { #expect(f == .declination) } else { Issue.record("expected invalid") }
+        #expect(m.declinationEcho == nil)
     }
 }

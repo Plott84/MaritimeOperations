@@ -61,18 +61,24 @@ struct CompassErrorToolView: View {
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("compassError.event")
             }
-            ToolNumberField(
-                title: "Latitude", text: $model.latitude, placeholder: "60.0", unit: "°",
-                isError: errorField == .latitude, errorReason: errorReason,
-                fieldAccessibilityIdentifier: "compassError.latitude"
+            ToolDegMinInput(
+                title: "Latitude", degrees: $model.latDeg, minutes: $model.latMin,
+                hemisphere: $model.latNS,
+                hemispheres: [(.n, "N (north)"), (.s, "S (south)")],
+                hemisphereLabel: "Latitude hemisphere",
+                echo: model.latitudeEcho,
+                errorReason: errorField == .latitude ? errorReason : nil,
+                identifier: "compassError.latitude"
             )
-            nsPicker("Latitude hemisphere", $model.latNS, id: "compassError.latNS")
-            ToolNumberField(
-                title: "Declination", text: $model.declination, placeholder: "20.0", unit: "°",
-                isError: errorField == .declination, errorReason: errorReason,
-                fieldAccessibilityIdentifier: "compassError.declination"
+            ToolDegMinInput(
+                title: "Declination", degrees: $model.decDeg, minutes: $model.decMin,
+                hemisphere: $model.decNS,
+                hemispheres: [(.n, "N (north)"), (.s, "S (south)")],
+                hemisphereLabel: "Declination name",
+                echo: model.declinationEcho,
+                errorReason: errorField == .declination ? errorReason : nil,
+                identifier: "compassError.declination"
             )
-            nsPicker("Declination name", $model.decNS, id: "compassError.decNS")
             ToolNumberField(
                 title: "Compass bearing", text: $model.compass, placeholder: "049.0", unit: "°C",
                 isError: errorField == .compass, errorReason: errorReason,
@@ -102,16 +108,6 @@ struct CompassErrorToolView: View {
     private var errorReason: String? {
         if case .invalid(_, let r) = model.outcome { return r }
         return nil
-    }
-
-    private func nsPicker(_ label: String, _ sel: Binding<CompassErrorModel.NS>, id: String) -> some View {
-        Picker(label, selection: sel) {
-            Text("N (north)").tag(CompassErrorModel.NS.n)
-            Text("S (south)").tag(CompassErrorModel.NS.s)
-        }
-        .pickerStyle(.segmented)
-        .accessibilityLabel(label)
-        .accessibilityIdentifier(id)
     }
 
     // MARK: Result

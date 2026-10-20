@@ -87,7 +87,12 @@ struct ToolsHomeView: View {
     private func reloadStatuses() {
         var s: [ToolTile.Kind: String] = [:]
         for tool in sections.flatMap(\.tools) {
-            if let k = tool.kind.lastResultKind { s[tool.kind] = store.status(for: k) }
+            guard let k = tool.kind.lastResultKind else { continue }
+            if k == .portUnlocode {
+                if store.load(for: k) != nil { s[tool.kind] = "searched" }
+            } else {
+                s[tool.kind] = store.status(for: k)
+            }
         }
         statuses = s
     }
@@ -108,7 +113,9 @@ struct ToolsHomeView: View {
 
     private func status(for tool: ToolTile) -> (text: String, isEmpty: Bool) {
         if tool.kind == .portUnlocode {
-            return (portCountText ?? "Offline UNECE port codes", false)
+            // Spec: never empty. "17.6k ports offline · no searches yet" until the first search.
+            guard let count = portCountText else { return ("Offline UNECE port codes", false) }
+            return (statuses[.portUnlocode] == nil ? "\(count) · no searches yet" : count, false)
         }
         let s = statuses[tool.kind] ?? ToolLastResultStore.notUsed
         return (s, s == ToolLastResultStore.notUsed)

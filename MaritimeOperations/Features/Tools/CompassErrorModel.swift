@@ -25,24 +25,80 @@ final class CompassErrorModel {
     static let maxDeclination = 23.5
 
     var event: AmplitudeMath.Event = .rising
-    var latitude = ""
+    var latDeg = ""
+    var latMin = ""
     var latNS: NS = .n
-    var declination = ""
+    var decDeg = ""
+    var decMin = ""
     var decNS: NS = .n
     var compass = ""
     var variation = ""
     var varEW: EW = .e
 
+    /// Degrees–minutes text → unsigned decimal degrees.
+    enum DM: Equatable {
+        case empty
+        case invalid(String)
+        case value(Double)
+    }
+
+    /// Whole degrees (required) + minutes 0..<60 (blank = 0). `maxDegrees` caps the total.
+    static func parseDM(degrees d: String, minutes m: String, maxDegrees: Double) -> DM {
+        let dTrim = d.trimmingCharacters(in: .whitespacesAndNewlines)
+        let mTrim = m.trimmingCharacters(in: .whitespacesAndNewlines)
+        if dTrim.isEmpty { return mTrim.isEmpty ? .empty : .invalid("Enter whole degrees") }
+        guard let dv = ToolsParse.double(dTrim), dv >= 0, dv == dv.rounded() else {
+            return .invalid("Whole degrees, 0 to \(Int(maxDegrees.rounded(.down)))")
+        }
+        var mv = 0.0
+        if !mTrim.isEmpty {
+            guard let parsed = ToolsParse.double(mTrim), parsed >= 0, parsed < 60 else {
+                return .invalid("Minutes 0 to 59.9")
+            }
+            mv = parsed
+        }
+        let total = GyroMath.decimal(degrees: dv, minutes: mv)
+        guard total <= maxDegrees + 1e-9 else {
+            return .invalid(maxDegrees == 90 ? "Latitude 0 to 90° (90° needs 0′)" : "Declination 0 to 23°30′")
+        }
+        return .value(total)
+    }
+
+    /// "20°15.3′ N"
+    static func dmText(_ v: Double, _ hemi: String) -> String {
+        var tenths = (abs(v) * 600).rounded()
+        let deg = Int(tenths / 600)
+        tenths -= Double(deg) * 600
+        return String(format: "%d°%04.1f′ ", deg, tenths / 10) + hemi
+    }
+
+    var latitudeDM: DM { Self.parseDM(degrees: latDeg, minutes: latMin, maxDegrees: 90) }
+    var declinationDM: DM { Self.parseDM(degrees: decDeg, minutes: decMin, maxDegrees: Self.maxDeclination) }
+
+    /// Quiet echo under each input, e.g. "= 20°15.3′ N"; nil unless the input is valid.
+    var latitudeEcho: String? {
+        if case .value(let v) = latitudeDM { return "= " + Self.dmText(v, latNS.rawValue) }
+        return nil
+    }
+    var declinationEcho: String? {
+        if case .value(let v) = declinationDM { return "= " + Self.dmText(v, decNS.rawValue) }
+        return nil
+    }
+
     var outcome: Outcome {
-        let latV = ToolsParse.double(latitude)
-        let decV = ToolsParse.double(declination)
+        var latV: Double?
+        var decV: Double?
+        switch latitudeDM {
+        case .invalid(let r): return .invalid(field: .latitude, reason: r)
+        case .value(let v): latV = v
+        case .empty: break
+        }
+        switch declinationDM {
+        case .invalid(let r): return .invalid(field: .declination, reason: r)
+        case .value(let v): decV = v
+        case .empty: break
+        }
         let cV = ToolsParse.double(compass)
-        if let latV, latV < 0 || latV > 90 {
-            return .invalid(field: .latitude, reason: "Latitude 0 to 90°")
-        }
-        if let decV, decV < 0 || decV > Self.maxDeclination {
-            return .invalid(field: .declination, reason: "Declination 0 to 23.5°")
-        }
         if let cV, cV < 0 || cV >= 360 {
             return .invalid(field: .compass, reason: "Compass bearing 0 to 359.9°")
         }
