@@ -144,6 +144,12 @@ struct WinchCapacityToolView: View {
         return Eval(outcome: outcome, errorField: field, errorReason: reason, showPull: showPull)
     }
 
+    /// Tools-tab status line, only for a valid result.
+    private var lastResultSummary: String? {
+        guard case .ok(let r)? = eval.outcome, r.workingLengthM.isFinite else { return nil }
+        return "Last: \(r.workingLengthM.formatted(.number.precision(.fractionLength(0)))) m on drum · \(r.layerCount) layers"
+    }
+
     var body: some View {
         ZStack {
             AppCanvas()
@@ -272,6 +278,10 @@ struct WinchCapacityToolView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone { recompute() }
+        .onDisappear {
+            // Save once, on leaving, only if a valid result is on screen (not per keystroke).
+            if let s = lastResultSummary { ToolLastResultStore().save(s, for: .winch) }
+        }
         .onAppear { recompute() }
         .onChange(of: dText) { _, _ in recompute() }
         .onChange(of: d0Text) { _, _ in recompute() }

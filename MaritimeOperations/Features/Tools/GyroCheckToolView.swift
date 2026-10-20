@@ -4,6 +4,12 @@ import SwiftUI
 struct GyroCheckToolView: View {
     @State private var model = GyroCheckModel()
 
+    /// Tools-tab status line, only for a valid result.
+    private var lastResultSummary: String? {
+        guard case .result(_, let err, _) = model.outcome else { return nil }
+        return ToolLastResultStore.gyroSummary(error: err.value)
+    }
+
     var body: some View {
         ZStack {
             AppCanvas()
@@ -32,6 +38,10 @@ struct GyroCheckToolView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone()
+        .onDisappear {
+            // Save once, on leaving, only if a valid result is on screen (not per keystroke).
+            if let s = lastResultSummary { ToolLastResultStore().save(s, for: .gyro) }
+        }
     }
 
     @ViewBuilder

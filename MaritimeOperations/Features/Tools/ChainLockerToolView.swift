@@ -77,6 +77,12 @@ struct ChainLockerToolView: View {
         return Eval(outcome: outcome, errorField: nil, errorReason: nil)
     }
 
+    /// Tools-tab status line, only for a valid result.
+    private var lastResultSummary: String? {
+        guard case .ok(let r)? = eval.outcome, r.lengthM.isFinite, r.volumeM3.isFinite else { return nil }
+        return "Last: \(ToolsParse.format(r.lengthM, decimals: 0)) m · \(ToolsParse.format(r.volumeM3, decimals: 1)) m³"
+    }
+
     var body: some View {
         ZStack {
             AppCanvas()
@@ -150,6 +156,10 @@ struct ChainLockerToolView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone()
+        .onDisappear {
+            // Save once, on leaving, only if a valid result is on screen (not per keystroke).
+            if let s = lastResultSummary { ToolLastResultStore().save(s, for: .chainLocker) }
+        }
     }
 
     @ViewBuilder

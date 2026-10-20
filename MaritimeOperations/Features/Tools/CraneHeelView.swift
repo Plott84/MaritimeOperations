@@ -34,6 +34,16 @@ struct CraneHeelView: View {
         _position = State(initialValue: position)
     }
 
+    /// Tools-tab status line, only for a valid result.
+    private var lastResultSummary: String? {
+        let s = CraneHeelPresentation(inputs: inputs)
+        guard s.result != nil, s.heelValueText != CraneHeelPresentation.dash else { return nil }
+        var line = "Last: heel \(s.heelValueText)°"
+        if let side = s.sideText, !side.isEmpty { line += " \(side)" }
+        if let b = s.ballast { line += " · ballast \(b.value) \(b.unit)" }
+        return line
+    }
+
     var body: some View {
         let state = CraneHeelPresentation(inputs: inputs)
         ZStack {
@@ -62,6 +72,10 @@ struct CraneHeelView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone()
+        .onDisappear {
+            // Save once, on leaving, only if a valid result is on screen (not per keystroke).
+            if let s = lastResultSummary { ToolLastResultStore().save(s, for: .craneHeel) }
+        }
     }
 
     // MARK: - 1. STATIC HEEL
