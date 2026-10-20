@@ -61,7 +61,7 @@ final class AnchorHandlingLogUITests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
         let card = app.descendants(matching: .any)["logBook_anchorHandling"]
         XCTAssertTrue(card.waitForExistence(timeout: 5))
-        XCTAssertEqual(card.value as? String, "1 rig moves")
+        XCTAssertEqual(card.value as? String, "1 rig move")
 
         // Reopen: values were saved on the Rig Move record.
         card.tap()

@@ -54,6 +54,7 @@ final class ToolsCompassUITests: XCTestCase {
         app.swipeUp()
         sleep(1)
         XCTAssertTrue(app.staticTexts["3.7° W"].exists)
+        XCTAssertTrue(app.staticTexts["046.8°T"].exists)
         snap(app, "04-compass-filled-result")
 
         app.navigationBars.buttons.element(boundBy: 0).tap()

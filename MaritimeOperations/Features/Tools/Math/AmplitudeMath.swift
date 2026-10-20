@@ -69,11 +69,30 @@ enum AmplitudeMath {
         return "\(mag) \(r > 0 ? "E" : "W")"
     }
 
-    /// "046.8°"
-    static func bearing(_ v: Double) -> String {
+    /// Rounded bearing 0..<360 to 0.1°.
+    static func bearingValue(_ v: Double) -> Double {
         var r = (v * 10).rounded() / 10
         if r >= 360 { r -= 360 }
-        return String(format: "%05.1f°", r)
+        if r < 0 { r += 360 }
+        return r
+    }
+
+    /// "046.8°" (no letter). Used in the Tools-tab status line.
+    static func bearing(_ v: Double) -> String {
+        String(format: "%05.1f°", bearingValue(v))
+    }
+
+    /// Bridge notation: "046.8°T" / "049.0°C".
+    static func bearing(_ v: Double, letter: String) -> String {
+        String(format: "%05.1f°%@", bearingValue(v), letter)
+    }
+
+    /// VoiceOver: "049 point 0 degrees compass" / "046 point 8 degrees true".
+    static func spokenBearing(_ v: Double, kind: String) -> String {
+        let r = bearingValue(v)
+        let whole = Int(r)
+        let tenths = Int(((r - Double(whole)) * 10).rounded())
+        return String(format: "%03d point %d degrees %@", whole, tenths, kind)
     }
 
     /// "E 43.2 N" (rising, north dec) / "W 12.0 S" (setting, south dec)

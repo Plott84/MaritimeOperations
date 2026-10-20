@@ -87,6 +87,7 @@ struct CompassErrorToolView: View {
             ToolNumberField(
                 title: "Compass bearing", text: $model.compass, placeholder: "049.0", unit: "°C",
                 isError: errorField == .compass, errorReason: errorReason,
+                accessibilityName: compassA11yLabel,
                 fieldAccessibilityIdentifier: "compassError.compass"
             )
             ToolNumberField(
@@ -153,10 +154,13 @@ struct CompassErrorToolView: View {
             if case .result(let r) = model.outcome {
                 ToolResultHero(caption: "compass error", value: AmplitudeMath.eastWest(r.error))
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Compass error \(spoken(r.error)). True bearing \(AmplitudeMath.bearing(r.trueBearing).replacingOccurrences(of: "°", with: "")) degrees.")
+                    .accessibilityLabel("Compass error \(spoken(r.error)). True bearing \(AmplitudeMath.spokenBearing(r.trueBearing, kind: "true")).")
                     .accessibilityIdentifier("compassError.hero")
                 ToolResultRow(title: "Amplitude", value: AmplitudeMath.amplitudeText(r.amplitude, event: model.event))
-                ToolResultRow(title: "True bearing", value: AmplitudeMath.bearing(r.trueBearing))
+                ToolResultRow(title: "True bearing", value: AmplitudeMath.bearing(r.trueBearing, letter: "T"))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("True bearing, \(AmplitudeMath.spokenBearing(r.trueBearing, kind: "true"))")
+                    .accessibilityIdentifier("compassError.trueBearing")
                 ToolResultRow(title: "Compass error", value: AmplitudeMath.eastWest(r.error))
                 if let d = r.deviation {
                     ToolResultRow(title: "Deviation", value: AmplitudeMath.eastWest(d))
@@ -174,6 +178,13 @@ struct CompassErrorToolView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var compassA11yLabel: String {
+        if let v = ToolsParse.double(model.compass), (0..<360).contains(v) {
+            return AmplitudeMath.spokenBearing(v, kind: "compass")
+        }
+        return "Compass bearing"
     }
 
     private func spoken(_ v: Double) -> String {

@@ -93,7 +93,10 @@ struct AmplitudeMathTests {
         #expect(CompassErrorModel.parseDM(degrees: "60", minutes: "", maxDegrees: 90) == .value(60))
         #expect(CompassErrorModel.parseDM(degrees: "", minutes: "", maxDegrees: 90) == .empty)
         #expect(CompassErrorModel.dmText(20.255, "N") == "20°15.3′ N")
-        #expect(CompassErrorModel.dmText(59.99999, "S") == "60°00.0′ S")
+        // Floor to 0.1′: 20°59.96′ must stay 20°59.9′, never round up to 21°00.0′.
+        #expect(CompassErrorModel.dmText(20 + 59.96 / 60, "N") == "20°59.9′ N")
+        #expect(CompassErrorModel.dmText(20 + 59.94 / 60, "S") == "20°59.9′ S")
+        #expect(CompassErrorModel.dmText(20 + 59.0 / 60, "N") == "20°59.0′ N")
     }
 
     @Test func dmBounds() {
@@ -140,5 +143,12 @@ struct AmplitudeMathTests {
         #expect(m.outcome == .polar)
         // just inside the limit still gives a bearing
         #expect(AmplitudeMath.amplitude(latitude: 66, declination: 23.5) != nil)
+    }
+
+    @Test func bridgeBearingNotation() {
+        #expect(AmplitudeMath.bearing(46.8, letter: "T") == "046.8°T")
+        #expect(AmplitudeMath.bearing(49.0, letter: "C") == "049.0°C")
+        #expect(AmplitudeMath.spokenBearing(49.0, kind: "compass") == "049 point 0 degrees compass")
+        #expect(AmplitudeMath.spokenBearing(46.8, kind: "true") == "046 point 8 degrees true")
     }
 }

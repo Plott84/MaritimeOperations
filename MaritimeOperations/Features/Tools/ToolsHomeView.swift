@@ -3,6 +3,7 @@ import SwiftUI
 /// Tools tab home — grouped list (DP & NAV · DECK CALCS · REFERENCE).
 /// Each row shows a one-line status from the tool's last valid result on this device.
 struct ToolsHomeView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var statuses: [ToolTile.Kind: String] = [:]
     @State private var portCountText: String?
     private let store = ToolLastResultStore()
@@ -49,21 +50,28 @@ struct ToolsHomeView: View {
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .padding(.leading, 4)
                                 .accessibilityAddTraits(.isHeader)
-                            GlassCard(padding: 0) {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(section.tools.enumerated()), id: \.element.id) { index, tool in
-                                        if index > 0 {
-                                            Divider().overlay(AppTheme.cardBorder).padding(.leading, 62)
-                                        }
-                                        NavigationLink {
-                                            destination(for: tool.kind)
-                                        } label: {
-                                            row(tool)
-                                        }
-                                        .buttonStyle(.plain)
+                            // Solid navy card (spec #1B2327 + 1px #3A474D, 20 pt). Glass stays on the tab bar only.
+                            VStack(spacing: 0) {
+                                ForEach(Array(section.tools.enumerated()), id: \.element.id) { index, tool in
+                                    if index > 0 {
+                                        Divider().overlay(AppTheme.cardBorder).padding(.leading, 62)
                                     }
+                                    NavigationLink {
+                                        destination(for: tool.kind)
+                                    } label: {
+                                        row(tool)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
+                            .background(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(AppTheme.card)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .strokeBorder(AppTheme.cardBorder, lineWidth: 1)
+                            )
                         }
                     }
                     Text("Subtitles show your last inputs on this device only.")
@@ -152,7 +160,7 @@ struct ToolsHomeView: View {
                     .italic(st.isEmpty)
                     .monospacedDigit()
                     .foregroundStyle(AppTheme.textSecondary)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .truncationMode(.tail)
                     .accessibilityIdentifier("toolStatus.\(tool.kind.rawValue)")
             }

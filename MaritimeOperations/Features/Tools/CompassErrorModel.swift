@@ -64,9 +64,12 @@ final class CompassErrorModel {
         return .value(total)
     }
 
-    /// "20°15.3′ N"
+    /// "20°15.3′ N". Minutes are floored to 0.1′ so 20°59.96′ shows as 20°59.9′, never 21°00.0′.
     static func dmText(_ v: Double, _ hemi: String) -> String {
-        var tenths = (abs(v) * 600).rounded()
+        let totalTenths = abs(v) * 600  // tenths of a minute
+        // Floor (with a tiny epsilon so exact tenths stay exact), never round up into the next degree.
+        var tenths = (totalTenths + 1e-9).rounded(.down)
+        if tenths < 0 { tenths = 0 }
         let deg = Int(tenths / 600)
         tenths -= Double(deg) * 600
         return String(format: "%d°%04.1f′ ", deg, tenths / 10) + hemi
