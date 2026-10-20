@@ -126,4 +126,19 @@ struct AmplitudeMathTests {
         if case .invalid(let f, _) = m.outcome { #expect(f == .declination) } else { Issue.record("expected invalid") }
         #expect(m.declinationEcho == nil)
     }
+
+    @Test func polarAtOrBeyondLimit() {
+        // 70°N, dec 20°N: |lat| + dec = 90 → polar
+        #expect(AmplitudeMath.amplitude(latitude: 70, declination: 20) == nil)
+        // 66°30′ + 23°30′ = 90 → |sin A| = 1 exactly → polar, not a bearing
+        #expect(AmplitudeMath.amplitude(latitude: 66.5, declination: 23.5) == nil)
+        #expect(AmplitudeMath.trueBearing(latitude: -66.5, declination: -23.5, event: .setting) == nil)
+        let m = CompassErrorModel()
+        m.latDeg = "66"; m.latMin = "30"; m.decDeg = "23"; m.decMin = "30"; m.compass = "10"
+        #expect(m.outcome == .polar)   // a state, not a field error (23°30′ cap still valid)
+        m.latDeg = "70"; m.latMin = ""; m.decDeg = "20"; m.decMin = ""
+        #expect(m.outcome == .polar)
+        // just inside the limit still gives a bearing
+        #expect(AmplitudeMath.amplitude(latitude: 66, declination: 23.5) != nil)
+    }
 }

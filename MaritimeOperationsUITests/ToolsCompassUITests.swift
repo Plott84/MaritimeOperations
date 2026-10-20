@@ -41,6 +41,7 @@ final class ToolsCompassUITests: XCTestCase {
 
         app.descendants(matching: .any)["toolTile.compassError"].tap()
         XCTAssertTrue(app.navigationBars["Compass error"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["compassError.subtitle"].exists)
         snap(app, "02-compass-empty")
 
         type(app, "compassError.latitude.deg", "60")
@@ -71,6 +72,7 @@ final class ToolsCompassUITests: XCTestCase {
         type(app, "compassError.compass", "49")
         XCTAssertTrue(app.descendants(matching: .any)["compassError.polar"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.staticTexts["compass error"].exists)
+        XCTAssertTrue(app.staticTexts["Sun doesn't rise or set here"].exists || app.descendants(matching: .any)["compassError.polar"].label.contains("Sun doesn't rise or set here"))
         app.swipeUp()
         sleep(1)
         snap(app, "06-compass-polar")

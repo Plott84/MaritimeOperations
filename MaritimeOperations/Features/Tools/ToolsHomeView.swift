@@ -17,7 +17,7 @@ struct ToolsHomeView: View {
         .init(title: "DP & NAV", tools: [
             .init(kind: .gyro, title: "Gyro check", hint: "Transit, sun azimuth, amplitude",
                   systemImage: "location.north.line"),
-            .init(kind: .compassError, title: "Compass error", hint: "Compass error and deviation from the sun's amplitude",
+            .init(kind: .compassError, title: "Compass error", hint: "Sun amplitude",
                   systemImage: "safari")
         ]),
         .init(title: "DECK CALCS", tools: [

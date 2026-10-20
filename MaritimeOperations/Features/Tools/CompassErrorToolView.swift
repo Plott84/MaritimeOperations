@@ -14,6 +14,11 @@ struct CompassErrorToolView: View {
             AppCanvas()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    Text("Sun amplitude")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("compassError.subtitle")
                     GlassCard { observation }
                     resultSection
                     GlassCard {
@@ -121,7 +126,7 @@ struct CompassErrorToolView: View {
                     .font(.caption.weight(.bold))
                     .tracking(1.1)
                     .foregroundStyle(AppTheme.gold)
-                Text("Sun doesn't rise or set at this latitude and declination.")
+                Text("Sun doesn't rise or set here")
                     .font(.body.weight(.semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)

@@ -13,14 +13,15 @@ enum AmplitudeMath {
     private static func deg(_ r: Double) -> Double { r * 180 / .pi }
 
     /// Signed amplitude in degrees (+ = north of E/W, − = south).
-    /// sin A = sin dec / cos lat. `nil` when |sin A| > 1 (sun doesn't rise or set),
+    /// sin A = sin dec / cos lat. `nil` when |sin A| ≥ 1 (sun doesn't rise or set),
     /// at the pole, or for non-finite input.
     static func amplitude(latitude: Double, declination: Double) -> Double? {
         guard latitude.isFinite, declination.isFinite, abs(latitude) < 90, abs(declination) <= 90 else { return nil }
         let c = cos(rad(latitude))
         guard c > 1e-12 else { return nil }
         let s = sin(rad(declination)) / c
-        guard s.isFinite, abs(s) <= 1 else { return nil }
+        // |sin A| ≥ 1 (incl. exactly 1, e.g. 66°30′ N + 23°30′ N) → sun doesn't rise or set: polar.
+        guard s.isFinite, abs(s) < 1 - 1e-12 else { return nil }
         let a = deg(asin(s))
         return a.isFinite ? a : nil
     }
