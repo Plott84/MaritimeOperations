@@ -48,6 +48,12 @@ struct CatenaryToolView: View {
         return (.h, reason)
     }
 
+    /// Tools-tab status line, only for a valid result.
+    private var lastResultSummary: String? {
+        guard let r = okResult, let S = ToolsParse.double(sText), r.sag.isFinite else { return nil }
+        return "Last: \(ToolsParse.format(S, decimals: 0)) m wire · sag \(ToolsParse.format(r.sag, decimals: 1)) m"
+    }
+
     var body: some View {
         ZStack {
             AppCanvas()
@@ -116,6 +122,10 @@ struct CatenaryToolView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone()
+        .onDisappear {
+            // Save once, on leaving, only if a valid result is on screen (not per keystroke).
+            if let s = lastResultSummary { ToolLastResultStore().save(s, for: .catenary) }
+        }
     }
 
     @ViewBuilder

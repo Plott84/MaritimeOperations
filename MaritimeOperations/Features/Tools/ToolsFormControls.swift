@@ -167,3 +167,83 @@ extension View {
     }
 }
 
+
+// MARK: - Degrees + minutes
+
+/// Whole-degrees field + minutes field (same look as the Gyro check's deg/min row),
+/// a hemisphere segment, optional quiet echo line ("= 20°15.3′ N") and inline error.
+struct ToolDegMinInput<Hemi: Hashable>: View {
+    let title: String
+    @Binding var degrees: String
+    @Binding var minutes: String
+    @Binding var hemisphere: Hemi
+    let hemispheres: [(Hemi, String)]
+    let hemisphereLabel: String
+    var echo: String? = nil
+    var errorReason: String? = nil
+    var identifier: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .tracking(0.6)
+                .foregroundStyle(errorReason != nil ? AppTheme.danger : AppTheme.textSecondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { degField; minField }
+                VStack(alignment: .leading, spacing: 8) { degField; minField }
+            }
+            Picker(hemisphereLabel, selection: $hemisphere) {
+                ForEach(hemispheres, id: \.0) { Text($0.1).tag($0.0) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel(hemisphereLabel)
+            .accessibilityIdentifier("\(identifier).hemisphere")
+            if let errorReason {
+                Text(errorReason)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("\(identifier).error")
+            } else if let echo {
+                Text(echo)
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .accessibilityLabel("\(title) \(echo.replacingOccurrences(of: "= ", with: ""))")
+                    .accessibilityIdentifier("\(identifier).echo")
+            }
+        }
+    }
+
+    private var degField: some View {
+        box(TextField("deg", text: $degrees, prompt: Text("deg").foregroundStyle(AppTheme.textSecondary))
+                .keyboardType(.numberPad)
+                .accessibilityLabel("\(title) degrees")
+                .accessibilityIdentifier("\(identifier).deg"),
+            unit: "°")
+    }
+
+    private var minField: some View {
+        box(TextField("min", text: $minutes, prompt: Text("min").foregroundStyle(AppTheme.textSecondary))
+                .keyboardType(.decimalPad)
+                .accessibilityLabel("\(title) minutes")
+                .accessibilityIdentifier("\(identifier).min"),
+            unit: "′")
+    }
+
+    private func box(_ field: some View, unit: String) -> some View {
+        HStack(spacing: 4) {
+            field
+                .textFieldStyle(.plain)
+                .foregroundStyle(AppTheme.textPrimary)
+                .padding(12)
+                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(errorReason != nil ? AppTheme.danger : AppTheme.fieldBorder,
+                                      lineWidth: errorReason != nil ? 1.5 : 1)
+                }
+            Text(unit).foregroundStyle(AppTheme.textSecondary)
+        }
+    }
+}

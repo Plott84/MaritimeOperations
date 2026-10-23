@@ -1,64 +1,83 @@
 import SwiftUI
 
-/// Tools tab home — two-column grid of live desk tools.
+/// Tools tab home — grouped list (DP & NAV · DECK CALCS · REFERENCE).
+/// Each row shows a one-line status from the tool's last valid result on this device.
 struct ToolsHomeView: View {
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var statuses: [ToolTile.Kind: String] = [:]
+    @State private var portCountText: String?
+    private let store = ToolLastResultStore()
 
-    private let tools: [ToolTile] = [
-        .init(
-            kind: .catenary,
-            title: "Catenary",
-            subtitle: "Free-hang span and sag",
-            systemImage: "point.topleft.down.curvedto.point.bottomright.up"
-        ),
-        .init(
-            kind: .winch,
-            title: "Winch capacity",
-            subtitle: "Drum length and layers",
-            systemImage: "cylinder.split.1x2"
-        ),
-        .init(
-            kind: .gyro,
-            title: "Gyro check",
-            subtitle: "Transit, sun azimuth, amplitude",
-            systemImage: "location.north.line"
-        ),
-        .init(
-            kind: .chainLocker,
-            title: "Chain locker",
-            subtitle: "Stowage volume and length",
-            systemImage: "link"
-        ),
-        .init(
-            kind: .craneHeel,
-            title: "Crane heel",
-            subtitle: "Static heel and ballast to level",
-            systemImage: "ferry"
-        ),
-        .init(
-            kind: .portUnlocode,
-            title: "Port UN/LOCODE",
-            subtitle: "Offline UNECE port codes",
-            systemImage: "mappin.and.ellipse"
-        )
+    private struct Section: Identifiable {
+        let title: String
+        let tools: [ToolTile]
+        var id: String { title }
+    }
+
+    private let sections: [Section] = [
+        .init(title: "DP & NAV", tools: [
+            .init(kind: .gyro, title: "Gyro check", hint: "Transit, sun azimuth, amplitude",
+                  systemImage: "location.north.line"),
+            .init(kind: .compassError, title: "Compass error", hint: "Sun amplitude",
+                  systemImage: "safari")
+        ]),
+        .init(title: "DECK CALCS", tools: [
+            .init(kind: .catenary, title: "Catenary", hint: "Free-hang span and sag",
+                  systemImage: "point.topleft.down.curvedto.point.bottomright.up"),
+            .init(kind: .winch, title: "Winch capacity", hint: "Drum length and layers",
+                  systemImage: "cylinder.split.1x2"),
+            .init(kind: .chainLocker, title: "Chain locker", hint: "Stowage volume and length",
+                  systemImage: "link"),
+            .init(kind: .craneHeel, title: "Crane heel", hint: "Static heel and ballast to level",
+                  systemImage: "ferry")
+        ]),
+        .init(title: "REFERENCE", tools: [
+            .init(kind: .portUnlocode, title: "Port UN/LOCODE", hint: "Offline UNECE port codes",
+                  systemImage: "mappin.and.ellipse")
+        ])
     ]
 
     var body: some View {
         ZStack {
             AppCanvas()
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(tools) { tool in
-                        NavigationLink {
-                            destination(for: tool.kind)
-                        } label: {
-                            tile(tool)
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(sections) { section in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(section.title)
+                                .font(.caption.weight(.semibold))
+                                .tracking(1.0)
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .padding(.leading, 4)
+                                .accessibilityAddTraits(.isHeader)
+                            // Solid navy card (spec #1B2327 + 1px #3A474D, 20 pt). Glass stays on the tab bar only.
+                            VStack(spacing: 0) {
+                                ForEach(Array(section.tools.enumerated()), id: \.element.id) { index, tool in
+                                    if index > 0 {
+                                        Divider().overlay(AppTheme.cardBorder).padding(.leading, 62)
+                                    }
+                                    NavigationLink {
+                                        destination(for: tool.kind)
+                                    } label: {
+                                        row(tool)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(AppTheme.card)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .strokeBorder(AppTheme.cardBorder, lineWidth: 1)
+                            )
                         }
-                        .buttonStyle(.plain)
                     }
+                    Text("Subtitles show your last inputs on this device only.")
+                        .font(.footnote)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .padding(.horizontal, 4)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -68,6 +87,46 @@ struct ToolsHomeView: View {
         .navigationTitle("Tools")
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
+        .onAppear(perform: reloadStatuses)
+        .onReceive(NotificationCenter.default.publisher(for: ToolLastResultStore.didChange)) { _ in reloadStatuses() }
+        .task { await loadPortCount() }
+    }
+
+    private func reloadStatuses() {
+        var s: [ToolTile.Kind: String] = [:]
+        for tool in sections.flatMap(\.tools) {
+            guard let k = tool.kind.lastResultKind else { continue }
+            if k == .portUnlocode {
+                if store.load(for: k) != nil { s[tool.kind] = "searched" }
+            } else {
+                s[tool.kind] = store.status(for: k)
+            }
+        }
+        statuses = s
+    }
+
+    private func loadPortCount() async {
+        guard portCountText == nil else { return }
+        let count = await Task.detached(priority: .utility) {
+            (try? PortUnlocodeCatalog.loadBundled())?.count
+        }.value
+        if let count { portCountText = ToolsHomeView.portCountLine(count) }
+    }
+
+    /// 17_612 → "17.6k ports offline"
+    static func portCountLine(_ count: Int) -> String {
+        if count < 1000 { return "\(count) ports offline" }
+        return String(format: "%.1fk ports offline", Double(count) / 1000)
+    }
+
+    private func status(for tool: ToolTile) -> (text: String, isEmpty: Bool) {
+        if tool.kind == .portUnlocode {
+            // Spec: never empty. "17.6k ports offline · no searches yet" until the first search.
+            guard let count = portCountText else { return ("Offline UNECE port codes", false) }
+            return (statuses[.portUnlocode] == nil ? "\(count) · no searches yet" : count, false)
+        }
+        let s = statuses[tool.kind] ?? ToolLastResultStore.notUsed
+        return (s, s == ToolLastResultStore.notUsed)
     }
 
     @ViewBuilder
@@ -76,45 +135,60 @@ struct ToolsHomeView: View {
         case .catenary: CatenaryToolView()
         case .winch: WinchCapacityToolView()
         case .gyro: GyroCheckToolView()
+        case .compassError: CompassErrorToolView()
         case .chainLocker: ChainLockerToolView()
         case .craneHeel: CraneHeelView()
         case .portUnlocode: PortUnlocodeToolView()
         }
     }
 
-    private func tile(_ tool: ToolTile) -> some View {
-        GlassCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                Image(systemName: tool.systemImage)
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(AppTheme.teal)
-                    .frame(width: 36, height: 36)
-                    .background(Circle().fill(AppTheme.surface))
-                    .overlay(Circle().strokeBorder(AppTheme.cardBorder, lineWidth: 1))
+    private func row(_ tool: ToolTile) -> some View {
+        let st = status(for: tool)
+        return HStack(alignment: .center, spacing: 12) {
+            Image(systemName: tool.systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(AppTheme.teal)
+                .frame(width: 34, height: 34)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(AppTheme.surface))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(tool.title)
-                    .font(.headline)
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(AppTheme.textPrimary)
-                    .multilineTextAlignment(.leading)
-                Text(tool.subtitle)
-                    .font(.caption)
+                Text(st.text)
+                    .font(.subheadline)
+                    .italic(st.isEmpty)
+                    .monospacedDigit()
                     .foregroundStyle(AppTheme.textSecondary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .truncationMode(.tail)
+                    .accessibilityIdentifier("toolStatus.\(tool.kind.rawValue)")
             }
-            .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(AppTheme.textSecondary)
+                .accessibilityHidden(true)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(minHeight: 58)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(tool.title). \(tool.subtitle)")
+        .accessibilityLabel("\(tool.title), \(st.text)")
+        .accessibilityHint(tool.hint)
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
     }
 }
 
 private struct ToolTile: Identifiable {
-    enum Kind: String { case catenary, winch, gyro, chainLocker, craneHeel, portUnlocode }
+    enum Kind: String { case gyro, compassError, catenary, winch, chainLocker, craneHeel, portUnlocode
+        var lastResultKind: ToolLastResultKind? { ToolLastResultKind(rawValue: rawValue) }
+    }
     var id: String { kind.rawValue }
     let kind: Kind
     let title: String
-    let subtitle: String
+    let hint: String
     let systemImage: String
 }
