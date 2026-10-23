@@ -35,6 +35,19 @@ final class ToolsCompassUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["DP & NAV"].exists)
         XCTAssertTrue(app.staticTexts["DECK CALCS"].exists)
         XCTAssertTrue(app.staticTexts["REFERENCE"].exists)
+        let blurbs = [
+            "gyro": "Transit, sun azimuth, amplitude",
+            "compassError": "Sun amplitude · °C / °T",
+            "catenary": "Free-hang span and sag",
+            "winch": "Drum length and layers",
+            "chainLocker": "Stowage volume and length",
+            "craneHeel": "Static heel and ballast to level"
+        ]
+        for (kind, blurb) in blurbs {
+            let tile = app.descendants(matching: .any)["toolTile.\(kind)"]
+            XCTAssertTrue(tile.label.contains(blurb), tile.label)
+            XCTAssertFalse(tile.label.contains("Not used yet"), tile.label)
+        }
         sleep(1)
         XCTAssertTrue(app.descendants(matching: .any)["toolTile.portUnlocode"].label.contains("no searches yet"))
         snap(app, "01-tools-grouped-fresh")

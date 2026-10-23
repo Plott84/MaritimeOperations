@@ -13,6 +13,7 @@ struct ToolLastResult: Codable, Equatable, Sendable {
 }
 
 struct ToolLastResultStore {
+    /// Sentinel when nothing is saved. The Tools list shows a per-tool blurb instead of this string.
     static let notUsed = "Not used yet"
     static let keyPrefix = "toolLastResult."
     /// Posted after a save so the Tools tab can refresh (a tool's onDisappear can run after the list's onAppear).
