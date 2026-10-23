@@ -38,6 +38,34 @@ struct ToolLastResultTests {
         #expect(store.status(for: .catenary) == "Not used yet")
     }
 
+    @Test func homeRowShowsBlurbUntilAResultExists() {
+        let blurb = "Free-hang span and sag"
+        let empty = ToolsHomeView.rowSubtitle(stored: nil, blurb: blurb)
+        #expect(empty.text == blurb)
+        #expect(empty.isEmpty)
+        let sentinel = ToolsHomeView.rowSubtitle(stored: ToolLastResultStore.notUsed, blurb: blurb)
+        #expect(sentinel.text == blurb)
+        #expect(sentinel.isEmpty)
+        let used = ToolsHomeView.rowSubtitle(stored: "Last: 600 m wire · sag 41.3 m", blurb: blurb)
+        #expect(used.text == "Last: 600 m wire · sag 41.3 m")
+        #expect(!used.isEmpty)
+    }
+
+    @Test func emptyBlurbsMatchHomeCopyAndSkipPort() {
+        #expect(ToolsHomeView.emptyBlurb(for: .gyro) == "Transit, sun azimuth, amplitude")
+        #expect(ToolsHomeView.emptyBlurb(for: .compassError) == "Sun amplitude · °C / °T")
+        #expect(ToolsHomeView.emptyBlurb(for: .catenary) == "Free-hang span and sag")
+        #expect(ToolsHomeView.emptyBlurb(for: .winch) == "Drum length and layers")
+        #expect(ToolsHomeView.emptyBlurb(for: .chainLocker) == "Stowage volume and length")
+        #expect(ToolsHomeView.emptyBlurb(for: .craneHeel) == "Static heel and ballast to level")
+        #expect(ToolsHomeView.emptyBlurb(for: .portUnlocode) == nil)
+        for kind in ToolLastResultKind.allCases where kind != .portUnlocode {
+            let blurb = ToolsHomeView.emptyBlurb(for: kind)
+            #expect(blurb != nil)
+            #expect(blurb != ToolLastResultStore.notUsed)
+        }
+    }
+
     @Test func gyroSummaryFormat() {
         var c = DateComponents(); c.year = 2026; c.month = 10; c.day = 14; c.hour = 12
         let date = Calendar(identifier: .gregorian).date(from: c)!

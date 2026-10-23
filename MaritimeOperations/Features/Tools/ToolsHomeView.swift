@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Tools tab home — grouped list (DP & NAV · DECK CALCS · REFERENCE).
-/// Each row shows a one-line status from the tool's last valid result on this device.
+/// Until a tool has a saved result on this device, its row shows a one-line blurb.
+/// After that, the last-input status line replaces the blurb. Port keeps its own count line.
 struct ToolsHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var statuses: [ToolTile.Kind: String] = [:]
@@ -16,19 +17,19 @@ struct ToolsHomeView: View {
 
     private let sections: [Section] = [
         .init(title: "DP & NAV", tools: [
-            .init(kind: .gyro, title: "Gyro check", hint: "Transit, sun azimuth, amplitude",
+            .init(kind: .gyro, title: "Gyro check", hint: Self.blurb(.gyro),
                   systemImage: "location.north.line"),
-            .init(kind: .compassError, title: "Compass error", hint: "Sun amplitude",
+            .init(kind: .compassError, title: "Compass error", hint: Self.blurb(.compassError),
                   systemImage: "safari")
         ]),
         .init(title: "DECK CALCS", tools: [
-            .init(kind: .catenary, title: "Catenary", hint: "Free-hang span and sag",
+            .init(kind: .catenary, title: "Catenary", hint: Self.blurb(.catenary),
                   systemImage: "point.topleft.down.curvedto.point.bottomright.up"),
-            .init(kind: .winch, title: "Winch capacity", hint: "Drum length and layers",
+            .init(kind: .winch, title: "Winch capacity", hint: Self.blurb(.winch),
                   systemImage: "cylinder.split.1x2"),
-            .init(kind: .chainLocker, title: "Chain locker", hint: "Stowage volume and length",
+            .init(kind: .chainLocker, title: "Chain locker", hint: Self.blurb(.chainLocker),
                   systemImage: "link"),
-            .init(kind: .craneHeel, title: "Crane heel", hint: "Static heel and ballast to level",
+            .init(kind: .craneHeel, title: "Crane heel", hint: Self.blurb(.craneHeel),
                   systemImage: "ferry")
         ]),
         .init(title: "REFERENCE", tools: [
@@ -119,14 +120,39 @@ struct ToolsHomeView: View {
         return String(format: "%.1fk ports offline", Double(count) / 1000)
     }
 
+    /// Empty-row copy. Port has no blurb — that row uses the offline count line.
+    static func emptyBlurb(for kind: ToolLastResultKind) -> String? {
+        switch kind {
+        case .gyro: return "Transit, sun azimuth, amplitude"
+        case .compassError: return "Sun amplitude · °C / °T"
+        case .catenary: return "Free-hang span and sag"
+        case .winch: return "Drum length and layers"
+        case .chainLocker: return "Stowage volume and length"
+        case .craneHeel: return "Static heel and ballast to level"
+        case .portUnlocode: return nil
+        }
+    }
+
+    private static func blurb(_ kind: ToolLastResultKind) -> String {
+        emptyBlurb(for: kind) ?? ""
+    }
+
+    /// Calculation-tool subtitle. A missing or `notUsed` store value shows `blurb`; a saved summary wins.
+    static func rowSubtitle(stored: String?, blurb: String) -> (text: String, isEmpty: Bool) {
+        let s = stored ?? ToolLastResultStore.notUsed
+        if s == ToolLastResultStore.notUsed {
+            return (blurb, true)
+        }
+        return (s, false)
+    }
+
     private func status(for tool: ToolTile) -> (text: String, isEmpty: Bool) {
         if tool.kind == .portUnlocode {
             // Spec: never empty. "17.6k ports offline · no searches yet" until the first search.
             guard let count = portCountText else { return ("Offline UNECE port codes", false) }
             return (statuses[.portUnlocode] == nil ? "\(count) · no searches yet" : count, false)
         }
-        let s = statuses[tool.kind] ?? ToolLastResultStore.notUsed
-        return (s, s == ToolLastResultStore.notUsed)
+        return Self.rowSubtitle(stored: statuses[tool.kind], blurb: tool.hint)
     }
 
     @ViewBuilder
@@ -176,7 +202,8 @@ struct ToolsHomeView: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(tool.title), \(st.text)")
-        .accessibilityHint(tool.hint)
+        // Empty rows already speak the blurb as the visible subtitle. A last-result row keeps the blurb as the hint.
+        .accessibilityHint(st.isEmpty ? "" : tool.hint)
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
     }
