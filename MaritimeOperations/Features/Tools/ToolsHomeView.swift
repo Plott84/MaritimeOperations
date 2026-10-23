@@ -183,7 +183,6 @@ struct ToolsHomeView: View {
                     .foregroundStyle(AppTheme.textPrimary)
                 Text(st.text)
                     .font(.subheadline)
-                    .italic(st.isEmpty)
                     .monospacedDigit()
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
