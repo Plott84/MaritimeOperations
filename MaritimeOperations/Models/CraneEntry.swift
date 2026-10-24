@@ -24,6 +24,11 @@ final class CraneEntry {
     var fieldArea: String? = nil
     /// Own time at the controls, typed by hand. Not the shift length.
     var hoursOperated: Double? = nil
+    /// Driver's nominal estimate in tonnes, from the preset list or Other (one decimal).
+    /// Nil when left empty. Not a vessel lift plan, load chart, or certificate.
+    var liftWeightTonnes: Double? = nil
+    /// How far the crane wire was paid out, in metres. Nil when left empty.
+    var wireOutMetres: Double? = nil
     /// CraneLiftType raw values joined with "|". Nil = none picked.
     var liftTypesRaw: String? = nil
     /// CraneDayNight raw value.

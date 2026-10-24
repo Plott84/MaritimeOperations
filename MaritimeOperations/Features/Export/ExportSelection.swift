@@ -256,6 +256,7 @@ enum ExportAggregator {
             rovEntries: rovRows.count,
             rovHours: rovRows.reduce(0) { $0 + ($1.pilotingHours ?? 0) },
             craneEntries: craneRows.count,
+            // Hours operated only. Lift weight and wire out stay on the Crane entry.
             craneHours: craneRows.reduce(0) { $0 + ($1.hoursOperated ?? 0) }
         )
     }

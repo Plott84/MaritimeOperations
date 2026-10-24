@@ -182,6 +182,98 @@ final class ROVCraneLogUITests: XCTestCase {
         XCTAssertEqual(app.textFields["craneWind"].value as? String, "9")
     }
 
+    /// CR-W1…W4: both fields optional; a preset and wire show on the row; Other… stores one decimal.
+    func testCraneLiftWeightAndWireOut() throws {
+        let app = XCUIApplication.launchedClean()
+        app.openLogBook(.crane)
+        app.buttons["navAddCraneEntry"].tap()
+        XCTAssertTrue(app.navigationBars["New crane entry"].waitForExistence(timeout: 5))
+
+        let weight = app.buttons["craneLiftWeight"]
+        weight.swipeUpUntilHittable(in: app)
+        XCTAssertTrue(weight.waitForExistence(timeout: 5))
+        XCTAssertEqual(weight.value as? String, "Not set")
+        XCTAssertEqual(
+            app.staticTexts["craneLiftWeightCaption"].label,
+            "Optional. Nominal from the list \u{2014} your estimate, not the lift plan."
+        )
+
+        let wire = app.textFields["craneWireOut"]
+        wire.swipeUpUntilHittable(in: app)
+        XCTAssertTrue(wire.waitForExistence(timeout: 3))
+        XCTAssertEqual(
+            app.staticTexts["craneWireOutCaption"].label,
+            "Optional. How far the crane wire was paid out."
+        )
+
+        app.buttons["craneSave"].tap()
+        XCTAssertFalse(app.navigationBars["New crane entry"].waitForExistence(timeout: 3))
+        let emptyRow = app.bookRow(containing: "Crane entry")
+        XCTAssertTrue(emptyRow.waitForExistence(timeout: 6))
+        XCTAssertFalse(emptyRow.label.contains("tonne"), emptyRow.label)
+        XCTAssertFalse(emptyRow.label.contains("metre"), emptyRow.label)
+
+        emptyRow.tap()
+        XCTAssertTrue(app.navigationBars["Edit crane entry"].waitForExistence(timeout: 5))
+        let editWeight = app.buttons["craneLiftWeight"]
+        editWeight.swipeUpUntilHittable(in: app)
+        XCTAssertEqual(editWeight.value as? String, "Not set")
+        editWeight.tap()
+
+        let ten = app.buttons["craneLiftWeight_10"]
+        XCTAssertTrue(ten.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["craneLiftWeight_2"].exists)
+        XCTAssertTrue(app.buttons["craneLiftWeight_50"].exists)
+        XCTAssertTrue(app.buttons["craneLiftWeight_other"].exists)
+        ten.tap()
+        XCTAssertTrue(ten.waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["craneLiftWeight"].value as? String, "10 tonnes")
+
+        let wireField = app.textFields["craneWireOut"]
+        wireField.swipeUpUntilHittable(in: app)
+        wireField.tap()
+        wireField.typeText("85")
+        app.buttons["craneKeyboardDone"].tap()
+        app.buttons["craneSave"].tap()
+        XCTAssertFalse(app.navigationBars["Edit crane entry"].waitForExistence(timeout: 3))
+
+        let saved = app.bookRow(containing: "10 tonnes")
+        XCTAssertTrue(saved.waitForExistence(timeout: 6))
+        XCTAssertTrue(saved.label.contains("85 metres"), saved.label)
+
+        saved.tap()
+        XCTAssertTrue(app.navigationBars["Edit crane entry"].waitForExistence(timeout: 5))
+        let again = app.buttons["craneLiftWeight"]
+        again.swipeUpUntilHittable(in: app)
+        XCTAssertEqual(again.value as? String, "10 tonnes")
+        let wireAgain = app.textFields["craneWireOut"]
+        wireAgain.swipeUpUntilHittable(in: app)
+        XCTAssertTrue((wireAgain.value as? String)?.contains("85") == true, wireAgain.debugDescription)
+
+        again.tap()
+        let other = app.buttons["craneLiftWeight_other"]
+        XCTAssertTrue(other.waitForExistence(timeout: 5))
+        other.tap()
+        let otherField = app.textFields["craneLiftWeightOther"]
+        XCTAssertTrue(otherField.waitForExistence(timeout: 3))
+        otherField.swipeUpUntilHittable(in: app)
+        otherField.tap()
+        otherField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4))
+        otherField.typeText(dec("12.5"))
+        app.buttons["craneLiftWeightKeyboardDone"].tap()
+        let liftBar = app.navigationBars["Lift weight"]
+        XCTAssertTrue(liftBar.waitForExistence(timeout: 3))
+        liftBar.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["craneLiftWeight_other"].waitForNonExistence(timeout: 5))
+
+        XCTAssertEqual(app.buttons["craneLiftWeight"].value as? String, "\(dec("12.5")) tonnes")
+        app.buttons["craneSave"].tap()
+        XCTAssertFalse(app.navigationBars["Edit crane entry"].waitForExistence(timeout: 3))
+        let otherRow = app.bookRow(containing: "\(dec("12.5")) tonnes")
+        XCTAssertTrue(otherRow.waitForExistence(timeout: 6), otherRow.exists ? otherRow.label : "row missing")
+        XCTAssertTrue(otherRow.label.contains("85 metres"), otherRow.label)
+    }
+
     // MARK: Prefill and validation
 
     /// A new ROV entry takes the vessel of the newest entry in any book (here a Crane entry);
