@@ -27,6 +27,11 @@ struct AddCraneEntryView: View {
     @State private var fieldArea: String
     @State private var hoursText: String
     @State private var liftTypes: Set<CraneLiftType>
+    @State private var liftWeightTonnes: Double?
+    @State private var liftWeightIsOther: Bool
+    @State private var liftWeightOtherText: String
+    @State private var wireOutText: String
+    @State private var showLiftWeights: Bool
     @State private var craneMode: CraneMode?
     @State private var dayNight: CraneDayNight?
     @State private var windText: String
@@ -51,6 +56,14 @@ struct AddCraneEntryView: View {
         _fieldArea = State(initialValue: existing?.fieldArea ?? "")
         _hoursText = State(initialValue: LogNumber.text(existing?.hoursOperated))
         _liftTypes = State(initialValue: existing?.liftTypes ?? [])
+        let weight = CraneLiftWeight.editing(storedTonnes: existing?.liftWeightTonnes)
+        _liftWeightTonnes = State(initialValue: weight.preset)
+        _liftWeightIsOther = State(initialValue: weight.isOther)
+        _liftWeightOtherText = State(initialValue: weight.otherText)
+        _wireOutText = State(initialValue: existing?.wireOutMetres.map {
+            CraneLiftWeight.amount($0, fractionDigits: 2)
+        } ?? "")
+        _showLiftWeights = State(initialValue: false)
         _craneMode = State(initialValue: existing?.craneMode)
         _dayNight = State(initialValue: existing?.dayNight)
         _windText = State(initialValue: LogNumber.text(existing?.windMS))
@@ -103,6 +116,13 @@ struct AddCraneEntryView: View {
                 }
             }
             .onAppear(perform: prefillVessel)
+            .navigationDestination(isPresented: $showLiftWeights) {
+                CraneLiftWeightList(
+                    tonnes: $liftWeightTonnes,
+                    isOther: $liftWeightIsOther,
+                    otherText: $liftWeightOtherText
+                )
+            }
         }
         .accessibilityIdentifier("craneEntrySheet")
     }
@@ -169,6 +189,27 @@ struct AddCraneEntryView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Lift type")
 
+            liftWeightRow
+            LogFieldNote(text: CraneLiftWeight.weightCaption)
+                .padding(.top, 6)
+                .accessibilityIdentifier("craneLiftWeightCaption")
+
+            AHValueTile(title: "Wire out") {
+                AHNumberField(
+                    title: "Wire out",
+                    unit: "m",
+                    spokenUnit: "metres",
+                    text: $wireOutText,
+                    identifier: "craneWireOut",
+                    spokenValue: CraneLiftWeight.spokenWireField(wireOutText)
+                )
+                .focused($focusedField)
+            }
+            .padding(.top, 12)
+            LogFieldNote(text: CraneLiftWeight.wireCaption)
+                .padding(.top, 2)
+                .accessibilityIdentifier("craneWireOutCaption")
+
             LogFieldCaption(title: "Crane mode")
                 .padding(.top, 12)
             LogChoiceFlow(
@@ -181,6 +222,34 @@ struct AddCraneEntryView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Crane mode")
         }
+    }
+
+    private var liftWeightRow: some View {
+        VStack(spacing: 0) {
+            Button {
+                showLiftWeights = true
+            } label: {
+                CraneLiftWeightLinkLabel(value: CraneLiftWeight.formLabel(
+                    preset: liftWeightTonnes,
+                    isOther: liftWeightIsOther,
+                    otherText: liftWeightOtherText
+                ))
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Lift weight")
+            .accessibilityValue(CraneLiftWeight.formSpoken(
+                preset: liftWeightTonnes,
+                isOther: liftWeightIsOther,
+                otherText: liftWeightOtherText
+            ))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("craneLiftWeight")
+            Rectangle()
+                .fill(AppTheme.border)
+                .frame(height: 1)
+        }
+        .padding(.top, 12)
     }
 
     // MARK: Conditions
@@ -267,7 +336,15 @@ struct AddCraneEntryView: View {
             fieldError = LogOtherText.message(for: missingOther)
             return
         }
-        let numbers = CraneNumberInput(hoursOperated: hoursText, wind: windText, waveHeight: waveHeightText)
+        let numbers = CraneNumberInput(
+            hoursOperated: hoursText,
+            wind: windText,
+            waveHeight: waveHeightText,
+            wireOut: wireOutText,
+            liftWeightOther: liftWeightOtherText,
+            liftWeightIsOther: liftWeightIsOther,
+            liftWeightPreset: liftWeightTonnes
+        )
         if let problem = numbers.firstProblem {
             fieldError = problem
             return
@@ -287,6 +364,8 @@ struct AddCraneEntryView: View {
         target.craneTypeOther = LogOtherText.stored(craneType, text: craneTypeOther)
         target.fieldArea = LogEntryCheck.optionalText(fieldArea)
         target.hoursOperated = numbers.hoursOperatedValue
+        target.liftWeightTonnes = numbers.liftWeightValue
+        target.wireOutMetres = numbers.wireOutValue
         target.liftTypes = liftTypes
         target.craneMode = craneMode
         target.dayNight = dayNight

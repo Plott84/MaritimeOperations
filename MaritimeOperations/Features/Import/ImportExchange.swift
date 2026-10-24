@@ -148,6 +148,10 @@ struct CraneRecord: Codable, Equatable, Identifiable {
     var craneTypeOther: String?
     var fieldArea: String?
     var hoursOperated: Double?
+    /// Nil when the driver left Lift weight empty. Never a stand-in zero.
+    var liftWeightTonnes: Double?
+    /// Nil when Wire out was left empty. Never a stand-in zero.
+    var wireOutMetres: Double?
     var liftTypesRaw: String?
     var dayNightRaw: String?
     var windMS: Double?
@@ -517,6 +521,8 @@ extension CraneRecord {
         craneTypeOther = entry.craneTypeOther
         fieldArea = entry.fieldArea
         hoursOperated = entry.hoursOperated
+        liftWeightTonnes = entry.liftWeightTonnes
+        wireOutMetres = entry.wireOutMetres
         liftTypesRaw = entry.liftTypesRaw
         dayNightRaw = entry.dayNightRaw
         windMS = entry.windMS
@@ -536,6 +542,8 @@ extension CraneRecord {
         entry.craneTypeOther = craneTypeOther
         entry.fieldArea = fieldArea
         entry.hoursOperated = hoursOperated
+        entry.liftWeightTonnes = liftWeightTonnes
+        entry.wireOutMetres = wireOutMetres
         entry.liftTypesRaw = liftTypesRaw
         entry.dayNightRaw = dayNightRaw
         entry.windMS = windMS

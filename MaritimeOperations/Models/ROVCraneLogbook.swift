@@ -426,19 +426,46 @@ struct ROVNumberInput {
     }
 }
 
-/// Crane form numbers.
+/// Crane form numbers. Lift weight and wire out are optional: blank stays nil.
 struct CraneNumberInput {
     var hoursOperated: String
     var wind: String
     var waveHeight: String
+    /// Wire out, metres. Blank stays nil.
+    var wireOut: String = ""
+    /// Text for Lift weight "Other…". Used only while `liftWeightIsOther` is true.
+    var liftWeightOther: String = ""
+    var liftWeightIsOther: Bool = false
+    /// Preset tonnes when Other is not selected.
+    var liftWeightPreset: Double? = nil
 
     var hoursOperatedValue: Double? { LogNumber.hours(hoursOperated) }
     var windValue: Double? { LogNumber.decimal(wind) }
     var waveHeightValue: Double? { LogNumber.decimal(waveHeight) }
 
+    /// Nil when the field is blank. Nil also when the text is junk (see `firstProblem`).
+    var wireOutValue: Double? {
+        LogNumber.isBlank(wireOut) ? nil : LogNumber.decimal(wireOut)
+    }
+
+    /// Tonnes to store. Other with blank text is nil, not the previous preset and not zero.
+    var liftWeightValue: Double? {
+        if liftWeightIsOther {
+            if case .value(let tonnes) = CraneLiftWeight.parse(liftWeightOther) { return tonnes }
+            return nil
+        }
+        return liftWeightPreset
+    }
+
     var firstProblem: String? {
         if !LogNumber.isBlank(hoursOperated), hoursOperatedValue == nil {
             return "Hours operated must be a number from 0 to 24."
+        }
+        if liftWeightIsOther, let message = CraneLiftWeight.problem(for: CraneLiftWeight.parse(liftWeightOther)) {
+            return message
+        }
+        if !LogNumber.isBlank(wireOut), wireOutValue == nil {
+            return "Wire out must be a number."
         }
         if !LogNumber.isBlank(wind), windValue == nil {
             return "Wind must be a number."

@@ -455,6 +455,8 @@ struct LogBookRow: View {
     let detail: String
     /// "3.5 h piloting"; nil hides it.
     let hoursText: String?
+    /// Line under the hours, e.g. "10 t · 85 m out". Nil hides it.
+    var underHours: String? = nil
     let spokenLabel: String
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -483,11 +485,22 @@ struct LogBookRow: View {
                         .foregroundStyle(detail.isEmpty ? AppTheme.textSecondary : AppTheme.teal)
                         .fixedSize(horizontal: false, vertical: true)
                     if !stacked { Spacer(minLength: 8) }
-                    if let hoursText {
-                        Label(hoursText, systemImage: "clock")
-                            .font(.caption)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    if hoursText != nil || underHours != nil {
+                        VStack(alignment: stacked ? .leading : .trailing, spacing: 2) {
+                            if let hoursText {
+                                Label(hoursText, systemImage: "clock")
+                                    .font(.caption)
+                                    .foregroundStyle(AppTheme.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            if let underHours {
+                                Text(underHours)
+                                    .font(.caption)
+                                    .foregroundStyle(AppTheme.textSecondary)
+                                    .multilineTextAlignment(stacked ? .leading : .trailing)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
                 }
             }

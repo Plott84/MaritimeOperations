@@ -51,6 +51,10 @@ struct CraneBookView: View {
                                     date: entry.date,
                                     detail: entry.vesselCraneLine,
                                     hoursText: entry.hoursOperated.map { "\(AppFormatters.hoursString($0)) operated" },
+                                    underHours: CraneLiftWeight.rowLine(
+                                        weightTonnes: entry.liftWeightTonnes,
+                                        wireMetres: entry.wireOutMetres
+                                    ),
                                     spokenLabel: spokenLabel(entry)
                                 )
                             }
@@ -115,6 +119,12 @@ struct CraneBookView: View {
         parts.append(entry.date.formatted(date: .long, time: .omitted))
         if let hours = entry.hoursOperated {
             parts.append("\(LogSpoken.hours(hours)) operated")
+        }
+        if let summary = CraneLiftWeight.spokenSummary(
+            weightTonnes: entry.liftWeightTonnes,
+            wireMetres: entry.wireOutMetres
+        ) {
+            parts.append(summary)
         }
         return parts.joined(separator: ", ")
     }

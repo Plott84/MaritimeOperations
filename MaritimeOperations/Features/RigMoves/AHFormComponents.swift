@@ -248,6 +248,7 @@ struct AHValueTile<Field: View>: View {
 }
 
 /// Number entry with a unit suffix. Empty = not set.
+/// `spokenValue`, when set, is what VoiceOver speaks after the title ("85 metres").
 struct AHNumberField: View {
     let title: String
     let unit: String
@@ -255,21 +256,34 @@ struct AHNumberField: View {
     @Binding var text: String
     let identifier: String
     var keyboard: UIKeyboardType = .decimalPad
+    var spokenValue: String? = nil
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            TextField(title, text: $text, prompt: Text("—").foregroundStyle(AppTheme.textSecondary))
-                .keyboardType(keyboard)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .accessibilityLabel(spokenUnit.isEmpty ? title : "\(title), \(spokenUnit)")
-                .accessibilityIdentifier(identifier)
+            labeledTextField
             if !unit.isEmpty {
                 Text(unit)
                     .font(.subheadline)
                     .foregroundStyle(AppTheme.textSecondary)
                     .accessibilityHidden(true)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var labeledTextField: some View {
+        let field = TextField(title, text: $text, prompt: Text("—").foregroundStyle(AppTheme.textSecondary))
+            .keyboardType(keyboard)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(AppTheme.textPrimary)
+            .accessibilityIdentifier(identifier)
+        if let spokenValue {
+            field
+                .accessibilityLabel(title)
+                .accessibilityValue(spokenValue)
+        } else {
+            field
+                .accessibilityLabel(spokenUnit.isEmpty ? title : "\(title), \(spokenUnit)")
         }
     }
 }

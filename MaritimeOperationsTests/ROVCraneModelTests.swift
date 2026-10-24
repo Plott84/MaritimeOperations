@@ -51,6 +51,8 @@ struct ROVCraneModelTests {
         #expect(entry.craneTypeOther == nil)
         #expect(entry.fieldArea == nil)
         #expect(entry.hoursOperated == nil)
+        #expect(entry.liftWeightTonnes == nil)
+        #expect(entry.wireOutMetres == nil)
         #expect(entry.liftTypesRaw == nil)
         #expect(entry.liftTypes.isEmpty)
         #expect(entry.dayNight == nil)
@@ -313,6 +315,8 @@ struct ROVCraneModelTests {
         #expect(input.hoursOperatedValue == nil)
         #expect(input.windValue == nil)
         #expect(input.waveHeightValue == nil)
+        #expect(input.wireOutValue == nil)
+        #expect(input.liftWeightValue == nil)
 
         input = CraneNumberInput(hoursOperated: "4.5", wind: "9", waveHeight: "1,8")
         #expect(input.firstProblem == nil)

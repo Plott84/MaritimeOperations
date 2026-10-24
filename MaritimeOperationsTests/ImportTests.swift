@@ -334,6 +334,8 @@ struct ImportTests {
         craneEntry.windMS = 12.25
         craneEntry.waveHeightM = 2.5
         craneEntry.craneModeRaw = "harbour"
+        craneEntry.liftWeightTonnes = 12.5
+        craneEntry.wireOutMetres = 85
         craneEntry.remarks = "night shift"
         craneEntry.updatedAt = updated
 
@@ -363,6 +365,10 @@ struct ImportTests {
         #expect(payload.moves[0].makeModel().photoJPEG == nil)
         #expect(ROVRecord(payload.rov[0].makeModel()) == ROVRecord(rov))
         #expect(CraneRecord(payload.crane[0].makeModel()) == CraneRecord(craneEntry))
+        #expect(payload.crane[0].liftWeightTonnes == 12.5)
+        #expect(payload.crane[0].wireOutMetres == 85)
+        #expect(payload.crane[0].makeModel().liftWeightTonnes == 12.5)
+        #expect(payload.crane[0].makeModel().wireOutMetres == 85)
     }
 
     // MARK: - Merge and replace
