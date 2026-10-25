@@ -61,6 +61,19 @@ struct ToolLastResultStore {
     }
 
     static func gyroSummary(error: Double, date: Date = .now) -> String {
-        "Last check \(signedDegrees(error)) · \(shortDate(date))"
+        "Last gyro \(signedDegrees(error)) · \(shortDate(date))"
+    }
+
+    /// Which tab's valid result is written to the single Gyro & Compass row.
+    /// An empty tab does not replace a result the other tab already has — the caller skips a nil.
+    enum GyroCompassTab: String, Sendable {
+        case gyro, compass
+    }
+
+    static func summaryToSave(tab: GyroCompassTab, gyro: String?, compass: String?) -> String? {
+        switch tab {
+        case .gyro: return gyro
+        case .compass: return compass
+        }
     }
 }

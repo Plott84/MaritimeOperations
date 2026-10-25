@@ -1,122 +1,103 @@
 import SwiftUI
 
-/// Compass error by the sun's amplitude (theoretical rise / set). Aid, not authority.
+/// Compass tab of Gyro & Compass: sun amplitude only. Maths: `AmplitudeMath`.
 struct CompassErrorToolView: View {
-    @State private var model = CompassErrorModel()
-    private let store = ToolLastResultStore()
-
-    init(model: CompassErrorModel = CompassErrorModel()) {
-        _model = State(initialValue: model)
-    }
+    @Bindable var model: CompassErrorModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        ZStack {
-            AppCanvas()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Sun amplitude")
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("compassError.subtitle")
-                    GlassCard { observation }
-                    resultSection
-                    GlassCard {
-                        Text("Theoretical rise or set (sun's centre on the celestial horizon). For a visible-horizon observation, the usual correction still applies.")
-                            .font(.footnote)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityIdentifier("compassError.note")
-                    }
-                    Text("Aid, not authority. Use the ship's inclinometer and compass records.")
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("compassError.footer")
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
+        VStack(alignment: .leading, spacing: 16) {
+            GlassCard { observation }
+            resultSection
+            GlassCard {
+                Text(GyroCompassCopy.compassNote)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("compassError.note")
             }
-            .scrollDismissesKeyboard(.interactively)
-        }
-        .navigationTitle("Compass error")
-        .navigationBarTitleDisplayMode(.inline)
-        .systemGlassNavigation()
-        .toolsKeyboardDone()
-        .onDisappear {
-            // Save once, on leaving, only if a valid result is on screen (not per keystroke).
-            if let s = model.lastResultSummary { store.save(s, for: .compassError) }
         }
     }
-
-    // MARK: Observation
 
     private var observation: some View {
         VStack(alignment: .leading, spacing: 14) {
             caption("OBSERVATION")
+            Text(GyroCompassCopy.compassSubtitle)
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.textSecondary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("compassError.subtitle")
             VStack(alignment: .leading, spacing: 6) {
                 fieldLabel("Event")
-                Picker("Event", selection: $model.event) {
-                    ForEach(AmplitudeMath.Event.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("compassError.event")
+                ToolSegmentBar(
+                    title: "Event",
+                    barIdentifier: "compassError.event",
+                    selection: $model.event,
+                    options: AmplitudeMath.Event.allCases.map { event in
+                        ToolSegmentOption(
+                            value: event,
+                            title: event.rawValue,
+                            accessibilityLabel: "Event, \(event.rawValue)",
+                            accessibilityIdentifier: "compassError.event.\(event.rawValue)"
+                        )
+                    }
+                )
             }
-            ToolDegMinInput(
-                title: "Latitude", degrees: $model.latDeg, minutes: $model.latMin,
-                hemisphere: $model.latNS,
-                hemispheres: [(.n, "N (north)"), (.s, "S (south)")],
-                hemisphereLabel: "Latitude hemisphere",
-                echo: model.latitudeEcho,
-                errorReason: errorField == .latitude ? errorReason : nil,
-                identifier: "compassError.latitude"
-            )
-            ToolDegMinInput(
-                title: "Declination", degrees: $model.decDeg, minutes: $model.decMin,
-                hemisphere: $model.decNS,
-                hemispheres: [(.n, "N (north)"), (.s, "S (south)")],
-                hemisphereLabel: "Declination name",
-                echo: model.declinationEcho,
-                errorReason: errorField == .declination ? errorReason : nil,
-                identifier: "compassError.declination"
+            SharedLatDecFields(
+                position: model.position,
+                declinationMax: CompassErrorModel.maxDeclination,
+                latitudeIdentifier: "compassError.latitude",
+                declinationIdentifier: "compassError.declination",
+                latitudeError: errorField == .latitude ? errorReason : nil,
+                declinationError: errorField == .declination ? errorReason : nil
             )
             ToolNumberField(
-                title: "Compass bearing", text: $model.compass, placeholder: "049.0", unit: "°C",
-                isError: errorField == .compass, errorReason: errorReason,
+                title: "Compass bearing",
+                text: $model.compass,
+                placeholder: "049.0",
+                unit: "°C",
+                isError: errorField == .compass,
+                errorReason: errorReason,
                 accessibilityName: compassA11yLabel,
-                fieldAccessibilityIdentifier: "compassError.compass"
+                fieldAccessibilityIdentifier: "compassError.compass",
+                systemImage: "safari"
             )
             ToolNumberField(
-                title: "Variation (optional)", text: $model.variation, placeholder: "For deviation", unit: "°",
-                isError: errorField == .variation, errorReason: errorReason,
+                title: "Variation",
+                text: $model.variation,
+                placeholder: "For deviation",
+                unit: "°",
+                isError: errorField == .variation,
+                errorReason: errorReason,
                 accessibilityName: "Variation, optional",
-                fieldAccessibilityIdentifier: "compassError.variation"
+                fieldAccessibilityIdentifier: "compassError.variation",
+                systemImage: "arrow.left.and.right",
+                titleNote: "optional"
             )
-            Picker("Variation name", selection: $model.varEW) {
-                Text("E (east)").tag(CompassErrorModel.EW.e)
-                Text("W (west)").tag(CompassErrorModel.EW.w)
-            }
-            .pickerStyle(.segmented)
-            .accessibilityLabel("Variation name")
-            .accessibilityIdentifier("compassError.varEW")
+            ToolSegmentBar(
+                title: "Variation name",
+                barIdentifier: "compassError.varEW",
+                selection: $model.varEW,
+                options: [
+                    ToolSegmentOption(value: CompassErrorModel.EW.e, title: "E", accessibilityLabel: "Variation name, East", accessibilityIdentifier: "compassError.varEW.E"),
+                    ToolSegmentOption(value: CompassErrorModel.EW.w, title: "W", accessibilityLabel: "Variation name, West", accessibilityIdentifier: "compassError.varEW.W")
+                ]
+            )
         }
     }
 
     private var errorField: CompassErrorModel.Field? {
-        if case .invalid(let f, _) = model.outcome { return f }
+        if case .invalid(let field, _) = model.outcome { return field }
         return nil
     }
 
     private var errorReason: String? {
-        if case .invalid(_, let r) = model.outcome { return r }
+        if case .invalid(_, let reason) = model.outcome { return reason }
         return nil
     }
-
-    // MARK: Result
 
     @ViewBuilder
     private var resultSection: some View {
@@ -127,11 +108,11 @@ struct CompassErrorToolView: View {
                     .font(.caption.weight(.bold))
                     .tracking(1.1)
                     .foregroundStyle(AppTheme.gold)
-                Text("Sun doesn't rise or set here")
+                Text(GyroCompassCopy.polarBody)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Needs |sin dec ÷ cos lat| ≤ 1. Try a lower latitude or another day.")
+                Text(GyroCompassCopy.polarHelper)
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -154,27 +135,36 @@ struct CompassErrorToolView: View {
             if case .result(let r) = model.outcome {
                 ToolResultHero(caption: "compass error", value: AmplitudeMath.eastWest(r.error))
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Compass error \(spoken(r.error)). True bearing \(AmplitudeMath.spokenBearing(r.trueBearing, kind: "true")).")
+                    .accessibilityLabel(
+                        AmplitudeMath.spokenCompassResult(
+                            error: r.error, trueBearing: r.trueBearing, compassBearing: r.compassBearing
+                        )
+                    )
                     .accessibilityIdentifier("compassError.hero")
                 ToolResultRow(title: "Amplitude", value: AmplitudeMath.amplitudeText(r.amplitude, event: model.event))
-                ToolResultRow(title: "True bearing", value: AmplitudeMath.bearing(r.trueBearing, letter: "T"))
+                    .accessibilityIdentifier("compassError.amplitude")
+                ToolResultRow(title: "True", value: AmplitudeMath.bearing(r.trueBearing, letter: "T"))
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("True bearing, \(AmplitudeMath.spokenBearing(r.trueBearing, kind: "true"))")
+                    .accessibilityLabel("True \(AmplitudeMath.spokenBearing(r.trueBearing, kind: "true"))")
                     .accessibilityIdentifier("compassError.trueBearing")
-                ToolResultRow(title: "Compass error", value: AmplitudeMath.eastWest(r.error))
+                ToolResultRow(title: "Compass", value: AmplitudeMath.bearing(r.compassBearing, letter: "C"))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Compass \(AmplitudeMath.spokenBearing(r.compassBearing, kind: "compass"))")
+                    .accessibilityIdentifier("compassError.compassBearing")
                 if let d = r.deviation {
                     ToolResultRow(title: "Deviation", value: AmplitudeMath.eastWest(d))
                         .accessibilityIdentifier("compassError.deviation")
                 }
-                Text("Deviation = error − variation. Error is East when true > compass.")
+                Text(GyroCompassCopy.deviationNote)
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 ToolResultHero(caption: "compass error", value: ToolsParse.dash)
-                Text("Enter latitude, declination and compass bearing")
+                Text(GyroCompassCopy.compassEmpty)
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,18 +177,11 @@ struct CompassErrorToolView: View {
         return "Compass bearing"
     }
 
-    private func spoken(_ v: Double) -> String {
-        let r = (abs(v) * 10).rounded() / 10
-        let mag = String(format: "%.1f degrees", r)
-        if r == 0 { return mag }
-        return mag + (v > 0 ? " East" : " West")
+    private func caption(_ text: String) -> some View {
+        Text(text).font(.caption.weight(.bold)).tracking(1.1).foregroundStyle(AppTheme.teal)
     }
 
-    private func caption(_ t: String) -> some View {
-        Text(t).font(.caption.weight(.bold)).tracking(1.1).foregroundStyle(AppTheme.teal)
-    }
-
-    private func fieldLabel(_ t: String) -> some View {
-        Text(t).font(.caption.weight(.semibold)).tracking(0.6).foregroundStyle(AppTheme.textSecondary)
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text).font(.caption.weight(.semibold)).tracking(0.6).foregroundStyle(AppTheme.textSecondary)
     }
 }
