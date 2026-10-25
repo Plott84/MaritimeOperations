@@ -13,10 +13,12 @@ final class ToolsCompassUITests: XCTestCase {
         add(a)
     }
 
-    private func type(_ app: XCUIApplication, _ id: String, _ text: String, clear: Bool = false) {
+    private func type(_ app: XCUIApplication, _ id: String, _ text: String, clear: Bool = true) {
         let f = app.textFields[id]
         XCTAssertTrue(f.waitForExistence(timeout: 3))
         f.tap()
+        // Shared lat/dec stay on the screen if Navigation keeps the destination.
+        // Replace the field instead of appending ("60" + "75" → "6075" / "7551").
         if clear, let v = f.value as? String, !v.isEmpty {
             f.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: v.count))
         }

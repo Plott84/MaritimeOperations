@@ -218,7 +218,10 @@ struct ToolSegmentBar<Value: Hashable>: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
         }
-        .accessibilityIdentifier(barIdentifier.isEmpty ? title : barIdentifier)
+        // No container accessibilityIdentifier. XCTest copies that id onto every
+        // segment (gyroCompass.switch / gyro.method) and hides the per-option ids
+        // the UITests tap (gyroCompass.tab.*, gyro.method.*). Same shape as the
+        // log segment bars: the identifier lives on the button only.
     }
 
     private var buttons: some View {

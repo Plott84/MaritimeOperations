@@ -48,8 +48,8 @@ struct GyroCheckToolView: View {
                     text: $model.lha,
                     placeholder: "045.0",
                     unit: "°",
-                    systemImage: "clock",
-                    fieldAccessibilityIdentifier: "gyro.lha"
+                    fieldAccessibilityIdentifier: "gyro.lha",
+                    systemImage: "clock"
                 )
             case .amplitude:
                 SharedLatDecFields(
@@ -79,8 +79,8 @@ struct GyroCheckToolView: View {
                     text: $model.chartedTrue,
                     placeholder: "047.5",
                     unit: "°T",
-                    systemImage: "location.north.line",
-                    fieldAccessibilityIdentifier: "gyro.charted"
+                    fieldAccessibilityIdentifier: "gyro.charted",
+                    systemImage: "location.north.line"
                 )
             }
             ToolNumberField(
@@ -88,8 +88,8 @@ struct GyroCheckToolView: View {
                 text: $model.gyro,
                 placeholder: "046.8",
                 unit: "°G",
-                systemImage: "gyroscope",
-                fieldAccessibilityIdentifier: "gyro.bearing"
+                fieldAccessibilityIdentifier: "gyro.bearing",
+                systemImage: "gyroscope"
             )
         }
     }
