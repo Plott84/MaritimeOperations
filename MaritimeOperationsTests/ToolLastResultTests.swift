@@ -52,14 +52,16 @@ struct ToolLastResultTests {
     }
 
     @Test func emptyBlurbsMatchHomeCopyAndSkipPort() {
-        #expect(ToolsHomeView.emptyBlurb(for: .gyro) == "Transit, sun azimuth, amplitude")
+        #expect(ToolsHomeView.emptyBlurb(for: .gyro) == "Not used yet")
+        #expect(ToolsHomeView.gyroCompassTitle == "Gyro & Compass")
+        #expect(ToolsHomeView.gyroCompassHint == "Gyro check and sun-amplitude compass error")
         #expect(ToolsHomeView.emptyBlurb(for: .compassError) == "Sun amplitude · °C / °T")
         #expect(ToolsHomeView.emptyBlurb(for: .catenary) == "Free-hang span and sag")
         #expect(ToolsHomeView.emptyBlurb(for: .winch) == "Drum length and layers")
         #expect(ToolsHomeView.emptyBlurb(for: .chainLocker) == "Stowage volume and length")
         #expect(ToolsHomeView.emptyBlurb(for: .craneHeel) == "Static heel and ballast to level")
         #expect(ToolsHomeView.emptyBlurb(for: .portUnlocode) == nil)
-        for kind in ToolLastResultKind.allCases where kind != .portUnlocode {
+        for kind in ToolLastResultKind.allCases where kind != .portUnlocode && kind != .gyro {
             let blurb = ToolsHomeView.emptyBlurb(for: kind)
             #expect(blurb != nil)
             #expect(blurb != ToolLastResultStore.notUsed)
@@ -69,7 +71,10 @@ struct ToolLastResultTests {
     @Test func gyroSummaryFormat() {
         var c = DateComponents(); c.year = 2026; c.month = 10; c.day = 14; c.hour = 12
         let date = Calendar(identifier: .gregorian).date(from: c)!
-        #expect(ToolLastResultStore.gyroSummary(error: 1.2, date: date) == "Last check +1.2° · 14 Oct")
+        #expect(ToolLastResultStore.gyroSummary(error: 1.2, date: date) == "Last gyro +1.2° · 14 Oct")
+        #expect(ToolLastResultStore.summaryToSave(tab: .gyro, gyro: "Last gyro +1.2° · 14 Oct", compass: "Last compass 2.2° W · true 046.8°T") == "Last gyro +1.2° · 14 Oct")
+        #expect(ToolLastResultStore.summaryToSave(tab: .compass, gyro: "Last gyro +1.2° · 14 Oct", compass: "Last compass 2.2° W · true 046.8°T") == "Last compass 2.2° W · true 046.8°T")
+        #expect(ToolLastResultStore.summaryToSave(tab: .compass, gyro: "Last gyro +1.2° · 14 Oct", compass: nil) == nil)
         #expect(ToolLastResultStore.signedDegrees(-0.84) == "−0.8°")
         #expect(ToolLastResultStore.signedDegrees(0.04) == "0.0°")
     }

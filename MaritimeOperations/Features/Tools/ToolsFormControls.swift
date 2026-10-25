@@ -13,13 +13,29 @@ struct ToolNumberField: View {
     var accessibilityName: String? = nil
     /// Stable UITest id on the TextField itself (e.g. `winchField.wireDia`).
     var fieldAccessibilityIdentifier: String? = nil
+    var systemImage: String? = nil
+    /// Quiet word beside the title, e.g. "optional".
+    var titleNote: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .tracking(0.6)
-                .foregroundStyle(isError ? AppTheme.danger : AppTheme.textSecondary)
+            HStack(spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(isError ? AppTheme.danger : AppTheme.teal)
+                        .accessibilityHidden(true)
+                }
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .tracking(0.6)
+                    .foregroundStyle(isError ? AppTheme.danger : AppTheme.textSecondary)
+                if let titleNote {
+                    Text(titleNote)
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+            }
             HStack(spacing: 8) {
                 TextField(
                     "",
@@ -60,6 +76,7 @@ struct ToolResultHero: View {
     let value: String
     var unit: String? = nil
     var warning: String? = nil
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 44
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -69,7 +86,7 @@ struct ToolResultHero: View {
                 .foregroundStyle(AppTheme.teal)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(value)
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .font(.system(size: heroSize, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(AppTheme.textPrimary)
                     .minimumScaleFactor(0.5)
@@ -168,10 +185,78 @@ extension View {
 }
 
 
+// MARK: - Teal segment bar
+
+struct ToolSegmentOption<Value: Hashable>: Identifiable {
+    let value: Value
+    let title: String
+    let accessibilityLabel: String
+    let accessibilityIdentifier: String
+    var id: Value { value }
+}
+
+/// Full-width teal selected segment. At least 44 pt. Stacks vertically at accessibility text sizes.
+struct ToolSegmentBar<Value: Hashable>: View {
+    let title: String
+    var barIdentifier: String = ""
+    @Binding var selection: Value
+    let options: [ToolSegmentOption<Value>]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 4) { buttons }
+            } else {
+                HStack(spacing: 4) { buttons }
+            }
+        }
+        .padding(3)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background(AppTheme.pickerFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
+        }
+        .accessibilityIdentifier(barIdentifier.isEmpty ? title : barIdentifier)
+    }
+
+    private var buttons: some View {
+        ForEach(options) { option in
+            segmentButton(option)
+        }
+    }
+
+    private func segmentButton(_ option: ToolSegmentOption<Value>) -> some View {
+        let selected = selection == option.value
+        return Button {
+            selection = option.value
+        } label: {
+            Text(option.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(selected ? AppTheme.onTeal : AppTheme.textPrimary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background {
+                    if selected {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(AppTheme.teal)
+                    }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(option.accessibilityLabel)
+        .accessibilityAddTraits(selected ? AccessibilityTraits.isSelected : AccessibilityTraits())
+        .accessibilityIdentifier(option.accessibilityIdentifier)
+    }
+}
+
 // MARK: - Degrees + minutes
 
-/// Whole-degrees field + minutes field (same look as the Gyro check's deg/min row),
-/// a hemisphere segment, optional quiet echo line ("= 20°15.3′ N") and inline error.
+/// Whole-degrees field + minutes field, a hemisphere segment,
+/// optional quiet echo line ("= 20°15.3′ N") and inline error.
 struct ToolDegMinInput<Hemi: Hashable>: View {
     let title: String
     @Binding var degrees: String
@@ -182,23 +267,41 @@ struct ToolDegMinInput<Hemi: Hashable>: View {
     var echo: String? = nil
     var errorReason: String? = nil
     var identifier: String
+    var systemImage: String? = nil
+    var hemisphereAccessibility: [String]? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .tracking(0.6)
-                .foregroundStyle(errorReason != nil ? AppTheme.danger : AppTheme.textSecondary)
+            HStack(spacing: 6) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(errorReason != nil ? AppTheme.danger : AppTheme.teal)
+                        .accessibilityHidden(true)
+                }
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .tracking(0.6)
+                    .foregroundStyle(errorReason != nil ? AppTheme.danger : AppTheme.textSecondary)
+            }
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 10) { degField; minField }
                 VStack(alignment: .leading, spacing: 8) { degField; minField }
             }
-            Picker(hemisphereLabel, selection: $hemisphere) {
-                ForEach(hemispheres, id: \.0) { Text($0.1).tag($0.0) }
-            }
-            .pickerStyle(.segmented)
-            .accessibilityLabel(hemisphereLabel)
-            .accessibilityIdentifier("\(identifier).hemisphere")
+            ToolSegmentBar(
+                title: hemisphereLabel,
+                barIdentifier: "\(identifier).hemisphere",
+                selection: $hemisphere,
+                options: hemispheres.enumerated().map { index, pair in
+                    let spoken = hemisphereAccessibility.flatMap { $0.indices.contains(index) ? $0[index] : nil } ?? pair.1
+                    return ToolSegmentOption(
+                        value: pair.0,
+                        title: pair.1,
+                        accessibilityLabel: "\(hemisphereLabel), \(spoken)",
+                        accessibilityIdentifier: "\(identifier).hemisphere.\(pair.1)"
+                    )
+                }
+            )
             if let errorReason {
                 Text(errorReason)
                     .font(.footnote)

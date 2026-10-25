@@ -72,7 +72,8 @@ struct AmplitudeMathTests {
         m.latDeg = "60"; m.decDeg = "20"; m.compass = "49"
         guard case .result(let r) = m.outcome else { Issue.record("expected result"); return }
         #expect(r.deviation == nil)
-        #expect(m.lastResultSummary == "Last: 2.2° W · true 046.8°")
+        #expect(m.lastResultSummary == "Last compass 2.2° W · true 046.8°T")
+        #expect(AmplitudeMath.bearing(r.compassBearing, letter: "C") == "049.0°C")
         m.variation = "1.5"
         guard case .result(let r2) = m.outcome else { Issue.record("expected result"); return }
         #expect(AmplitudeMath.eastWest(r2.deviation ?? .nan) == "3.7° W")
@@ -150,5 +151,6 @@ struct AmplitudeMathTests {
         #expect(AmplitudeMath.bearing(49.0, letter: "C") == "049.0°C")
         #expect(AmplitudeMath.spokenBearing(49.0, kind: "compass") == "049 point 0 degrees compass")
         #expect(AmplitudeMath.spokenBearing(46.8, kind: "true") == "046 point 8 degrees true")
+        #expect(AmplitudeMath.spokenCompassResult(error: -2.2, trueBearing: 46.8, compassBearing: 49) == "Compass error 2.2 degrees West. True 046 point 8 degrees true. Compass 049 point 0 degrees compass.")
     }
 }

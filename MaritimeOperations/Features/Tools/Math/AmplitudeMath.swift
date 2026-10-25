@@ -87,6 +87,15 @@ enum AmplitudeMath {
         String(format: "%05.1f°%@", bearingValue(v), letter)
     }
 
+    /// VoiceOver for a compass result.
+    /// "Compass error 2.2 degrees West. True 046 point 8 degrees true. Compass 049 point 0 degrees compass."
+    static func spokenCompassResult(error: Double, trueBearing: Double, compassBearing: Double) -> String {
+        let r = (abs(error) * 10).rounded() / 10
+        let mag = String(format: "%.1f", abs(r))
+        let side = r == 0 ? "" : (error > 0 ? " East" : " West")
+        return "Compass error \(mag) degrees\(side). True \(spokenBearing(trueBearing, kind: "true")). Compass \(spokenBearing(compassBearing, kind: "compass"))."
+    }
+
     /// VoiceOver: "049 point 0 degrees compass" / "046 point 8 degrees true".
     static func spokenBearing(_ v: Double, kind: String) -> String {
         let r = bearingValue(v)

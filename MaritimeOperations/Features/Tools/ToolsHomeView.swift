@@ -17,10 +17,9 @@ struct ToolsHomeView: View {
 
     private let sections: [Section] = [
         .init(title: "DP & NAV", tools: [
-            .init(kind: .gyro, title: "Gyro check", hint: Self.blurb(.gyro),
-                  systemImage: "location.north.line"),
-            .init(kind: .compassError, title: "Compass error", hint: Self.blurb(.compassError),
-                  systemImage: "safari")
+            .init(kind: .gyro, title: Self.gyroCompassTitle, hint: Self.blurb(.gyro),
+                  systemImage: "location.north.line",
+                  voiceOverHint: Self.gyroCompassHint)
         ]),
         .init(title: "DECK CALCS", tools: [
             .init(kind: .catenary, title: "Catenary", hint: Self.blurb(.catenary),
@@ -120,10 +119,16 @@ struct ToolsHomeView: View {
         return String(format: "%.1fk ports offline", Double(count) / 1000)
     }
 
+    /// Visible title of the single DP & NAV row. The destination id stays `gyro`.
+    static let gyroCompassTitle = "Gyro & Compass"
+    /// VoiceOver hint for that row. Mentions both checks, empty or not.
+    static let gyroCompassHint = GyroCompassCopy.rowHint
+
     /// Empty-row copy. Port has no blurb — that row uses the offline count line.
+    /// Gyro & Compass shows the not-used sentinel until either tab saves a result.
     static func emptyBlurb(for kind: ToolLastResultKind) -> String? {
         switch kind {
-        case .gyro: return "Transit, sun azimuth, amplitude"
+        case .gyro: return ToolLastResultStore.notUsed
         case .compassError: return "Sun amplitude · °C / °T"
         case .catenary: return "Free-hang span and sag"
         case .winch: return "Drum length and layers"
@@ -160,8 +165,7 @@ struct ToolsHomeView: View {
         switch kind {
         case .catenary: CatenaryToolView()
         case .winch: WinchCapacityToolView()
-        case .gyro: GyroCheckToolView()
-        case .compassError: CompassErrorToolView()
+        case .gyro: GyroCompassToolView()
         case .chainLocker: ChainLockerToolView()
         case .craneHeel: CraneHeelView()
         case .portUnlocode: PortUnlocodeToolView()
@@ -202,14 +206,15 @@ struct ToolsHomeView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(tool.title), \(st.text)")
         // Empty rows already speak the blurb as the visible subtitle. A last-result row keeps the blurb as the hint.
-        .accessibilityHint(st.isEmpty ? "" : tool.hint)
+        // Gyro & Compass always hints at both checks.
+        .accessibilityHint(tool.voiceOverHint ?? (st.isEmpty ? "" : tool.hint))
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
     }
 }
 
 private struct ToolTile: Identifiable {
-    enum Kind: String { case gyro, compassError, catenary, winch, chainLocker, craneHeel, portUnlocode
+    enum Kind: String { case gyro, catenary, winch, chainLocker, craneHeel, portUnlocode
         var lastResultKind: ToolLastResultKind? { ToolLastResultKind(rawValue: rawValue) }
     }
     var id: String { kind.rawValue }
@@ -217,4 +222,5 @@ private struct ToolTile: Identifiable {
     let title: String
     let hint: String
     let systemImage: String
+    var voiceOverHint: String? = nil
 }

@@ -52,6 +52,9 @@ enum GyroMath {
     }
 
     /// Zn = atan2(−cos Dec·sin LHA, cos Lat·sin Dec − sin Lat·cos Dec·cos LHA)
+    ///
+    /// Worked desk sample (51°28.0′ N, 18°42.0′ N, LHA 45.0°) is about 244.2°T.
+    /// The design-mock hero 047.5°T is example chrome (047.5 − 046.8 = 0.7° E), not this sight.
     /// Hc = asin(sin Lat·sin Dec + cos Lat·cos Dec·cos LHA)
     /// Cross-check: cos Z = (sin Dec − sin Lat·sin Hc)/(cos Lat·cos Hc); Zn = Z if LHA > 180 else 360 − Z.
     /// Returns `nil` if any input is non-finite or Zn/Hc are non-finite (UI dash, never "nan°T").
@@ -148,6 +151,14 @@ enum GyroMath {
     }
 
     // MARK: - Display helpers
+
+    /// VoiceOver: "True bearing 047 point 5 degrees true. Gyro error 0.7 degrees East."
+    static func spokenResult(trueBearing: Double, error: GyroError) -> String {
+        let mag = String(format: "%.1f", abs(error.rounded))
+        let side = error.name == "E" ? " East" : error.name == "W" ? " West" : ""
+        let bearing = AmplitudeMath.spokenBearing(trueBearing, kind: "true")
+        return "True bearing \(bearing). Gyro error \(mag) degrees\(side)."
+    }
 
     /// "128.4°T". Non-finite → "—" (belt-and-suspenders for UI).
     static func bearingDisplay(_ zn: Double) -> String {
