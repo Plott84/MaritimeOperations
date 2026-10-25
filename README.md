@@ -13,7 +13,7 @@ CLI tip if `xcodebuild` can’t find SDKs:
 
 ## MVP included
 
-- Floating tab shell with `safeAreaInset` (Main / Entries / Rig Moves / Tools / Export stubs)
+- Floating tab shell with `safeAreaInset` (Main / Entries / Tools / Export)
 - Design tokens (navy / blue / teal / gold)
 - Unified `DPEntry` (timed + manual)
 - Main DP timer: persists `startedAt`, elapsed via `TimelineView` (survives kill/relaunch)

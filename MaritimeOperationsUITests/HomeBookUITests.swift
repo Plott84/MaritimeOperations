@@ -11,7 +11,8 @@ final class HomeBookUITests: XCTestCase {
         let app = XCUIApplication.launchedClean()
         XCTAssertTrue(app.staticTexts["DP TIMER"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Start DP"].firstMatch.waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["homeSecondaryCTA"].exists)
         XCTAssertTrue(app.staticTexts["00:00"].exists)
         XCTAssertFalse(app.staticTexts["STARRED"].exists)
         XCTAssertFalse(app.staticTexts["Your books"].exists)
@@ -24,9 +25,41 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertTrue(app.buttons["homeBookStar"].label.contains("Home book"))
         XCTAssertTrue(app.buttons["homeBookStar"].label.contains("D P"))
         XCTAssertTrue(app.staticTexts["5 latest · DP"].exists)
+        XCTAssertTrue(app.staticTexts["Newest 5 records in the DP book."].exists)
         XCTAssertEqual(app.buttons["tab_log"].label, "Entries")
-        XCTAssertTrue(app.buttons["tab_rigMoves"].exists)
-        XCTAssertEqual(app.buttons["tab_rigMoves"].label, "Rig Moves")
+        XCTAssertFalse(app.buttons["tab_rigMoves"].exists)
+    }
+
+    /// HB-11: DP Home idle hero has Start DP and no New Rig Move.
+    func testHB11_dpHomeIdleShowsOnlyStartDP() throws {
+        let app = XCUIApplication.launchedClean()
+        let start = app.buttons["Start DP"].firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["DP TIMER"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].exists)
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["homeSecondaryCTA"].exists)
+        XCTAssertEqual(app.buttons["homePrimaryCTA"].label, "Start DP")
+    }
+
+    /// HB-12: tab bar is Main, Entries, Tools, Export. Each item is a 44 pt hit.
+    func testHB12_tabBarHasFourTabsAndNoRigMoves() throws {
+        let app = XCUIApplication.launchedClean()
+        let tabs = [
+            ("tab_main", "Main"),
+            ("tab_log", "Entries"),
+            ("tab_tools", "Tools"),
+            ("tab_export", "Export")
+        ]
+        for (identifier, title) in tabs {
+            let tab = app.buttons[identifier]
+            XCTAssertTrue(tab.waitForExistence(timeout: 8), identifier)
+            XCTAssertEqual(tab.label, title)
+            XCTAssertGreaterThan(tab.frame.height, 43, identifier)
+        }
+        XCTAssertFalse(app.buttons["tab_rigMoves"].exists)
+        let tabButtons = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab_'"))
+        XCTAssertEqual(tabButtons.count, 4)
     }
 
     func testHB02_craneSwapHidesDPTimer() throws {
@@ -102,10 +135,13 @@ final class HomeBookUITests: XCTestCase {
         ])
         let start = app.buttons["Start DP"].firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 8))
-        XCTAssertGreaterThan(start.frame.height, 43)
+        XCTAssertGreaterThan(start.frame.height, 43, "Hero CTA hit target")
+        XCTAssertEqual(start.label, "Start DP")
         XCTAssertTrue(app.staticTexts["DP TIMER"].exists)
-        XCTAssertTrue(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
         XCTAssertTrue(app.staticTexts["Latest Activity"].exists)
+        let mainTab = app.buttons["tab_main"]
+        XCTAssertGreaterThan(mainTab.frame.height, 43, "Tab hit target at AX5")
 
         app.buttons["homeBookStar"].tap()
         let crane = app.buttons["homeBookOption_crane"]
@@ -121,8 +157,11 @@ final class HomeBookUITests: XCTestCase {
             swipes += 1
         }
         XCTAssertTrue(lift.isHittable)
-        XCTAssertGreaterThan(lift.frame.height, 43)
-        XCTAssertTrue(app.buttons["Open Crane log"].exists)
+        XCTAssertGreaterThan(lift.frame.height, 43, "Crane hero CTA hit target")
+        XCTAssertEqual(lift.label, "New lift")
+        let log = app.buttons["Open Crane log"]
+        XCTAssertTrue(log.exists)
+        XCTAssertEqual(log.label, "Open Crane log")
         XCTAssertFalse(app.staticTexts["DP TIMER"].exists)
     }
 

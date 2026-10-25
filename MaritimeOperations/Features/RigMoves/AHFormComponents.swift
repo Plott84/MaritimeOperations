@@ -110,7 +110,7 @@ struct AHSegmented<Option: Identifiable & Hashable>: View {
                         .lineLimit(stacked ? nil : 1)
                         .minimumScaleFactor(stacked ? 1 : 0.85)
                         .fixedSize(horizontal: false, vertical: stacked)
-                        .frame(maxWidth: .infinity, minHeight: 36)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .foregroundStyle(selected ? AppTheme.onTeal : AppTheme.textSecondary)
@@ -175,15 +175,15 @@ struct AHFlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        let rows = arrange(subviews: subviews, maxWidth: maxWidth)
+        let rows = arrange(subviews: subviews, maxWidth: wrapWidth(proposal.width))
         let height = rows.last.map { $0.y + $0.height } ?? 0
-        let width = proposal.width ?? rows.map(\.width).max() ?? 0
-        return CGSize(width: width, height: height)
+        let natural = rows.map(\.width).max() ?? 0
+        let width = proposal.width.map { finite($0) } ?? natural
+        return CGSize(width: finite(width), height: finite(height))
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let rows = arrange(subviews: subviews, maxWidth: bounds.width)
+        let rows = arrange(subviews: subviews, maxWidth: wrapWidth(bounds.width))
         for row in rows {
             for item in row.items {
                 subviews[item.index].place(
@@ -192,6 +192,16 @@ struct AHFlowLayout: Layout {
                 )
             }
         }
+    }
+
+    /// A zero or non-finite proposal (first ScrollView pass) must not become a negative frame.
+    private func wrapWidth(_ proposed: CGFloat?) -> CGFloat {
+        guard let proposed, proposed.isFinite, proposed > 1 else { return .greatestFiniteMagnitude }
+        return proposed
+    }
+
+    private func finite(_ value: CGFloat) -> CGFloat {
+        value.isFinite && value >= 0 ? value : 0
     }
 
     private struct Item { let index: Int; let x: CGFloat; let size: CGSize }
@@ -206,8 +216,10 @@ struct AHFlowLayout: Layout {
             var size = subview.sizeThatFits(.unspecified)
             if size.width > maxWidth {
                 size = subview.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil))
-                size.width = min(size.width, maxWidth)
+                size.width = min(max(size.width, 0), maxWidth)
             }
+            if !size.width.isFinite || size.width < 0 { size.width = 0 }
+            if !size.height.isFinite || size.height < 0 { size.height = 0 }
             if x > 0, x + size.width > maxWidth {
                 rows.append(current)
                 y += current.height + spacing

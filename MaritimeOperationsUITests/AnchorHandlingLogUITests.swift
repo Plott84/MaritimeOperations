@@ -7,10 +7,6 @@ final class AnchorHandlingLogUITests: XCTestCase {
     }
 
     func testAddAHEntryShowsInLog() throws {
-        // Soft-block: ahControl_dp not selected after tap; Invalid frame dimension (CI).
-        // Quarantine until AH form selection/layout is fixed; do not block Tools/Compass land.
-        throw XCTSkip("Quarantined: ahControl_dp selection / Invalid frame dimension — AH form soft-block")
-
         let app = XCUIApplication.launchedClean()
 
         // Log tab shows both books; AH starts empty.
@@ -48,8 +44,11 @@ final class AnchorHandlingLogUITests: XCTestCase {
         recover.swipeUpUntilHittable(in: app)
         recover.tap()
         XCTAssertTrue(recover.isSelected)
-        app.buttons["ahControl_dp"].tap()
-        XCTAssertTrue(app.buttons["ahControl_dp"].isSelected)
+        let control = app.buttons["ahControl_dp"]
+        control.swipeUpUntilHittable(in: app)
+        XCTAssertTrue(control.isHittable, "DP / Manual sits under the task chips")
+        control.tap()
+        XCTAssertTrue(control.isSelected)
 
         app.buttons["rigMoveSave"].tap()
         XCTAssertFalse(app.navigationBars["New entry"].waitForExistence(timeout: 3))
@@ -73,6 +72,9 @@ final class AnchorHandlingLogUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Edit entry"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ahPositionPicker"].value as? String, "Second Officer")
         XCTAssertTrue(app.buttons["ahJobType_preLay"].isSelected)
+        let savedControl = app.buttons["ahControl_dp"]
+        savedControl.swipeUpUntilHittable(in: app)
+        XCTAssertTrue(savedControl.isSelected, "DP control is stored on the rig move")
     }
 
     /// A new AH entry prefills only the vessel (newest DP line or AH entry); Position stays "Not set".

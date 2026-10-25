@@ -41,10 +41,6 @@ struct RootView: View {
                             }
                         }
                 }
-            case .rigMoves:
-                NavigationStack {
-                    RigMovesView(showingAdd: $showingAddRigMove)
-                }
             case .tools:
                 NavigationStack {
                     ToolsHomeView()
