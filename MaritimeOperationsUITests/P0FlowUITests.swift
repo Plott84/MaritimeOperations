@@ -9,11 +9,11 @@ final class P0FlowUITests: XCTestCase {
     func testE1_startStopCreatesTimedEntry() throws {
         let app = XCUIApplication.launchedClean(extraArguments: ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"])
 
-        let start = app.buttons["Start DP"]
+        let start = app.buttons["Start DP"].firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 8), "Start DP missing")
         start.tap()
 
-        let stop = app.buttons["Stop DP"]
+        let stop = app.buttons["Stop DP"].firstMatch
         XCTAssertTrue(stop.waitForExistence(timeout: 5), "Stop DP missing after start")
         // Brief run so duration > 0
         sleep(2)
@@ -21,7 +21,7 @@ final class P0FlowUITests: XCTestCase {
 
         // Stop saves immediately. No card, and the ship can be empty.
         XCTAssertFalse(app.navigationBars["DP log line"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.buttons["Start DP"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Start DP"].firstMatch.waitForExistence(timeout: 5))
 
         app.openLogBook(.dp)
 
@@ -91,10 +91,10 @@ final class P0FlowUITests: XCTestCase {
     func testE3_timerSurvivesRelaunch() throws {
         let app = XCUIApplication.launchedClean()
 
-        let start = app.buttons["Start DP"]
+        let start = app.buttons["Start DP"].firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         start.tap()
-        XCTAssertTrue(app.buttons["Stop DP"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Stop DP"].firstMatch.waitForExistence(timeout: 5))
         sleep(2)
 
         app.relaunchKeepingState()

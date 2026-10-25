@@ -40,7 +40,7 @@ enum LogBookID: String {
 }
 
 extension XCUIApplication {
-    /// Log tab → book. DP Entries and Rig Moves now live inside the Log tab.
+    /// Entries tab → book. The tab identifier stays `tab_log`.
     func openLogBook(_ book: LogBookID, file: StaticString = #filePath, line: UInt = #line) {
         let logTab = buttons["tab_log"]
         XCTAssertTrue(logTab.waitForExistence(timeout: 8), "Log tab missing", file: file, line: line)

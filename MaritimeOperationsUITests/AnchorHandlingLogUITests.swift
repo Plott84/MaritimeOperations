@@ -17,7 +17,7 @@ final class AnchorHandlingLogUITests: XCTestCase {
         app.buttons["tab_log"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["logBook_dp"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["logBook_anchorHandling"].exists)
-        XCTAssertTrue(app.staticTexts["Starred books show on Main."].exists)
+        XCTAssertTrue(app.staticTexts["The On Main star sets the Home book. Starring another replaces it."].exists)
 
         app.descendants(matching: .any)["logBook_anchorHandling"].tap()
         XCTAssertTrue(app.staticTexts["No rig moves yet."].waitForExistence(timeout: 5))

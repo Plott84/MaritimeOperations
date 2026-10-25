@@ -5,6 +5,8 @@ struct RootView: View {
     @State private var tab: AppTab = .main
     @State private var session = ActiveDPSessionStore()
     @State private var showingAddRigMove = false
+    @State private var showingAddCrane = false
+    @State private var showingAddROV = false
     @State private var logPath: [LogBook] = []
     @State private var showImport = false
     @State private var importPreload: ImportReadFile?
@@ -19,7 +21,8 @@ struct RootView: View {
                         session: session,
                         onOpenRigMoves: { open(.anchorHandling, addingEntry: true) },
                         onOpenBook: { open($0) },
-                        onOpenLog: { open(nil) }
+                        onNewCraneEntry: { showingAddCrane = true },
+                        onNewROVEntry: { showingAddROV = true }
                     )
                 }
             case .log:
@@ -37,6 +40,10 @@ struct RootView: View {
                                 CraneBookView()
                             }
                         }
+                }
+            case .rigMoves:
+                NavigationStack {
+                    RigMovesView(showingAdd: $showingAddRigMove)
                 }
             case .tools:
                 NavigationStack {
@@ -63,6 +70,12 @@ struct RootView: View {
         }
         .sheet(isPresented: $showImport, onDismiss: { importPreload = nil }) {
             ImportSheet(preload: $importPreload, onFinished: finishImport)
+        }
+        .sheet(isPresented: $showingAddCrane) {
+            AddCraneEntryView()
+        }
+        .sheet(isPresented: $showingAddROV) {
+            AddROVEntryView()
         }
         .overlay(alignment: .bottom) {
             if let importToast {
@@ -112,13 +125,11 @@ struct RootView: View {
         importToast = report.toastText
     }
 
-    /// Switch to Log, optionally straight into a book (and its New entry form).
+    /// Switch to Entries, optionally straight into a book (and its New entry form).
     private func open(_ book: LogBook?, addingEntry: Bool = false) {
         logPath = book.map { [$0] } ?? []
         tab = .log
-        if addingEntry {
-            showingAddRigMove = true
-        }
+        showingAddRigMove = addingEntry
     }
 }
 

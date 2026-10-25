@@ -245,15 +245,10 @@ struct AnchorHandlingModelTests {
 
     // MARK: Log books
 
-    @Test func starredBooksDefaultToDPAndToggle() {
-        #expect(StarredBooks.decode(StarredBooks.defaultRaw) == [.dp])
-        var raw = StarredBooks.toggled(.anchorHandling, in: StarredBooks.defaultRaw)
-        #expect(StarredBooks.decode(raw) == [.dp, .anchorHandling])
-        raw = StarredBooks.toggled(.dp, in: raw)
-        raw = StarredBooks.toggled(.anchorHandling, in: raw)
-        #expect(raw == "")
-        #expect(StarredBooks.shownOnMain(raw) == [.dp], "Nothing starred shows DP")
-        #expect(StarredBooks.decode("junk,anchorHandling") == [.anchorHandling])
+    @Test func homeBookReplacesRatherThanTogglingAList() {
+        #expect(HomeBook(logBook: .anchorHandling) == .ah)
+        #expect(HomeBook.ah.logBook == .anchorHandling)
+        #expect(HomeBook.resolve(nil) == .dp)
     }
 
     // MARK: Vessel prefill (new AH entry)

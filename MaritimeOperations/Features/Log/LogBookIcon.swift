@@ -53,7 +53,7 @@ struct CraneIcon: View {
     }
 }
 
-/// Book badge (Main's "Your books" rows and the ROV / Crane book rows in Log).
+/// Book badge (Latest Activity rows and the ROV / Crane book rows).
 /// Default sizes: the book's letters ("DP", "AH", "ROV", "CR") on a 36-point badge, unchanged.
 /// Accessibility sizes: every book shows its icon instead — DP the `scope` crosshair, AH the
 /// drawn anchor, ROV and Crane their drawn icons — in teal, at about 60% of the badge.
