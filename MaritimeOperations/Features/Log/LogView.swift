@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-// LogBook, StarredBooks and LogBookStats now live in Models/LogBooks.swift (four books).
+// LogBook and LogBookStats live in Models/LogBooks.swift. The On Main star writes HomeBook.
 
 extension LogBookStats {
     /// Totals from the stores. DP total matches the DP Entries screen: app lines + typed Old DP hours.
@@ -24,14 +24,14 @@ extension LogBookStats {
     }
 }
 
-/// Log tab: one card per book. Tap a card to open the book; star it to show it on Main.
+/// Entries tab: one card per book. Tap a card to open the book. The On Main star sets Home book.
 struct LogView: View {
     @Query private var entries: [DPEntry]
     @Query private var moves: [RigMove]
     @Query private var rovEntries: [ROVEntry]
     @Query private var craneEntries: [CraneEntry]
     @AppStorage("dp.oldHoursText") private var oldHoursText = ""
-    @AppStorage(StarredBooks.storageKey) private var starredRaw = StarredBooks.defaultRaw
+    @AppStorage(HomeBook.storageKey) private var homeBookRaw = HomeBook.defaultRaw
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var stats: LogBookStats {
@@ -51,7 +51,7 @@ struct LogView: View {
                         bookCard(book)
                     }
                     Label {
-                        Text("Starred books show on Main.")
+                        Text("The On Main star sets the Home book. Starring another replaces it.")
                     } icon: {
                         Image(systemName: "star.fill")
                             .foregroundStyle(AppTheme.teal)
@@ -66,13 +66,13 @@ struct LogView: View {
                 .padding(.bottom, 24)
             }
         }
-        .navigationTitle("Log")
+        .navigationTitle("Entries")
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
     }
 
     private func bookCard(_ book: LogBook) -> some View {
-        let starred = StarredBooks.decode(starredRaw).contains(book)
+        let starred = HomeBook.resolve(homeBookRaw).logBook == book
         let stacked = dynamicTypeSize.isAccessibilitySize
         return GlassCard(padding: 14) {
             VStack(alignment: .leading, spacing: 12) {
@@ -156,7 +156,7 @@ struct LogView: View {
 
     private func starButton(_ book: LogBook, starred: Bool) -> some View {
         Button {
-            starredRaw = StarredBooks.toggled(book, in: starredRaw)
+            homeBookRaw = HomeBook(logBook: book).rawValue
         } label: {
             Label("On Main", systemImage: starred ? "star.fill" : "star")
                 .font(.subheadline.weight(.semibold))
@@ -169,8 +169,9 @@ struct LogView: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Show \(book.spokenTitle) on Main")
-        .accessibilityValue(starred ? "On" : "Off")
+        .accessibilityLabel("On Main, \(book.spokenTitle)")
+        .accessibilityValue(starred ? "Home book" : "Off")
+        .accessibilityHint(starred ? "This is the Home book." : "Sets this book as the Home book and replaces the current one.")
         .accessibilityAddTraits(starred ? .isSelected : [])
         .accessibilityIdentifier("logBookStar_\(book.rawValue)")
     }

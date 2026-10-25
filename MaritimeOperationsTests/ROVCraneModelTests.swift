@@ -445,10 +445,8 @@ struct ROVCraneModelTests {
         #expect(LogBook.allCases.map(\.rawValue) == ["dp", "anchorHandling", "rov", "crane"])
         #expect(LogBook.rov.subtitle == "ROV dives · piloting hours")
         #expect(LogBook.crane.subtitle == "Crane work · hours operated")
-        var raw = StarredBooks.toggled(.crane, in: StarredBooks.defaultRaw)
-        raw = StarredBooks.toggled(.rov, in: raw)
-        #expect(StarredBooks.decode(raw) == [.dp, .rov, .crane], "Main keeps the Log order")
-        #expect(raw == "dp,rov,crane")
+        #expect(HomeBook(logBook: .crane).rawValue == "crane")
+        #expect(HomeBook(logBook: .rov).logBook == .rov)
     }
 
     @Test func statsSumTypedHoursAndKeepOldDPAndAHCopy() {

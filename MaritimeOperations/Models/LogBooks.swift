@@ -1,9 +1,10 @@
 import Foundation
 
-// Log tab books, starred-books storage and card totals. Moved here from LogView.swift
+// Log tab books and card totals. Moved here from LogView.swift
 // (unchanged for DP and Anchor handling) and widened to ROV and Crane.
+// Which book Main shows is HomeBook (`homeBook`), not a multi-star list.
 
-/// A book on the Log tab. Raw values are stored (starred books): never rename them.
+/// A book on the Entries tab. Raw values are stored: never rename them.
 /// New books go at the END so the Log order is DP, Anchor handling, ROV, Crane.
 enum LogBook: String, CaseIterable, Identifiable, Hashable {
     case dp
@@ -40,7 +41,7 @@ enum LogBook: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    /// Letters on the small badge on Main's "Your books" rows (default text sizes).
+    /// Letters on the small badge (Latest Activity rows, book rows).
     var badge: String {
         switch self {
         case .dp: return "DP"
@@ -57,37 +58,6 @@ enum LogBook: String, CaseIterable, Identifiable, Hashable {
         case .dp: return "location.north"
         case .anchorHandling, .rov, .crane: return nil
         }
-    }
-}
-
-/// Which books show on Main. Stored as raw values joined with ",". Default: DP.
-enum StarredBooks {
-    static let storageKey = "log.starredBooks"
-    static let defaultRaw = LogBook.dp.rawValue
-
-    static func decode(_ raw: String) -> [LogBook] {
-        let picked = Set(raw.split(separator: ",").compactMap { LogBook(rawValue: String($0)) })
-        return LogBook.allCases.filter { picked.contains($0) }
-    }
-
-    static func encode(_ books: [LogBook]) -> String {
-        LogBook.allCases.filter { books.contains($0) }.map(\.rawValue).joined(separator: ",")
-    }
-
-    static func toggled(_ book: LogBook, in raw: String) -> String {
-        var books = decode(raw)
-        if let index = books.firstIndex(of: book) {
-            books.remove(at: index)
-        } else {
-            books.append(book)
-        }
-        return encode(books)
-    }
-
-    /// Books Main shows: the starred ones, or DP when nothing is starred.
-    static func shownOnMain(_ raw: String) -> [LogBook] {
-        let books = decode(raw)
-        return books.isEmpty ? [.dp] : books
     }
 }
 
@@ -176,7 +146,7 @@ struct LogBookStats: Equatable {
         }
     }
 
-    /// Count line on Main's "Your books" row. DP and AH copy unchanged.
+    /// Count line for a book card. DP and AH copy unchanged.
     func mainCountText(for book: LogBook) -> String {
         switch book {
         case .anchorHandling: return rigMoves == 1 ? "1 rig move" : "\(rigMoves) rig moves"
@@ -184,7 +154,7 @@ struct LogBookStats: Equatable {
         }
     }
 
-    /// VoiceOver value on Main's "Your books" row. DP and AH copy unchanged.
+    /// VoiceOver count for a book card. DP and AH copy unchanged.
     func mainSpokenValue(for book: LogBook) -> String {
         let countText = mainCountText(for: book)
         switch book {
