@@ -71,14 +71,16 @@ struct HomeBookTests {
         #expect(defaults.string(forKey: "dp.oldHoursText") == "keep-me")
     }
 
-    @Test func dpHomeKeepsTheTimerCopy() {
+    /// HB-11: idle DP hero is the timer plus Start DP. No secondary rig-move CTA.
+    @Test func dpHomeIdleHeroShowsOnlyStartDP() {
         let copy = HomeBook.dp.hero
         #expect(copy.showsDPTimer)
         #expect(copy.eyebrow == "DP TIMER")
         #expect(copy.primary == "Start DP")
-        #expect(copy.secondary == "New Rig Move")
+        #expect(copy.secondary == nil)
         #expect(copy.caption == "Start when the vessel goes on DP. Stop saves the session to Entries.")
-        #expect(copy.activityCaption == "Newest 5 records in the DP book. Rig moves stay under Rig Moves.")
+        #expect(copy.activityCaption == "Newest 5 records in the DP book.")
+        #expect(!copy.activityCaption.contains("Rig Moves"))
         #expect(copy.activityChip == "5 latest · DP")
         #expect(copy.emptyTitle == "No DP entries yet.")
     }
@@ -93,7 +95,7 @@ struct HomeBookTests {
         #expect(copy.activityCaption == "Newest 5 Crane entries. DP timer is not on this Home.")
         #expect(copy.activityChip == "5 latest · Crane")
         #expect(copy.emptyTitle == "No Crane entries yet.")
-        let blob = [copy.eyebrow, copy.primary, copy.secondary, copy.caption, copy.activityCaption].joined(separator: "\n")
+        let blob = [copy.eyebrow, copy.primary, copy.secondary ?? "", copy.caption, copy.activityCaption].joined(separator: "\n")
         #expect(!blob.contains("DP TIMER"))
         #expect(!blob.contains("Start DP"))
         #expect(!blob.contains("Stop DP"))
@@ -121,10 +123,12 @@ struct HomeBookTests {
         #expect(rov.emptyTitle == "No ROV entries yet.")
     }
 
-    @Test func tabBarMatchesTheHomeLayout() {
-        #expect(AppTab.allCases.map(\.title) == ["Main", "Entries", "Rig Moves", "Tools", "Export"])
+    /// HB-12: four tabs. Rig moves stay in Entries (AH), not a fifth tab.
+    @Test func tabBarIsMainEntriesToolsExport() {
+        #expect(AppTab.allCases.map(\.title) == ["Main", "Entries", "Tools", "Export"])
+        #expect(AppTab.allCases.map(\.rawValue) == ["main", "log", "tools", "export"])
         #expect(AppTab.log.rawValue == "log", "Entries keeps the tab_log identifier")
-        #expect(AppTab.rigMoves.title == "Rig Moves")
+        #expect(!AppTab.allCases.contains { $0.title == "Rig Moves" || $0.rawValue == "rigMoves" })
     }
 
     @Test func craneActivityIsCraneOnlyAndCapsAtFive() {

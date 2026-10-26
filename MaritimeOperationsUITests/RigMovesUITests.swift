@@ -21,10 +21,18 @@ final class RigMovesUITests: XCTestCase {
         app.buttons["rigMoveCancel"].tap()
     }
 
-    func testNewRigMoveOnMainOpensForm() throws {
+    /// AH create stays on the AH Home hero after the Rig Moves tab is gone. DP Home has no New Rig Move.
+    func testAHHomeHeroOpensNewRigMoveForm() throws {
         let app = XCUIApplication.launchedClean()
-        let open = app.buttons["New Rig Move"]
-        XCTAssertTrue(open.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Start DP"].firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        app.buttons["homeBookStar"].tap()
+        let ah = app.buttons["homeBookOption_ah"]
+        XCTAssertTrue(ah.waitForExistence(timeout: 5))
+        ah.tap()
+        let open = app.buttons["New rig move"]
+        XCTAssertTrue(open.waitForExistence(timeout: 6))
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
         open.tap()
         XCTAssertTrue(app.navigationBars["New entry"].waitForExistence(timeout: 6))
     }

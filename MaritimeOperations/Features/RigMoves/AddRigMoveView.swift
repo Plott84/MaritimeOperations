@@ -403,7 +403,7 @@ struct AddRigMoveView: View {
                     spokenLabel: { $0 == .dp ? "D P" : $0.label },
                     identifier: { "ahControl_\($0.rawValue)" }
                 )
-                .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 170)
+                .frame(minWidth: 0, maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 170)
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -472,7 +472,7 @@ struct AddRigMoveView: View {
                     label: \.label,
                     identifier: { "ahSupervised_\($0.rawValue)" }
                 )
-                .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 170)
+                .frame(minWidth: 0, maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 170)
             }
 
             detailTiles

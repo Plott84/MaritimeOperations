@@ -4,7 +4,6 @@ enum AppTab: String, CaseIterable, Identifiable {
     case main
     /// Book list. Title is Entries; raw value stays `log` so UI tests keep `tab_log`.
     case log
-    case rigMoves
     case tools
     case export
 
@@ -14,7 +13,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .main: return "Main"
         case .log: return "Entries"
-        case .rigMoves: return "Rig Moves"
         case .tools: return "Tools"
         case .export: return "Export"
         }
@@ -24,7 +22,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .main: return "house.fill"
         case .log: return "book.closed"
-        case .rigMoves: return "ferry.fill"
         case .tools: return "wrench.and.screwdriver"
         case .export: return "doc.text"
         }
@@ -55,9 +52,9 @@ struct FloatingTabBar: View {
                         }
                     }
                     .foregroundStyle(selected ? AppTheme.teal : AppTheme.textSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 4)
                     .padding(.horizontal, 2)
+                    .frame(maxWidth: .infinity, minHeight: 44)
                     .modifier(SelectedTabGlass(isSelected: selected))
                     .contentShape(Rectangle())
                 }

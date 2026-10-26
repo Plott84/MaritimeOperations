@@ -81,9 +81,9 @@ enum HomeBook: String, CaseIterable, Identifiable {
             return HomeHeroCopy(
                 eyebrow: "DP TIMER",
                 primary: "Start DP",
-                secondary: "New Rig Move",
+                secondary: nil,
                 caption: "Start when the vessel goes on DP. Stop saves the session to Entries.",
-                activityCaption: "Newest 5 records in the DP book. Rig moves stay under Rig Moves.",
+                activityCaption: "Newest 5 records in the DP book.",
                 activityChip: "5 latest · DP",
                 emptyTitle: "No DP entries yet.",
                 showsDPTimer: true
@@ -141,7 +141,8 @@ enum HomeBook: String, CaseIterable, Identifiable {
 struct HomeHeroCopy: Equatable {
     var eyebrow: String
     var primary: String
-    var secondary: String
+    /// Nil when the hero has no secondary CTA. DP idle is Start DP only.
+    var secondary: String?
     var caption: String
     var activityCaption: String
     var activityChip: String

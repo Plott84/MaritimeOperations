@@ -161,10 +161,11 @@ struct HomeEyebrowHeader: View {
                     .accessibilityHidden(true)
                 Text(title)
                     .font(.caption.weight(.semibold))
-                    .tracking(1.1)
+                    .tracking(dynamicTypeSize.isAccessibilitySize ? 0.0 : 1.1)
                     .foregroundStyle(AppTheme.teal)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1.0 : 0.6)
+                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
             }
             if !dynamicTypeSize.isAccessibilitySize {
@@ -196,20 +197,16 @@ struct HomeCTAButton: View {
     /// Spoken name when it should differ from `title` (empty-state repeat of the hero CTA).
     var spokenTitle: String? = nil
     var action: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button(action: action) {
-            Label {
-                Text(title)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: systemImage)
-            }
-            .font(.headline)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .padding(.vertical, kind == .primary ? 12 : 10)
-            .contentShape(Rectangle())
+            label
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .padding(.horizontal, 12)
+                .padding(.vertical, kind == .primary ? 12 : 10)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(kind == .primary ? AppTheme.onTeal : AppTheme.textPrimary)
@@ -225,6 +222,26 @@ struct HomeCTAButton: View {
         }
         .accessibilityIdentifier(identifier)
         .accessibilityLabel(spokenTitle ?? title)
+    }
+
+    /// AX5 stacks the icon so the title uses the full width and wraps instead of clipping.
+    @ViewBuilder private var label: some View {
+        let titleText = Text(title)
+            .multilineTextAlignment(.center)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage)
+                titleText
+            }
+        } else {
+            Label {
+                titleText
+            } icon: {
+                Image(systemName: systemImage)
+            }
+        }
     }
 }
 
@@ -251,13 +268,15 @@ struct HomeQuickStartCard: View {
                     identifier: "homePrimaryCTA",
                     action: onPrimary
                 )
-                HomeCTAButton(
-                    title: copy.secondary,
-                    systemImage: book.secondarySymbol,
-                    kind: .secondary,
-                    identifier: "homeSecondaryCTA",
-                    action: onSecondary
-                )
+                if let secondary = copy.secondary {
+                    HomeCTAButton(
+                        title: secondary,
+                        systemImage: book.secondarySymbol,
+                        kind: .secondary,
+                        identifier: "homeSecondaryCTA",
+                        action: onSecondary
+                    )
+                }
                 Text(copy.caption)
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)

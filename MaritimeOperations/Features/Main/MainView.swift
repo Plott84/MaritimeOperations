@@ -154,13 +154,6 @@ struct MainView: View {
                     identifier: "homePrimaryCTA",
                     action: toggleTimer
                 )
-                HomeCTAButton(
-                    title: HomeBook.dp.hero.secondary,
-                    systemImage: HomeBook.dp.secondarySymbol,
-                    kind: .secondary,
-                    identifier: "homeSecondaryCTA",
-                    action: onOpenRigMoves
-                )
                 Text(HomeBook.dp.hero.caption)
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
