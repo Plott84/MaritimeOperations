@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeBookStarButton: View {
-    let book: HomeBook
+    let books: HomeBooks
     var action: () -> Void
 
     var body: some View {
@@ -13,22 +13,19 @@ struct HomeBookStarButton: View {
                 .background(AppTheme.teal, in: Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(book.starAccessibilityLabel)
+        .accessibilityLabel(books.voiceLabel)
         .accessibilityHint(HomeBook.changeHint)
         .accessibilityIdentifier("homeBookStar")
     }
 }
 
 struct HomeBookChip: View {
-    let book: HomeBook
+    let books: HomeBooks
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            (Text("Home book · ★ \(book.chipTitle) · ")
-                .foregroundStyle(AppTheme.textPrimary)
-                + Text("Change ›")
-                .foregroundStyle(AppTheme.teal))
+            chipText
                 .font(.subheadline.weight(.semibold))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -39,14 +36,33 @@ struct HomeBookChip: View {
                 .overlay(Capsule().strokeBorder(AppTheme.cardBorder, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(book.starAccessibilityLabel)
+        .accessibilityLabel(books.voiceLabel)
         .accessibilityHint(HomeBook.changeHint)
         .accessibilityIdentifier("homeBookChip")
+    }
+
+    private var chipText: Text {
+        var text = Text("On Main · ")
+            .foregroundStyle(AppTheme.textPrimary)
+            + Text("★ \(books.primary.chipTitle)")
+            .foregroundStyle(AppTheme.teal)
+        if let secondary = books.secondary {
+            text = text
+                + Text(" · ")
+                .foregroundStyle(AppTheme.textPrimary)
+                + Text("★ \(secondary.chipTitle)")
+                .foregroundStyle(AppTheme.teal)
+        }
+        return text
+            + Text(" · ")
+            .foregroundStyle(AppTheme.textPrimary)
+            + Text("Change ›")
+            .foregroundStyle(AppTheme.teal)
     }
 }
 
 struct HomeBookPickerSheet: View {
-    @Binding var selection: HomeBook
+    @Binding var books: HomeBooks
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -55,8 +71,15 @@ struct HomeBookPickerSheet: View {
                 AppCanvas()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
+                        sectionTitle("PRIMARY")
                         ForEach(HomeBook.allCases) { book in
-                            option(book)
+                            primaryOption(book)
+                        }
+                        sectionTitle("SECONDARY")
+                            .padding(.top, 8)
+                        noneOption
+                        ForEach(HomeBook.allCases) { book in
+                            secondaryOption(book)
                         }
                         Text(HomeBook.pickerFootnote)
                             .font(.footnote)
@@ -69,7 +92,7 @@ struct HomeBookPickerSheet: View {
                     .padding(16)
                 }
             }
-            .navigationTitle("Home book")
+            .navigationTitle(HomeBook.pickerTitle)
             .navigationBarTitleDisplayMode(.inline)
             .systemGlassNavigation()
             .toolbar {
@@ -79,46 +102,150 @@ struct HomeBookPickerSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large, .medium])
         .presentationDragIndicator(.visible)
     }
 
-    private func option(_ book: HomeBook) -> some View {
-        let selected = book == selection
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .tracking(1.1)
+            .foregroundStyle(AppTheme.teal)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func primaryOption(_ book: HomeBook) -> some View {
+        let selected = book == books.primary
         return Button {
-            selection = book
+            books = books.selectingPrimary(book)
             dismiss()
         } label: {
-            HStack(spacing: 12) {
-                LogBookIcon(book: book.logBook, scale: 0.9)
-                    .foregroundStyle(AppTheme.teal)
-                    .frame(width: 28, height: 28)
-                    .accessibilityHidden(true)
-                Text(book.chipTitle)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                if selected {
-                    Image(systemName: "checkmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(AppTheme.teal)
-                        .accessibilityHidden(true)
-                }
-            }
-            .padding(.horizontal, 14)
-            .frame(minHeight: 44)
-            .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(selected ? AppTheme.teal : AppTheme.cardBorder, lineWidth: selected ? 1.5 : 1)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            optionLabel(book, selected: selected, showsCheck: selected)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(book.voiceName)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookOption_\(book.rawValue)")
+    }
+
+    private var noneOption: some View {
+        let selected = books.secondary == nil
+        return Button {
+            books = books.selectingSecondary(nil)
+        } label: {
+            HStack(spacing: 12) {
+                Text("None")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                Spacer(minLength: 8)
+                if selected {
+                    checkmark
+                }
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 44)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(rowFill(selected: selected))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("None")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier("homeBookSecondaryNone")
+    }
+
+    private func secondaryOption(_ book: HomeBook) -> some View {
+        let isPrimary = book == books.primary
+        let isSecondary = book == books.secondary
+        return HStack(spacing: 4) {
+            Button {
+                books = books.selectingSecondary(book)
+            } label: {
+                HStack(spacing: 12) {
+                    bookIcon(book)
+                    Text(book.chipTitle)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    if isPrimary {
+                        Text("Primary")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                    } else if isSecondary {
+                        checkmark
+                    }
+                }
+                .padding(.leading, 14)
+                .padding(.trailing, isSecondary ? 4 : 14)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(isPrimary)
+            .accessibilityLabel(book.voiceName)
+            .accessibilityAddTraits(isSecondary ? .isSelected : [])
+            .accessibilityIdentifier("homeBookSecondaryOption_\(book.rawValue)")
+            if isSecondary {
+                Button {
+                    books = books.makingSecondaryPrimary()
+                    dismiss()
+                } label: {
+                    Text("Make primary")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.teal)
+                        .padding(.horizontal, 8)
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.trailing, 6)
+                .accessibilityIdentifier("homeBookMakePrimary")
+            }
+        }
+        .background(rowFill(selected: isSecondary))
+        .opacity(isPrimary ? 0.45 : 1)
+    }
+
+    private func bookIcon(_ book: HomeBook) -> some View {
+        LogBookIcon(book: book.logBook, scale: 0.9)
+            .foregroundStyle(AppTheme.teal)
+            .frame(width: 28, height: 28)
+            .accessibilityHidden(true)
+    }
+
+    private func optionLabel(_ book: HomeBook, selected: Bool, showsCheck: Bool) -> some View {
+        HStack(spacing: 12) {
+            bookIcon(book)
+            Text(book.chipTitle)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            if showsCheck {
+                checkmark
+            }
+        }
+        .padding(.horizontal, 14)
+        .frame(minHeight: 44)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(rowFill(selected: selected))
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func rowFill(selected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(AppTheme.card)
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(selected ? AppTheme.teal : AppTheme.cardBorder, lineWidth: selected ? 1.5 : 1)
+            }
+    }
+
+    private var checkmark: some View {
+        Image(systemName: "checkmark")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(AppTheme.teal)
+            .accessibilityHidden(true)
     }
 }
 
@@ -241,6 +368,86 @@ struct HomeCTAButton: View {
             } icon: {
                 Image(systemName: systemImage)
             }
+        }
+    }
+}
+
+/// Compact card under the hero. One status line and the book's start action. Not a second hero.
+struct HomeSecondaryCard: View {
+    let book: HomeBook
+    var status: String
+    var cta: String
+    var systemImage: String
+    var action: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        let layout = stacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+        GlassCard(padding: 14) {
+            layout {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        eyebrowIcon
+                        Text(book.hero.eyebrow)
+                            .font(.caption.weight(.semibold))
+                            .tracking(stacked ? 0 : 1.1)
+                            .foregroundStyle(AppTheme.teal)
+                            .lineLimit(stacked ? nil : 1)
+                            .minimumScaleFactor(stacked ? 1 : 0.7)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    Text(status)
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(stacked ? nil : 1)
+                        .minimumScaleFactor(stacked ? 1 : 0.75)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("homeBookSecondaryStatus")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(action: action) {
+                    Label {
+                        Text(cta)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(stacked ? nil : 1)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: systemImage)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppTheme.onTeal)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: stacked ? .infinity : nil, minHeight: 44)
+                    .background(AppTheme.teal, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .fixedSize(horizontal: !stacked, vertical: false)
+                .layoutPriority(1)
+                .accessibilityIdentifier("homeBookSecondaryCTA")
+                .accessibilityLabel(HomeSecondaryLine.accessibilityLabel(book: book, cta: cta))
+                .accessibilityValue(status)
+            }
+        }
+        .accessibilityIdentifier("homeBookSecondaryCard_\(book.rawValue)")
+    }
+
+    @ViewBuilder private var eyebrowIcon: some View {
+        if book == .dp {
+            Image(systemName: "scope")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppTheme.teal)
+                .accessibilityHidden(true)
+        } else {
+            LogBookIcon(book: book.logBook, scale: 0.85)
+                .foregroundStyle(AppTheme.teal)
+                .accessibilityHidden(true)
         }
     }
 }

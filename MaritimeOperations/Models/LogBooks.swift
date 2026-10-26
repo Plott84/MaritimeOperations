@@ -2,7 +2,7 @@ import Foundation
 
 // Log tab books and card totals. Moved here from LogView.swift
 // (unchanged for DP and Anchor handling) and widened to ROV and Crane.
-// Which book Main shows is HomeBook (`homeBook`), not a multi-star list.
+// Which books Main shows is HomeBooks (`homeBook` plus optional `homeBookSecondary`).
 
 /// A book on the Entries tab. Raw values are stored: never rename them.
 /// New books go at the END so the Log order is DP, Anchor handling, ROV, Crane.

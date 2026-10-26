@@ -20,9 +20,10 @@ final class HomeBookUITests: XCTestCase {
 
         let chip = app.buttons["homeBookChip"]
         XCTAssertTrue(chip.waitForExistence(timeout: 3))
-        XCTAssertTrue(chip.label.contains("Home book"))
+        XCTAssertTrue(chip.label.contains("On Main"))
         XCTAssertTrue(chip.label.contains("D P"))
-        XCTAssertTrue(app.buttons["homeBookStar"].label.contains("Home book"))
+        XCTAssertFalse(chip.label.contains("Crane"))
+        XCTAssertTrue(app.buttons["homeBookStar"].label.contains("On Main"))
         XCTAssertTrue(app.buttons["homeBookStar"].label.contains("D P"))
         XCTAssertTrue(app.staticTexts["5 latest · DP"].exists)
         XCTAssertTrue(app.staticTexts["Newest 5 records in the DP book."].exists)
@@ -67,7 +68,7 @@ final class HomeBookUITests: XCTestCase {
         app.buttons["homeBookStar"].tap()
         let crane = app.buttons["homeBookOption_crane"]
         XCTAssertTrue(crane.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Main shows this book\u{2019}s quick-start. Change anytime."].exists)
+        XCTAssertTrue(app.staticTexts["Primary gets the big card. Secondary sits under it. Max two."].exists)
         XCTAssertTrue(app.buttons["homeBookOption_dp"].isSelected)
         XCTAssertFalse(crane.isSelected)
         crane.tap()
@@ -165,27 +166,163 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["DP TIMER"].exists)
     }
 
-    func testHB08_logStarReplacesHomeBook() throws {
+    /// A second Entries star sits under the primary. It does not replace the DP hero.
+    func testHB08_secondLogStarSitsUnderThePrimary() throws {
         let app = XCUIApplication.launchedClean()
         app.buttons["tab_log"].tap()
         let dpStar = app.buttons["logBookStar_dp"]
         XCTAssertTrue(dpStar.waitForExistence(timeout: 5))
         XCTAssertTrue(dpStar.isSelected)
+        tapLogStar(app, "anchorHandling")
         let ahStar = app.buttons["logBookStar_anchorHandling"]
+        XCTAssertTrue(ahStar.isSelected)
+        XCTAssertTrue(dpStar.isSelected)
+        app.buttons["tab_main"].tap()
+        XCTAssertTrue(app.staticTexts["DP TIMER"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Start DP"].firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any)["homeHero_ah"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_ah"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["homeBookSecondaryCTA"].label.contains("New rig move"))
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["homeSecondaryCTA"].exists)
+    }
+
+    /// HB-13a: DP hero, Crane compact card, chip names both, one Latest list.
+    func testHB13a_dpHeroAndCraneSecondaryCard() throws {
+        let app = starDPThenCrane()
+        XCTAssertTrue(app.staticTexts["DP TIMER"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["homeHero_crane"].exists)
+        XCTAssertTrue(app.buttons["Start DP"].firstMatch.exists)
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["homeSecondaryCTA"].exists)
+        XCTAssertFalse(app.buttons["Open Crane log"].exists)
+        let secondary = app.buttons["homeBookSecondaryCTA"]
+        XCTAssertTrue(secondary.waitForExistence(timeout: 3))
+        XCTAssertEqual(secondary.label, "Crane on Main, New lift")
+        XCTAssertGreaterThan(secondary.frame.height, 43)
+        XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_crane"].exists)
+        XCTAssertEqual(app.staticTexts["homeBookSecondaryStatus"].label, "No entries yet")
+        let chip = app.buttons["homeBookChip"]
+        XCTAssertTrue(chip.label.contains("D P"))
+        XCTAssertTrue(chip.label.contains("Crane"))
+        XCTAssertTrue(app.buttons["homeBookStar"].label.contains("Crane"))
+        XCTAssertTrue(app.staticTexts["5 latest · DP"].exists)
+        XCTAssertFalse(app.staticTexts["5 latest · Crane"].exists)
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "Latest Activity")).count, 1)
+        XCTAssertFalse(app.staticTexts["STARRED"].exists)
+        XCTAssertFalse(app.buttons["mainEditStarredBooks"].exists)
+        let tabs = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab_'"))
+        XCTAssertEqual(tabs.count, 4)
+        XCTAssertFalse(app.buttons["tab_rigMoves"].exists)
+    }
+
+    /// HB-13b: starring AH after DP + Crane replaces the secondary. DP stays primary.
+    func testHB13b_thirdStarReplacesSecondary() throws {
+        let app = starDPThenCrane()
+        app.buttons["tab_log"].tap()
+        tapLogStar(app, "anchorHandling")
+        XCTAssertTrue(app.buttons["logBookStar_dp"].isSelected)
+        XCTAssertTrue(app.buttons["logBookStar_anchorHandling"].isSelected)
+        XCTAssertFalse(app.buttons["logBookStar_crane"].isSelected)
+        app.buttons["tab_main"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["homeHero_ah"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["homeBookSecondaryCard_crane"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_ah"].exists)
+        XCTAssertEqual(app.buttons["homeBookSecondaryCTA"].label, "A H on Main, New rig move")
+        XCTAssertTrue(app.buttons["Start DP"].firstMatch.exists)
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertTrue(app.staticTexts["5 latest · DP"].exists)
+        XCTAssertTrue(app.buttons["homeBookChip"].label.contains("A H"))
+        XCTAssertFalse(app.buttons["homeBookChip"].label.contains("Crane"))
+    }
+
+    /// HB-13c: Make primary swaps Crane into the hero and DP into the compact card.
+    func testHB13c_makePrimarySwapsTheBooks() throws {
+        let app = starDPThenCrane()
+        app.buttons["homeBookChip"].tap()
+        XCTAssertTrue(app.navigationBars["On Main"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["homeBookOption_dp"].isSelected)
+        XCTAssertFalse(app.buttons["homeBookOption_crane"].isSelected)
+        let make = app.buttons["homeBookMakePrimary"]
         var swipes = 0
-        while !ahStar.isHittable && swipes < 4 {
+        while !make.isHittable && swipes < 6 {
             app.swipeUp()
             swipes += 1
         }
-        ahStar.tap()
-        XCTAssertTrue(ahStar.isSelected)
-        XCTAssertFalse(dpStar.isSelected)
-        app.buttons["tab_main"].tap()
-        XCTAssertTrue(app.staticTexts["ANCHOR HANDLING"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["DP TIMER"].exists)
-        XCTAssertTrue(app.buttons["New rig move"].exists)
-        XCTAssertFalse(app.buttons["Start DP"].exists)
+        XCTAssertTrue(make.isHittable)
+        make.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_crane"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["homeHero_dp"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_dp"].exists)
+        XCTAssertTrue(app.buttons["New lift"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Open Crane log"].exists)
+        XCTAssertEqual(app.buttons["homeBookSecondaryCTA"].label, "D P on Main, Start DP")
+        XCTAssertEqual(app.staticTexts["homeBookSecondaryStatus"].label, "00:00 · Ready")
+        XCTAssertFalse(app.staticTexts["00:00"].exists)
         XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertTrue(app.staticTexts["5 latest · Crane"].exists)
+        XCTAssertFalse(app.staticTexts["5 latest · DP"].exists)
+        XCTAssertTrue(app.buttons["homeBookChip"].label.contains("Crane"))
+        XCTAssertTrue(app.buttons["homeBookChip"].label.contains("D P"))
+    }
+
+    /// HB-13d: with Crane under a DP hero, Latest stays on DP.
+    func testHB13d_activityChipStaysOnThePrimary() throws {
+        let app = starDPThenCrane()
+        XCTAssertTrue(app.staticTexts["5 latest · DP"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Newest 5 records in the DP book."].exists)
+        XCTAssertFalse(app.staticTexts["5 latest · Crane"].exists)
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "Latest Activity")).count, 1)
+    }
+
+    /// HB-13e: the pair is still there after relaunch.
+    func testHB13e_primaryAndSecondaryPersist() throws {
+        let app = starDPThenCrane()
+        app.relaunchKeepingState()
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_crane"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["homeHero_crane"].exists)
+        XCTAssertEqual(app.buttons["homeBookSecondaryCTA"].label, "Crane on Main, New lift")
+        XCTAssertTrue(app.buttons["homeBookChip"].label.contains("D P"))
+        XCTAssertTrue(app.buttons["homeBookChip"].label.contains("Crane"))
+        XCTAssertTrue(app.buttons["Start DP"].firstMatch.exists)
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
+        XCTAssertFalse(app.buttons["tab_rigMoves"].exists)
+    }
+
+    private func starDPThenCrane() -> XCUIApplication {
+        let app = XCUIApplication.launchedClean()
+        XCTAssertTrue(app.buttons["tab_log"].waitForExistence(timeout: 8))
+        app.buttons["tab_log"].tap()
+        let dpStar = app.buttons["logBookStar_dp"]
+        XCTAssertTrue(dpStar.waitForExistence(timeout: 5))
+        XCTAssertTrue(dpStar.isSelected)
+        dpStar.tap()
+        XCTAssertTrue(dpStar.isSelected, "Clearing the only DP star falls back to DP")
+        tapLogStar(app, "crane")
+        XCTAssertTrue(app.buttons["logBookStar_crane"].isSelected)
+        XCTAssertTrue(dpStar.isSelected)
+        app.buttons["tab_main"].tap()
+        XCTAssertTrue(app.staticTexts["DP TIMER"].waitForExistence(timeout: 5))
+        return app
+    }
+
+    private func tapLogStar(_ app: XCUIApplication, _ raw: String) {
+        let star = app.buttons["logBookStar_\(raw)"]
+        XCTAssertTrue(star.waitForExistence(timeout: 5))
+        var swipes = 0
+        while !star.isHittable && swipes < 4 {
+            app.swipeDown()
+            swipes += 1
+        }
+        swipes = 0
+        while !star.isHittable && swipes < 6 {
+            app.swipeUp()
+            swipes += 1
+        }
+        star.tap()
     }
 
     private func openCraneHome() -> XCUIApplication {
