@@ -24,7 +24,7 @@ extension LogBookStats {
     }
 }
 
-/// Entries tab: one card per book. Tap a card to open the book. The On Main star sets Home book.
+/// Entries tab: one card per book. Tap a card to open the book. Stars put up to two books on Main.
 struct LogView: View {
     @Query private var entries: [DPEntry]
     @Query private var moves: [RigMove]
@@ -32,7 +32,19 @@ struct LogView: View {
     @Query private var craneEntries: [CraneEntry]
     @AppStorage("dp.oldHoursText") private var oldHoursText = ""
     @AppStorage(HomeBook.storageKey) private var homeBookRaw = HomeBook.defaultRaw
+    @AppStorage(HomeBooks.secondaryStorageKey) private var homeBookSecondaryRaw = ""
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var books: HomeBooks {
+        HomeBooks.resolve(primaryRaw: homeBookRaw, secondaryRaw: homeBookSecondaryRaw)
+    }
+
+    /// Secondary is written first so a swap does not briefly store the same book twice.
+    private func store(_ next: HomeBooks) {
+        let normalized = HomeBooks(primary: next.primary, secondary: next.secondary)
+        homeBookSecondaryRaw = normalized.storedSecondaryRaw
+        homeBookRaw = normalized.primary.rawValue
+    }
 
     private var stats: LogBookStats {
         LogBookStats(entries: entries, moves: moves, rovEntries: rovEntries, craneEntries: craneEntries, oldDPHoursText: oldHoursText)
@@ -51,7 +63,7 @@ struct LogView: View {
                         bookCard(book)
                     }
                     Label {
-                        Text("The On Main star sets the Home book. Starring another replaces it.")
+                        Text(HomeBooks.entriesFootnote)
                     } icon: {
                         Image(systemName: "star.fill")
                             .foregroundStyle(AppTheme.teal)
@@ -72,7 +84,7 @@ struct LogView: View {
     }
 
     private func bookCard(_ book: LogBook) -> some View {
-        let starred = HomeBook.resolve(homeBookRaw).logBook == book
+        let role = books.role(of: HomeBook(logBook: book))
         let stacked = dynamicTypeSize.isAccessibilitySize
         return GlassCard(padding: 14) {
             VStack(alignment: .leading, spacing: 12) {
@@ -125,7 +137,7 @@ struct LogView: View {
                     statsLine(book)
                         .accessibilityElement(children: .combine)
                     if !stacked { Spacer(minLength: 8) }
-                    starButton(book, starred: starred)
+                    starButton(book, role: role)
                 }
             }
         }
@@ -154,25 +166,26 @@ struct LogView: View {
         stats.logSpokenValue(for: book)
     }
 
-    private func starButton(_ book: LogBook, starred: Bool) -> some View {
-        Button {
-            homeBookRaw = HomeBook(logBook: book).rawValue
+    private func starButton(_ book: LogBook, role: HomeOnMainRole) -> some View {
+        let home = HomeBook(logBook: book)
+        return Button {
+            store(books.starring(home))
         } label: {
-            Label("On Main", systemImage: starred ? "star.fill" : "star")
+            Label("On Main", systemImage: role.isOnMain ? "star.fill" : "star")
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .frame(minHeight: 44)
-                .foregroundStyle(starred ? AppTheme.onTeal : AppTheme.textPrimary)
-                .background(starred ? AppTheme.teal : AppTheme.pickerFill, in: Capsule())
-                .overlay(Capsule().strokeBorder(starred ? AppTheme.teal : AppTheme.fieldBorder, lineWidth: 1))
+                .foregroundStyle(role.isOnMain ? AppTheme.onTeal : AppTheme.textPrimary)
+                .background(role.isOnMain ? AppTheme.teal : AppTheme.pickerFill, in: Capsule())
+                .overlay(Capsule().strokeBorder(role.isOnMain ? AppTheme.teal : AppTheme.fieldBorder, lineWidth: 1))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("On Main, \(book.spokenTitle)")
-        .accessibilityValue(starred ? "Home book" : "Off")
-        .accessibilityHint(starred ? "This is the Home book." : "Sets this book as the Home book and replaces the current one.")
-        .accessibilityAddTraits(starred ? .isSelected : [])
+        .accessibilityValue(books.starValue(for: home))
+        .accessibilityHint(books.starHint(for: home))
+        .accessibilityAddTraits(role.isOnMain ? .isSelected : [])
         .accessibilityIdentifier("logBookStar_\(book.rawValue)")
     }
 }

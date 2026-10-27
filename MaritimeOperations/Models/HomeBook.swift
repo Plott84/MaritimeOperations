@@ -1,9 +1,10 @@
 import Foundation
 
-// One preferred book for Main. Raw values are the AppStorage contract (`homeBook`):
-// dp, ah, crane, rov. `ah` is not LogBook.anchorHandling. Do not rename them.
-// The old multi-star key `log.starredBooks` is not read. Changing this value never
-// deletes entries; it only swaps Main's hero and Latest Activity.
+// Preferred books for Main. Raw values are the AppStorage contract:
+// `homeBook` and optional `homeBookSecondary` — dp, ah, crane, rov.
+// `ah` is not LogBook.anchorHandling. Do not rename them.
+// The old multi-star key `log.starredBooks` is not read. Changing these values never
+// deletes entries. Primary owns the hero and Latest Activity. Secondary is a compact card.
 
 enum HomeBook: String, CaseIterable, Identifiable {
     case dp
@@ -14,7 +15,8 @@ enum HomeBook: String, CaseIterable, Identifiable {
     static let storageKey = "homeBook"
     static let defaultRaw = HomeBook.dp.rawValue
     static let changeHint = "Double tap to change."
-    static let pickerFootnote = "Main shows this book\u{2019}s quick-start. Change anytime."
+    static let pickerTitle = "On Main"
+    static let pickerFootnote = "Primary gets the big card. Secondary sits under it. Max two."
 
     var id: String { rawValue }
 
@@ -46,7 +48,7 @@ enum HomeBook: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Spoken book in "Home book, {Book}".
+    /// Spoken book in "On Main, {Book}".
     var voiceName: String {
         switch self {
         case .dp: return "D P"
@@ -56,9 +58,10 @@ enum HomeBook: String, CaseIterable, Identifiable {
         }
     }
 
-    var starAccessibilityLabel: String { "Home book, \(voiceName)" }
+    /// Nav star and chip when this book is primary and nothing sits under it.
+    var starAccessibilityLabel: String { HomeBooks(primary: self).voiceLabel }
 
-    var chipLine: String { "Home book · ★ \(chipTitle) · Change ›" }
+    var chipLine: String { HomeBooks(primary: self).chipLine }
 
     var primarySymbol: String {
         switch self {
@@ -135,6 +138,191 @@ enum HomeBook: String, CaseIterable, Identifiable {
 
     static func save(_ book: HomeBook, defaults: UserDefaults) {
         defaults.set(book.rawValue, forKey: storageKey)
+    }
+}
+
+/// Primary book plus an optional secondary. Secondary is empty or a different book.
+struct HomeBooks: Equatable {
+    var primary: HomeBook
+    var secondary: HomeBook?
+
+    static let secondaryStorageKey = "homeBookSecondary"
+    static let entriesFootnote = "The first On Main star is the primary book. A second book sits under it. A third replaces the secondary."
+
+    init(primary: HomeBook = .dp, secondary: HomeBook? = nil) {
+        self.primary = primary
+        if let secondary, secondary != primary {
+            self.secondary = secondary
+        } else {
+            self.secondary = nil
+        }
+    }
+
+    var storedSecondaryRaw: String { secondary?.rawValue ?? "" }
+
+    var voiceLabel: String {
+        if let secondary {
+            return "On Main, \(primary.voiceName), \(secondary.voiceName)"
+        }
+        return "On Main, \(primary.voiceName)"
+    }
+
+    var chipLine: String {
+        if let secondary {
+            return "On Main · ★ \(primary.chipTitle) · ★ \(secondary.chipTitle) · Change ›"
+        }
+        return "On Main · ★ \(primary.chipTitle) · Change ›"
+    }
+
+    func role(of book: HomeBook) -> HomeOnMainRole {
+        if book == primary { return .primary }
+        if book == secondary { return .secondary }
+        return .off
+    }
+
+    func starValue(for book: HomeBook) -> String {
+        role(of: book).accessibilityValue
+    }
+
+    func starHint(for book: HomeBook) -> String {
+        switch role(of: book) {
+        case .primary:
+            if secondary == nil, primary != .dp {
+                return "Primary book on Main. Clears it and Main falls back to D P."
+            }
+            return "Primary book on Main."
+        case .secondary:
+            return "Secondary book on Main. Removes it from Main."
+        case .off:
+            if secondary == nil {
+                return "Adds this book under the primary on Main."
+            }
+            return "Replaces the secondary book on Main."
+        }
+    }
+
+    /// Entries star.
+    /// The current primary is the first star. Another book becomes secondary.
+    /// A further book replaces secondary. Primary changes in the On Main sheet.
+    /// Starring the secondary clears it. Starring the only book falls back to DP.
+    /// Starring the primary while a secondary is set keeps the pair.
+    func starring(_ book: HomeBook) -> HomeBooks {
+        if book == primary {
+            if secondary == nil {
+                return HomeBooks(primary: .dp)
+            }
+            return self
+        }
+        if book == secondary {
+            return HomeBooks(primary: primary)
+        }
+        return HomeBooks(primary: primary, secondary: book)
+    }
+
+    func selectingPrimary(_ book: HomeBook) -> HomeBooks {
+        if book == primary { return self }
+        if book == secondary {
+            return HomeBooks(primary: book, secondary: primary)
+        }
+        return HomeBooks(primary: book, secondary: secondary)
+    }
+
+    func selectingSecondary(_ book: HomeBook?) -> HomeBooks {
+        guard let book else { return HomeBooks(primary: primary) }
+        if book == primary { return self }
+        return HomeBooks(primary: primary, secondary: book)
+    }
+
+    func makingSecondaryPrimary() -> HomeBooks {
+        guard let secondary else { return self }
+        return HomeBooks(primary: secondary, secondary: primary)
+    }
+
+    static func resolve(primaryRaw: String?, secondaryRaw: String?) -> HomeBooks {
+        let secondary = secondaryRaw.flatMap { raw -> HomeBook? in
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return nil }
+            return HomeBook(rawValue: trimmed)
+        }
+        return HomeBooks(primary: HomeBook.resolve(primaryRaw), secondary: secondary)
+    }
+
+    /// Reads both keys. Does not write, so an install with only `homeBook` keeps a nil secondary.
+    static func load(defaults: UserDefaults) -> HomeBooks {
+        resolve(
+            primaryRaw: defaults.string(forKey: HomeBook.storageKey),
+            secondaryRaw: defaults.string(forKey: secondaryStorageKey)
+        )
+    }
+
+    func save(to defaults: UserDefaults) {
+        defaults.set(primary.rawValue, forKey: HomeBook.storageKey)
+        if let secondary {
+            defaults.set(secondary.rawValue, forKey: Self.secondaryStorageKey)
+        } else {
+            defaults.removeObject(forKey: Self.secondaryStorageKey)
+        }
+    }
+}
+
+enum HomeOnMainRole: Equatable {
+    case primary
+    case secondary
+    case off
+
+    var isOnMain: Bool { self != .off }
+
+    var accessibilityValue: String {
+        switch self {
+        case .primary: return "Primary"
+        case .secondary: return "Secondary"
+        case .off: return "Off"
+        }
+    }
+}
+
+/// Compact secondary card: one status line and the book's start action. Not a second hero.
+enum HomeSecondaryLine {
+    static func status(
+        book: HomeBook,
+        dpClock: String = "00:00",
+        dpRunning: Bool = false,
+        craneLift: CraneHomeLastLift? = nil,
+        anchor: HomeEntrySummary? = nil,
+        rov: HomeEntrySummary? = nil
+    ) -> String {
+        switch book {
+        case .dp:
+            return "\(dpClock) · \(dpRunning ? "Running" : "Ready")"
+        case .crane:
+            guard let craneLift else { return "No entries yet" }
+            if let value = craneLift.value {
+                return "Last lift · \(value)"
+            }
+            return "Last lift · \(craneLift.sub)"
+        case .ah:
+            guard let anchor else { return "No entries yet" }
+            return oneLine(title: anchor.title, sub: anchor.sub)
+        case .rov:
+            guard let rov else { return "No entries yet" }
+            return oneLine(title: rov.title, sub: rov.sub)
+        }
+    }
+
+    /// Start action. A running DP session shows Stop DP so this card can stop the same timer.
+    static func cta(book: HomeBook, dpRunning: Bool = false) -> String {
+        if book == .dp, dpRunning { return "Stop DP" }
+        return book.hero.primary
+    }
+
+    static func accessibilityLabel(book: HomeBook, cta: String) -> String {
+        "\(book.voiceName) on Main, \(cta)"
+    }
+
+    private static func oneLine(title: String, sub: String) -> String {
+        let sub = sub.trimmingCharacters(in: .whitespacesAndNewlines)
+        if sub.isEmpty { return title }
+        return "\(title) · \(sub)"
     }
 }
 

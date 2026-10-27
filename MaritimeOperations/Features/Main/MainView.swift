@@ -8,6 +8,7 @@ struct MainView: View {
     @Query private var rovEntries: [ROVEntry]
     @Query private var craneEntries: [CraneEntry]
     @AppStorage(HomeBook.storageKey) private var homeBookRaw = HomeBook.defaultRaw
+    @AppStorage(HomeBooks.secondaryStorageKey) private var homeBookSecondaryRaw = ""
     @AppStorage(DPDaysSettings.targetTextKey) private var dayTargetText = DPDaysSettings.defaultTargetText
     @AppStorage(DPDaysSettings.certificateKey) private var certificateISO = ""
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -26,15 +27,21 @@ struct MainView: View {
     @State private var vesselDraft = ""
     @State private var classDraft: Int?
 
-    private var homeBook: HomeBook {
-        HomeBook.resolve(homeBookRaw)
+    private var books: HomeBooks {
+        HomeBooks.resolve(primaryRaw: homeBookRaw, secondaryRaw: homeBookSecondaryRaw)
     }
 
-    private var homeBookSelection: Binding<HomeBook> {
-        Binding(
-            get: { HomeBook.resolve(homeBookRaw) },
-            set: { homeBookRaw = $0.rawValue }
-        )
+    private var homeBook: HomeBook { books.primary }
+
+    private var booksBinding: Binding<HomeBooks> {
+        Binding(get: { books }, set: { store($0) })
+    }
+
+    /// Secondary is written first so a swap does not briefly store the same book twice.
+    private func store(_ next: HomeBooks) {
+        let normalized = HomeBooks(primary: next.primary, secondary: next.secondary)
+        homeBookSecondaryRaw = normalized.storedSecondaryRaw
+        homeBookRaw = normalized.primary.rawValue
     }
 
     var body: some View {
@@ -42,7 +49,7 @@ struct MainView: View {
             AppCanvas()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HomeBookChip(book: homeBook) { showHomeBookPicker = true }
+                    HomeBookChip(books: books) { showHomeBookPicker = true }
                     switch homeBook {
                     case .dp:
                         timerCard
@@ -56,6 +63,10 @@ struct MainView: View {
                         anchorHero
                     case .rov:
                         rovHero
+                    }
+                    // Prefill and DP days stay with the DP hero. The secondary card sits under that block.
+                    if books.secondary != nil {
+                        secondaryCard
                     }
                     HomeActivityCard(
                         book: homeBook,
@@ -84,14 +95,14 @@ struct MainView: View {
                 }
                 .accessibilityLabel("Settings")
                 .accessibilityIdentifier("mainSettings")
-                HomeBookStarButton(book: homeBook) { showHomeBookPicker = true }
+                HomeBookStarButton(books: books) { showHomeBookPicker = true }
             }
         }
         .navigationDestination(isPresented: $showDPDaysSettings) {
             DPDaysSettingsView()
         }
         .sheet(isPresented: $showHomeBookPicker) {
-            HomeBookPickerSheet(selection: homeBookSelection)
+            HomeBookPickerSheet(books: booksBinding)
         }
         .sheet(item: $editingEntry) { entry in
             DPEntryFieldsSheet(mode: .edit(entry))
@@ -200,6 +211,67 @@ struct MainView: View {
         )
     }
 
+    @ViewBuilder private var secondaryCard: some View {
+        if let secondary = books.secondary {
+            if secondary == .dp {
+                dpSecondaryCard
+            } else {
+                HomeSecondaryCard(
+                    book: secondary,
+                    status: secondaryStatus(secondary, dpClock: "00:00", dpRunning: false),
+                    cta: HomeSecondaryLine.cta(book: secondary, dpRunning: false),
+                    systemImage: secondary.primarySymbol,
+                    action: { perform(secondary) }
+                )
+            }
+        }
+    }
+
+    private var dpSecondaryCard: some View {
+        Group {
+            if session.startedAt != nil {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let clock = AppFormatters.timerString(from: session.elapsed(at: context.date))
+                    HomeSecondaryCard(
+                        book: .dp,
+                        status: HomeSecondaryLine.status(book: .dp, dpClock: clock, dpRunning: true),
+                        cta: HomeSecondaryLine.cta(book: .dp, dpRunning: true),
+                        systemImage: "stop.fill",
+                        action: { perform(.dp) }
+                    )
+                }
+            } else {
+                HomeSecondaryCard(
+                    book: .dp,
+                    status: HomeSecondaryLine.status(book: .dp, dpClock: "00:00", dpRunning: false),
+                    cta: HomeSecondaryLine.cta(book: .dp, dpRunning: false),
+                    systemImage: HomeBook.dp.primarySymbol,
+                    action: { perform(.dp) }
+                )
+            }
+        }
+    }
+
+    private func secondaryStatus(_ book: HomeBook, dpClock: String, dpRunning: Bool) -> String {
+        HomeSecondaryLine.status(
+            book: book,
+            dpClock: dpClock,
+            dpRunning: dpRunning,
+            craneLift: book == .crane ? CraneHomeLastLift.latest(in: craneEntries) : nil,
+            anchor: book == .ah ? HomeActivity.newestMove(rigMoves).map { HomeEntrySummary.anchorHandling($0) } : nil,
+            rov: book == .rov ? HomeActivity.newestROV(rovEntries).map { HomeEntrySummary.rov($0) } : nil
+        )
+    }
+
+    private func perform(_ book: HomeBook) {
+        switch book {
+        case .dp: toggleTimer()
+        case .ah: onOpenRigMoves()
+        case .crane: onNewCraneEntry()
+        case .rov: onNewROVEntry()
+        }
+    }
+
     private var prefill: DPStartPrefill.Draft {
         DPStartPrefill.make(from: entries)
     }
@@ -269,12 +341,7 @@ struct MainView: View {
     }
 
     private func performPrimary() {
-        switch homeBook {
-        case .dp: toggleTimer()
-        case .ah: onOpenRigMoves()
-        case .crane: onNewCraneEntry()
-        case .rov: onNewROVEntry()
-        }
+        perform(homeBook)
     }
 
     private func openActivity(_ item: HomeActivityItem) {

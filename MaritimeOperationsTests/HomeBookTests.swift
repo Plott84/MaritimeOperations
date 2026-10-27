@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import MaritimeOperations
 
-/// Home book: one preference, DP by default. Crane Home must not describe a DP timer.
+/// Home books: primary plus an optional secondary. DP by default. Crane Home must not describe a DP timer.
 @MainActor
 struct HomeBookTests {
     private let locale = Locale(identifier: "en_US_POSIX")
@@ -29,15 +29,21 @@ struct HomeBookTests {
     }
 
     @Test func chipAndVoiceNameTheCurrentBook() {
-        #expect(HomeBook.dp.chipLine == "Home book · ★ DP · Change ›")
-        #expect(HomeBook.crane.chipLine == "Home book · ★ Crane · Change ›")
+        #expect(HomeBook.dp.chipLine == "On Main · ★ DP · Change ›")
+        #expect(HomeBook.crane.chipLine == "On Main · ★ Crane · Change ›")
         #expect(HomeBook.ah.chipTitle == "AH")
         #expect(HomeBook.rov.chipTitle == "ROV")
-        #expect(HomeBook.dp.starAccessibilityLabel == "Home book, D P")
-        #expect(HomeBook.crane.starAccessibilityLabel == "Home book, Crane")
-        #expect(HomeBook.ah.starAccessibilityLabel == "Home book, A H")
+        #expect(HomeBook.dp.starAccessibilityLabel == "On Main, D P")
+        #expect(HomeBook.crane.starAccessibilityLabel == "On Main, Crane")
+        #expect(HomeBook.ah.starAccessibilityLabel == "On Main, A H")
         #expect(HomeBook.changeHint == "Double tap to change.")
-        #expect(HomeBook.pickerFootnote == "Main shows this book\u{2019}s quick-start. Change anytime.")
+        #expect(HomeBook.pickerTitle == "On Main")
+        #expect(HomeBook.pickerFootnote == "Primary gets the big card. Secondary sits under it. Max two.")
+        #expect(HomeBooks.entriesFootnote == "The first On Main star is the primary book. A second book sits under it. A third replaces the secondary.")
+        let pair = HomeBooks(primary: .dp, secondary: .crane)
+        #expect(pair.chipLine == "On Main · ★ DP · ★ Crane · Change ›")
+        #expect(pair.voiceLabel == "On Main, D P, Crane")
+        #expect(HomeBooks(primary: .crane, secondary: .dp).voiceLabel == "On Main, Crane, D P")
     }
 
     @Test func logStarMapsOntoTheSameBook() {
@@ -297,5 +303,173 @@ struct HomeBookTests {
         let rovSummary = HomeEntrySummary.rov(rov, locale: locale, timeZone: timeZone)
         #expect(rovSummary.title == "ROV entry")
         #expect(rovSummary.sub == "Vessel B · System A · 3 Oct · 3 h")
+    }
+
+    /// HB-13a: star DP, then Crane. DP stays the hero. Crane is the compact secondary.
+    @Test func starringDPThenCraneKeepsDPHeroAndAddsCraneSecondary() {
+        var books = HomeBooks(primary: .dp)
+        #expect(books.role(of: .dp) == .primary)
+        books = books.starring(.dp)
+        #expect(books == HomeBooks(primary: .dp))
+        books = books.starring(.crane)
+        #expect(books == HomeBooks(primary: .dp, secondary: .crane))
+        #expect(books.role(of: .dp) == .primary)
+        #expect(books.role(of: .crane) == .secondary)
+        #expect(books.role(of: .ah) == .off)
+        #expect(books.chipLine == "On Main · ★ DP · ★ Crane · Change ›")
+        #expect(HomeBook.dp.hero.primary == "Start DP")
+        #expect(HomeBook.dp.hero.secondary == nil)
+        #expect(HomeSecondaryLine.cta(book: .crane) == "New lift")
+        #expect(HomeSecondaryLine.accessibilityLabel(book: .crane, cta: "New lift") == "Crane on Main, New lift")
+        #expect(!HomeSecondaryLine.cta(book: .crane).contains("Open Crane log"))
+        #expect(HomeSecondaryLine.cta(book: .ah) != "New Rig Move")
+        #expect(HomeSecondaryLine.cta(book: .rov) == "New ROV entry")
+        #expect(HomeSecondaryLine.cta(book: .dp) == "Start DP")
+    }
+
+    /// HB-13b: a third star replaces secondary. Primary stays.
+    @Test func thirdStarReplacesSecondaryAndLeavesPrimary() {
+        let paired = HomeBooks(primary: .dp, secondary: .crane)
+        let next = paired.starring(.ah)
+        #expect(next.primary == .dp)
+        #expect(next.secondary == .ah)
+        #expect(next.role(of: .crane) == .off)
+        #expect(next.role(of: .ah) == .secondary)
+        #expect(paired.starring(.dp) == paired, "Primary stays while a secondary is set")
+        #expect(next.starring(.ah) == HomeBooks(primary: .dp), "Starring the secondary clears it")
+    }
+
+    /// HB-13c: Make primary swaps the two books. Crane hero still has no DP timer.
+    @Test func makePrimarySwapsSecondaryIntoTheHero() {
+        let swapped = HomeBooks(primary: .dp, secondary: .crane).makingSecondaryPrimary()
+        #expect(swapped == HomeBooks(primary: .crane, secondary: .dp))
+        #expect(swapped.selectingPrimary(.dp) == HomeBooks(primary: .dp, secondary: .crane))
+        #expect(!HomeBook.crane.hero.showsDPTimer)
+        #expect(!HomeBook.crane.hero.eyebrow.contains("DP TIMER"))
+        let dpLine = HomeSecondaryLine.status(book: .dp, dpClock: "00:00", dpRunning: false)
+        #expect(dpLine == "00:00 · Ready")
+        #expect(HomeSecondaryLine.cta(book: .dp, dpRunning: false) == "Start DP")
+        #expect(HomeSecondaryLine.cta(book: .dp, dpRunning: true) == "Stop DP")
+        let running = HomeSecondaryLine.status(book: .dp, dpClock: "01:02", dpRunning: true)
+        #expect(running == "01:02 · Running")
+        #expect(HomeBooks(primary: .crane).makingSecondaryPrimary() == HomeBooks(primary: .crane))
+    }
+
+    /// HB-13d: Latest Activity is the primary book only.
+    @Test func latestActivityStaysOnThePrimaryBook() {
+        let t0 = Date(timeIntervalSince1970: 1_780_000_000)
+        let dp = DPEntry(
+            source: .manual,
+            date: t0,
+            durationHours: 6,
+            vessel: "Seven Falcon",
+            vesselType: "PSV",
+            dpClassLevel: 2,
+            createdAt: t0
+        )
+        let crane = CraneEntry(date: t0, vessel: "Vessel B", createdAt: t0)
+        crane.liftWeightTonnes = 10
+        crane.wireOutMetres = 85
+        let books = HomeBooks(primary: .dp, secondary: .crane)
+        let items = HomeActivity.latest(
+            book: books.primary,
+            dpEntries: [dp],
+            rigMoves: [],
+            rovEntries: [],
+            craneEntries: [crane],
+            locale: locale,
+            timeZone: timeZone
+        )
+        #expect(items.count == 1)
+        #expect(items.allSatisfy { $0.book == .dp })
+        #expect(items[0].title == "DP session")
+        #expect(!items.contains { $0.book == .crane })
+        #expect(books.primary.hero.activityChip == "5 latest · DP")
+        #expect(crane.liftWeightTonnes == 10, "Reading activity must not delete the crane entry")
+    }
+
+    /// HB-13e: primary and secondary survive a fresh defaults read. Missing secondary stays nil.
+    @Test func primaryAndSecondaryPersistAndMigrateWithoutASecondary() {
+        let suite = "homeBooks-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        defaults.set("crane", forKey: HomeBook.storageKey)
+        defaults.set("keep-me", forKey: "dp.oldHoursText")
+        defaults.set("dp,crane", forKey: "log.starredBooks")
+        let migrated = HomeBooks.load(defaults: defaults)
+        #expect(migrated == HomeBooks(primary: .crane))
+        #expect(defaults.object(forKey: HomeBooks.secondaryStorageKey) == nil)
+        #expect(defaults.string(forKey: "log.starredBooks") == "dp,crane")
+
+        HomeBooks(primary: .dp, secondary: .crane).save(to: defaults)
+        let relaunch = UserDefaults(suiteName: suite)!
+        #expect(HomeBooks.load(defaults: relaunch) == HomeBooks(primary: .dp, secondary: .crane))
+        #expect(relaunch.string(forKey: HomeBook.storageKey) == "dp")
+        #expect(relaunch.string(forKey: HomeBooks.secondaryStorageKey) == "crane")
+        #expect(relaunch.string(forKey: "dp.oldHoursText") == "keep-me")
+
+        HomeBooks(primary: .dp, secondary: .dp).save(to: defaults)
+        #expect(HomeBooks.load(defaults: defaults).secondary == nil)
+        #expect(defaults.object(forKey: HomeBooks.secondaryStorageKey) == nil)
+        #expect(defaults.string(forKey: HomeBook.storageKey) == "dp")
+
+        defaults.set("rov", forKey: HomeBook.storageKey)
+        defaults.set("rov", forKey: HomeBooks.secondaryStorageKey)
+        #expect(HomeBooks.load(defaults: defaults) == HomeBooks(primary: .rov))
+        defaults.set("", forKey: HomeBooks.secondaryStorageKey)
+        #expect(HomeBooks.load(defaults: defaults).secondary == nil)
+        defaults.set("nope", forKey: HomeBooks.secondaryStorageKey)
+        #expect(HomeBooks.load(defaults: defaults) == HomeBooks(primary: .rov))
+        #expect(defaults.string(forKey: "dp.oldHoursText") == "keep-me")
+    }
+
+    @Test func secondaryStatusIsOneLineAndCraneDoesNotBorrowTheDPClock() {
+        let date = octoberThird
+        let lift = CraneHomeLastLift.make(
+            weightTonnes: 10,
+            wireMetres: 85,
+            vessel: "Vessel B",
+            craneName: "Crane A",
+            date: date,
+            hours: 4.5,
+            locale: locale,
+            timeZone: timeZone
+        )
+        #expect(HomeSecondaryLine.status(book: .crane, dpClock: "00:00", dpRunning: true, craneLift: lift) == "Last lift · 10 t · 85 m wire")
+        let noClock = HomeSecondaryLine.status(book: .crane, dpClock: "12:34", dpRunning: true, craneLift: nil)
+        #expect(noClock == "No entries yet")
+        #expect(!noClock.contains("12:34"))
+        #expect(!noClock.contains("DP TIMER"))
+        #expect(!noClock.contains("Start DP"))
+
+        let bare = CraneHomeLastLift.make(
+            weightTonnes: nil,
+            wireMetres: nil,
+            vessel: "Vessel B",
+            craneName: nil,
+            date: date,
+            hours: nil,
+            locale: locale,
+            timeZone: timeZone
+        )
+        #expect(HomeSecondaryLine.status(book: .crane, craneLift: bare) == "Last lift · Vessel B · 3 Oct")
+
+        let move = RigMove(rigName: "Rig A", date: date, vessel: "Vessel B")
+        let anchor = HomeEntrySummary.anchorHandling(move, locale: locale, timeZone: timeZone)
+        #expect(HomeSecondaryLine.status(book: .ah, anchor: anchor) == "Rig move · Rig A · Vessel B · 3 Oct")
+        #expect(HomeSecondaryLine.status(book: .ah) == "No entries yet")
+        #expect(HomeSecondaryLine.status(book: .rov) == "No entries yet")
+
+        let cleared = HomeBooks(primary: .ah).starring(.ah)
+        #expect(cleared == HomeBooks(primary: .dp))
+        let added = HomeBooks(primary: .crane).starring(.dp)
+        #expect(added == HomeBooks(primary: .crane, secondary: .dp))
+        let kept = HomeBooks(primary: .dp, secondary: .rov).selectingPrimary(.ah)
+        #expect(kept == HomeBooks(primary: .ah, secondary: .rov))
+        let rejected = HomeBooks(primary: .dp, secondary: .crane).selectingSecondary(.dp)
+        #expect(rejected == HomeBooks(primary: .dp, secondary: .crane))
+        #expect(HomeBooks(primary: .dp, secondary: .crane).selectingSecondary(nil) == HomeBooks(primary: .dp))
     }
 }
