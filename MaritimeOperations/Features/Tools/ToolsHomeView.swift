@@ -29,7 +29,10 @@ struct ToolsHomeView: View {
             .init(kind: .chainLocker, title: "Chain locker", hint: Self.blurb(.chainLocker),
                   systemImage: "link"),
             .init(kind: .craneHeel, title: "Crane heel", hint: Self.blurb(.craneHeel),
-                  systemImage: "ferry")
+                  systemImage: "ferry"),
+            .init(kind: .rigging, title: "Slinging & Rigging", hint: Self.blurb(.rigging),
+                  systemImage: "scalemass",
+                  voiceOverHint: "Sling angle and chain-block check")
         ]),
         .init(title: "REFERENCE", tools: [
             .init(kind: .portUnlocode, title: "Port UN/LOCODE", hint: "Offline UNECE port codes",
@@ -134,6 +137,7 @@ struct ToolsHomeView: View {
         case .winch: return "Drum length and layers"
         case .chainLocker: return "Stowage volume and length"
         case .craneHeel: return "Static heel and ballast to level"
+        case .rigging: return ToolLastResultStore.notUsed
         case .portUnlocode: return nil
         }
     }
@@ -168,6 +172,7 @@ struct ToolsHomeView: View {
         case .gyro: GyroCompassToolView()
         case .chainLocker: ChainLockerToolView()
         case .craneHeel: CraneHeelView()
+        case .rigging: SlingingRiggingToolView()
         case .portUnlocode: PortUnlocodeToolView()
         }
     }
@@ -214,7 +219,7 @@ struct ToolsHomeView: View {
 }
 
 private struct ToolTile: Identifiable {
-    enum Kind: String { case gyro, catenary, winch, chainLocker, craneHeel, portUnlocode
+    enum Kind: String { case gyro, catenary, winch, chainLocker, craneHeel, rigging, portUnlocode
         var lastResultKind: ToolLastResultKind? { ToolLastResultKind(rawValue: rawValue) }
     }
     var id: String { kind.rawValue }

@@ -60,8 +60,9 @@ struct ToolLastResultTests {
         #expect(ToolsHomeView.emptyBlurb(for: .winch) == "Drum length and layers")
         #expect(ToolsHomeView.emptyBlurb(for: .chainLocker) == "Stowage volume and length")
         #expect(ToolsHomeView.emptyBlurb(for: .craneHeel) == "Static heel and ballast to level")
+        #expect(ToolsHomeView.emptyBlurb(for: .rigging) == "Not used yet")
         #expect(ToolsHomeView.emptyBlurb(for: .portUnlocode) == nil)
-        for kind in ToolLastResultKind.allCases where kind != .portUnlocode && kind != .gyro {
+        for kind in ToolLastResultKind.allCases where kind != .portUnlocode && kind != .gyro && kind != .rigging {
             let blurb = ToolsHomeView.emptyBlurb(for: kind)
             #expect(blurb != nil)
             #expect(blurb != ToolLastResultStore.notUsed)
