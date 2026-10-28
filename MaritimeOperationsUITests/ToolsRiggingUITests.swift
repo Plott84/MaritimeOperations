@@ -170,4 +170,24 @@ final class ToolsRiggingUITests: XCTestCase {
         XCTAssertTrue((load.value as? String)?.contains("6") == true)
         XCTAssertTrue(app.staticTexts["Aid, not authority."].exists)
     }
+
+    func testNegativeAngleShowsFieldError() throws {
+        let app = XCUIApplication.launchedClean()
+        app.buttons["tab_tools"].tap()
+        let tile = app.descendants(matching: .any)["toolTile.rigging"]
+        XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        var swipes = 0
+        while !tile.isHittable && swipes < 4 {
+            app.swipeUp()
+            swipes += 1
+        }
+        tile.tap()
+        XCTAssertTrue(app.navigationBars["Slinging & Rigging"].waitForExistence(timeout: 5))
+        app.buttons["rigging.angleMode.Angle"].tap()
+        type(app, "rigging.angle", "-5")
+        let error = app.descendants(matching: .any)["rigging.angle.error"]
+        XCTAssertTrue(error.waitForExistence(timeout: 3))
+        XCTAssertTrue(error.label.contains("from vertical"), error.label)
+        XCTAssertFalse(app.descendants(matching: .any)["rigging.hero"].exists)
+    }
 }

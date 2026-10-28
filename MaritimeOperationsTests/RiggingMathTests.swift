@@ -331,6 +331,8 @@ struct RiggingMathTests {
         #expect(row.requiredLine == "≥ 1250 kg")
         #expect(row.assemblyLine == "1600 kg")
         #expect(row.within)
+        #expect(choked.chokeNote == "Choke angle ≥120°; edges protected")
+        #expect(sling(load: "6", tag: "5", angle: "0").chokeNote == nil)
 
         #expect(RiggingMath.modeFactor(legs: 1, hitch: .basket, beta: 0) == dec("2"))
         #expect(RiggingMath.modeFactor(legs: 1, hitch: .basket, beta: dec("20")) == dec("1.4"))
@@ -390,6 +392,62 @@ struct RiggingMathTests {
         } else {
             Issue.record("empty form")
         }
+    }
+
+    @Test func thousandsSeparatorsAreRejectedOnLoadAndWLL() {
+        #expect(RiggingMath.parseDecimal("1,000") == nil)
+        #expect(RiggingMath.parseDecimal("1.000") == nil)
+        #expect(RiggingMath.parseDecimal("1.250") == nil)
+        #expect(RiggingMath.parseDecimal("1,2,3") == nil)
+        #expect(RiggingMath.parseDecimal("6.25") == Optional(dec("6.25")))
+        #expect(RiggingMath.parseDecimal("45") == Optional(Decimal(45)))
+
+        let load = sling(load: "1,000", tag: "5", angle: "40")
+        #expect(load.slingScreen.errors.load == RiggingCopy.enterNumber)
+        if case .invalid = load.slingScreen.panel {} else { Issue.record("load 1,000 should be invalid") }
+        #expect(slingRow(load) == nil)
+
+        let dotted = sling(load: "1.000", tag: "5", angle: "40")
+        #expect(dotted.slingScreen.errors.load == RiggingCopy.enterNumber)
+
+        let wll = single(load: "1", wll: "1.000", angle: "0")
+        #expect(wll.chainScreen.errors.blockWLL == RiggingCopy.enterNumber)
+        if case .invalid = wll.chainScreen.panel {} else { Issue.record("block WLL 1.000 should be invalid") }
+
+        let tag = sling(load: "6", tag: "1,000", angle: "40")
+        #expect(tag.slingScreen.errors.tag == RiggingCopy.enterNumber)
+    }
+
+    @Test func resultNumbersUseTheLocaleAfterRounding() {
+        let required = RiggingMath.roundUp(dec("4.2857"), places: 2)
+        let capacity = RiggingMath.roundDown(dec("5.333"), places: 2)
+        let norway = Locale(identifier: "nb_NO")
+        let english = Locale(identifier: "en_US")
+        #expect(RiggingMath.formatLocalized(required, places: 2, locale: english) == "4.29")
+        #expect(RiggingMath.formatLocalized(required, places: 2, locale: norway) == "4,29")
+        #expect(RiggingMath.formatLocalized(capacity, places: 2, locale: english) == "5.33")
+        #expect(RiggingMath.formatLocalized(capacity, places: 2, locale: norway) == "5,33")
+        #expect(RiggingMath.massText(required, unit: .tonnes, locale: norway) == "4,29 t")
+        #expect(RiggingMath.massText(required, unit: .tonnes, locale: english) == "4.29 t")
+        #expect(RiggingMath.massText(Decimal(1000), unit: .kilograms, locale: english) == "1000 kg")
+        #expect(RiggingMath.massText(Decimal(1000), unit: .kilograms, locale: norway) == "1000 kg")
+    }
+
+    @Test func selectedUnitPersists() {
+        let name = "RiggingUnit.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        let model = SlingingRiggingModel(defaults: defaults)
+        model.setSlingUnit(.kilograms)
+        #expect(defaults.string(forKey: SlingingRiggingModel.unitStorageKey) == "kg")
+        let restored = SlingingRiggingModel(defaults: defaults)
+        restored.applyStoredUnit(defaults.string(forKey: SlingingRiggingModel.unitStorageKey) ?? "")
+        #expect(restored.slingUnit == .kilograms)
+        #expect(restored.chainUnit == .kilograms)
+        restored.loadText = "1500"
+        restored.setSlingUnit(.tonnes)
+        #expect(restored.loadText == "1.5")
+        #expect(defaults.string(forKey: SlingingRiggingModel.unitStorageKey) == "t")
     }
 
     @Test func unitSwitchConvertsMassesAndTabsKeepFields() {

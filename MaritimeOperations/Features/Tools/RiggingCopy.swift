@@ -7,6 +7,7 @@ enum RiggingCopy {
     static let angleCaption = "Measured from vertical. L includes hook/shackle."
     static let chainAngleCaption = "Measured from vertical."
     static let legNote = "3- and 4-leg slings are calculated as 2-leg."
+    static let chokeCaption = "Choke angle ≥120°; edges protected"
     static let assumptions = "Assumes CoG centred, legs equal. Tag overrides."
     static let highAngle = "High angle — check with lift plan / competent person."
     static let chainAmber = "Most blocks are rated vertical only. Check maker's limit; force must be checked by a competent person (LEEA 053)."
@@ -34,7 +35,7 @@ enum RiggingCopy {
     static let straightPull = "straight pull"
 
     static let staticStrings: [String] = [
-        title, footer, angleCaption, chainAngleCaption, legNote, assumptions,
+        title, footer, angleCaption, chainAngleCaption, legNote, chokeCaption, assumptions,
         highAngle, chainAmber, blocked, heightTooTall, noReduction, blocksApart,
         slingGuidanceLength, slingGuidanceAngle, chainGuidance, pairGuidance,
         enterNumber, loadPositive, tagPositive, wllPositive, lengthPositive,

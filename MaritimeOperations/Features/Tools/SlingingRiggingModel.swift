@@ -114,6 +114,14 @@ final class SlingingRiggingModel {
         var panel: Panel
     }
 
+    static let unitStorageKey = "rigging.unit"
+
+    let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
     var tab: Tab = .slings
     var angleMode: AngleMode = .lengthHeight
     var legs: Int = 2
@@ -136,6 +144,7 @@ final class SlingingRiggingModel {
     var chainWLL2Text = ""
 
     var legNote: String? { legs >= 3 ? RiggingCopy.legNote : nil }
+    var chokeNote: String? { hitch == .choke ? RiggingCopy.chokeCaption : nil }
 
     var slingScreen: SlingScreen { Self.makeSling(self) }
     var chainScreen: ChainScreen { Self.makeChain(self) }
@@ -178,12 +187,19 @@ final class SlingingRiggingModel {
         }
     }
 
+    func applyStoredUnit(_ raw: String) {
+        guard let unit = RiggingMath.MassUnit(rawValue: raw) else { return }
+        setSlingUnit(unit)
+        setChainUnit(unit)
+    }
+
     func setSlingUnit(_ unit: RiggingMath.MassUnit) {
         guard unit != slingUnit else { return }
         let old = slingUnit
         loadText = RiggingMath.converting(loadText, from: old, to: unit)
         tagText = RiggingMath.converting(tagText, from: old, to: unit)
         slingUnit = unit
+        defaults.set(unit.rawValue, forKey: Self.unitStorageKey)
     }
 
     func setChainUnit(_ unit: RiggingMath.MassUnit) {
@@ -194,6 +210,7 @@ final class SlingingRiggingModel {
         chainWLL1Text = RiggingMath.converting(chainWLL1Text, from: old, to: unit)
         chainWLL2Text = RiggingMath.converting(chainWLL2Text, from: old, to: unit)
         chainUnit = unit
+        defaults.set(unit.rawValue, forKey: Self.unitStorageKey)
     }
 
     private func summaryMass(_ text: String, unit: RiggingMath.MassUnit) -> String {

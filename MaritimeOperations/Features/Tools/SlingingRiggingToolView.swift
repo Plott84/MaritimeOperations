@@ -3,6 +3,7 @@ import SwiftUI
 /// Slinging & Rigging. Slings | Chain block. Results update as the fields change.
 /// Band table decides Within / Exceeds. Exact trig is information only.
 struct SlingingRiggingToolView: View {
+    @AppStorage(SlingingRiggingModel.unitStorageKey) private var unitRaw = RiggingMath.MassUnit.tonnes.rawValue
     @State private var model = SlingingRiggingModel()
     private let store = ToolLastResultStore()
 
@@ -47,6 +48,7 @@ struct SlingingRiggingToolView: View {
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
         .toolsKeyboardDone()
+        .onAppear { model.applyStoredUnit(unitRaw) }
         .onDisappear {
             if let summary = model.lastResultSummary {
                 store.save(summary, for: .rigging)
@@ -82,6 +84,13 @@ private struct SlingPane: View {
                             .accessibilityIdentifier("rigging.legNote")
                     }
                     hitchBar
+                    if let note = model.chokeNote {
+                        Text(note)
+                            .font(.footnote)
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("rigging.chokeCaption")
+                    }
                     RiggingField(
                         title: "Load",
                         text: $model.loadText,

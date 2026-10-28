@@ -78,14 +78,14 @@ enum RiggingMath {
     // MARK: - Parsing
 
     /// Finite decimal. Empty string is nil.
-    /// After trim, only an optional leading sign, digits, and one `.` or `,` decimal mark.
-    /// `6,0` is 6. `45°`, `6t`, and `1e9` are rejected — Foundation would otherwise read `45°` as 45.
+    /// After trim: optional sign, digits, and at most one `.` or `,` with at most two digits after it.
+    /// `6,0` and `6.25` parse. `1,000`, `1.250`, `45°`, `6t`, and `1e9` do not.
     static func parseDecimal(_ raw: String) -> Decimal? {
         guard let normalized = normalizedCleanNumber(raw) else { return nil }
         return Decimal(string: normalized, locale: posix)
     }
 
-    /// `+6`, `-5`, `6.0`, and `6,0` pass. Anything else, including a trailing unit, does not.
+    /// `+6`, `-5`, `45`, `6.0`, and `6,0` pass. A unit suffix or a third decimal digit does not.
     private static func normalizedCleanNumber(_ raw: String) -> String? {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         var body = trimmed[...]
@@ -100,6 +100,7 @@ enum RiggingMath {
         for ch in body {
             if ch.isASCII && ch.isNumber {
                 if sawSeparator { fractionDigits += 1 }
+                if fractionDigits > 2 { return nil }
                 continue
             }
             if (ch == "." || ch == ",") && !sawSeparator {
@@ -118,7 +119,7 @@ enum RiggingMath {
         guard !trimmed.isEmpty, let value = parseDecimal(trimmed) else { return text }
         let kilograms = from == .tonnes ? value * 1000 : value
         let out = to == .tonnes ? kilograms / 1000 : kilograms
-        return plain(out, maxPlaces: 4)
+        return plain(out, maxPlaces: 2)
     }
 
     // MARK: - Rounding
@@ -195,8 +196,18 @@ enum RiggingMath {
         return text.isEmpty ? "0" : text
     }
 
-    static func massText(_ value: Decimal, unit: MassUnit) -> String {
-        "\(formatFixed(value, places: unit.places)) \(unit.rawValue)"
+    /// Locale digits only. Callers round with `roundUp` / `roundDown` before this.
+    static func formatLocalized(_ value: Decimal, places: Int, locale: Locale = .current) -> String {
+        value.formatted(
+            .number
+                .precision(.fractionLength(places))
+                .grouping(.never)
+                .locale(locale)
+        )
+    }
+
+    static func massText(_ value: Decimal, unit: MassUnit, locale: Locale = .current) -> String {
+        "\(formatLocalized(value, places: unit.places, locale: locale)) \(unit.rawValue)"
     }
 
     // MARK: - Angle
