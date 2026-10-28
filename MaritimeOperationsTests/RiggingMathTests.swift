@@ -355,10 +355,20 @@ struct RiggingMathTests {
 
     @Test func badTextDoesNotProduceAResult() {
         let model = sling(load: "6", tag: "5", angle: "40")
-        model.angleText = "abc"
-        if case .invalid = model.slingScreen.panel {} else { Issue.record("letters") }
-        model.angleText = "45°"
-        if case .invalid = model.slingScreen.panel {} else { Issue.record("degree sign") }
+        #expect(RiggingMath.parseDecimal("45°") == nil)
+        #expect(RiggingMath.parseDecimal("6t") == nil)
+        #expect(RiggingMath.parseDecimal("1e9") == nil)
+        #expect(RiggingMath.parseDecimal("6,0") == Optional(Decimal(6)))
+        #expect(RiggingMath.parseDecimal("6.0") == Optional(Decimal(6)))
+        for junk in ["abc", "45°", "45 deg", "6t", "4.29t"] {
+            model.angleText = junk
+            guard case .invalid = model.slingScreen.panel else {
+                Issue.record("expected invalid angle for \(junk)")
+                continue
+            }
+            #expect(model.slingScreen.errors.angle == RiggingCopy.enterNumber)
+            #expect(slingRow(model) == nil)
+        }
         model.angleText = "-5"
         #expect(model.slingScreen.errors.angle == RiggingCopy.angleNegative)
         model.angleText = "40"
@@ -442,7 +452,7 @@ struct RiggingMathTests {
         for angle in ["5", "30"] {
             let model = single(load: "0.80", wll: "1.00", angle: angle)
             guard case .chainSingle(let row) = model.chainScreen.panel else {
-                Issue.record(angle)
+                Issue.record("expected single-block result at \(angle)")
                 continue
             }
             #expect(row.within)

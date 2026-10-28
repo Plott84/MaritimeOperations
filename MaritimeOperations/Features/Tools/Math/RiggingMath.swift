@@ -77,16 +77,39 @@ enum RiggingMath {
 
     // MARK: - Parsing
 
-    /// Finite decimal. Empty string is nil. Accepts a comma as the decimal mark.
-    /// Rejects exponents and grouping spaces so "1e9" and "1 000" are not silent.
+    /// Finite decimal. Empty string is nil.
+    /// After trim, only an optional leading sign, digits, and one `.` or `,` decimal mark.
+    /// `6,0` is 6. `45°`, `6t`, and `1e9` are rejected — Foundation would otherwise read `45°` as 45.
     static func parseDecimal(_ raw: String) -> Decimal? {
-        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if s.isEmpty { return nil }
-        if s.contains("e") || s.contains("E") || s.contains(" ") { return nil }
-        s = s.replacingOccurrences(of: ",", with: ".")
-        if s.hasPrefix("+") { s.removeFirst() }
-        if s == "-" || s == "." || s == "-." { return nil }
-        return Decimal(string: s, locale: posix)
+        guard let normalized = normalizedCleanNumber(raw) else { return nil }
+        return Decimal(string: normalized, locale: posix)
+    }
+
+    /// `+6`, `-5`, `6.0`, and `6,0` pass. Anything else, including a trailing unit, does not.
+    private static func normalizedCleanNumber(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        var body = trimmed[...]
+        var sign = ""
+        if let first = body.first, first == "+" || first == "-" {
+            if first == "-" { sign = "-" }
+            body = body.dropFirst()
+        }
+        guard let firstDigit = body.first, firstDigit.isASCII && firstDigit.isNumber else { return nil }
+        var sawSeparator = false
+        var fractionDigits = 0
+        for ch in body {
+            if ch.isASCII && ch.isNumber {
+                if sawSeparator { fractionDigits += 1 }
+                continue
+            }
+            if (ch == "." || ch == ",") && !sawSeparator {
+                sawSeparator = true
+                continue
+            }
+            return nil
+        }
+        if sawSeparator && fractionDigits == 0 { return nil }
+        return sign + body.replacingOccurrences(of: ",", with: ".")
     }
 
     static func converting(_ text: String, from: MassUnit, to: MassUnit) -> String {
@@ -103,7 +126,7 @@ enum RiggingMath {
     static func round(_ value: Decimal, places: Int, mode: NSDecimalNumber.RoundingMode) -> Decimal {
         var source = value
         var result = Decimal()
-        NSDecimalRound(&result, &source, Int16(places), mode)
+        NSDecimalRound(&result, &source, places, mode)
         return result
     }
 
