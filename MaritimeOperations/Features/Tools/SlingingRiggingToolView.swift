@@ -598,10 +598,6 @@ private func hero(_ text: String, within: Bool, spoken: String) -> some View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(
-            (within ? AppTheme.teal : AppTheme.gold).opacity(0.14),
-            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-        )
         .accessibilityLabel(spoken)
         .accessibilityIdentifier("rigging.hero")
 }
