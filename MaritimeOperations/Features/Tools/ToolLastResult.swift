@@ -2,7 +2,7 @@ import Foundation
 
 /// Which tool a saved "last result" belongs to. Raw values are the UserDefaults key suffix.
 enum ToolLastResultKind: String, CaseIterable, Sendable {
-    case gyro, compassError, catenary, winch, chainLocker, craneHeel, portUnlocode
+    case gyro, compassError, catenary, winch, chainLocker, craneHeel, rigging, portUnlocode
 }
 
 /// One short status line per tool, shown under the row on the Tools tab.
