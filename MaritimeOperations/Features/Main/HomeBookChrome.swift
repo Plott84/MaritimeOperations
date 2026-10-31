@@ -61,9 +61,10 @@ struct HomeBookChip: View {
     }
 }
 
-/// On Main picker rows (`homeBookOption_*`). Same 44 pt button-body floor as the CTAs.
+/// On Main picker rows (`homeBookOption_*`) go through `HomeMinimumHitButtonStyle`.
+/// A 44 pt floor still measured 42.25 under AX5, so short rows use the secondary CTA floor (48).
 enum HomeBookOptionHit {
-    static let minimumHeight: CGFloat = HomeCTAButton.hardMinimumHit
+    static let minimumHeight: CGFloat = HomeCTAButton.Kind.secondary.minimumHeight
 }
 
 struct HomeBookPickerSheet: View {
@@ -127,10 +128,25 @@ struct HomeBookPickerSheet: View {
         } label: {
             optionLabel(book, showsCheck: selected)
         }
-        .buttonStyle(HomeBookOptionButtonStyle(selected: selected))
+        .buttonStyle(bookOptionStyle(selected: selected))
         .accessibilityLabel(book.voiceName)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookOption_\(book.rawValue)")
+    }
+
+    /// Same button-body style as Home CTAs. Card fill keeps the picker row look.
+    private func bookOptionStyle(selected: Bool) -> HomeMinimumHitButtonStyle {
+        HomeMinimumHitButtonStyle(
+            minimumHeight: HomeBookOptionHit.minimumHeight,
+            fillsWidth: true,
+            fill: AppTheme.card,
+            foreground: AppTheme.textPrimary,
+            stroke: selected ? AppTheme.teal : AppTheme.cardBorder,
+            cornerRadius: 14,
+            horizontalPadding: 14,
+            verticalPadding: 10,
+            strokeWidth: selected ? 1.5 : 1
+        )
     }
 
     private var noneOption: some View {
@@ -148,7 +164,7 @@ struct HomeBookPickerSheet: View {
                 }
             }
         }
-        .buttonStyle(HomeBookOptionButtonStyle(selected: selected))
+        .buttonStyle(bookOptionStyle(selected: selected))
         .accessibilityLabel("None")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookSecondaryNone")
@@ -403,24 +419,55 @@ private struct HomeMinimumHitButtonStyle: ButtonStyle {
     var cornerRadius: CGFloat
     var horizontalPadding: CGFloat
     var verticalPadding: CGFloat
+    var strokeWidth: CGFloat
+
+    init(
+        minimumHeight: CGFloat,
+        fillsWidth: Bool,
+        fill: Color,
+        foreground: Color,
+        stroke: Color?,
+        cornerRadius: CGFloat,
+        horizontalPadding: CGFloat,
+        verticalPadding: CGFloat,
+        strokeWidth: CGFloat = 1
+    ) {
+        self.minimumHeight = minimumHeight
+        self.fillsWidth = fillsWidth
+        self.fill = fill
+        self.foreground = foreground
+        self.stroke = stroke
+        self.cornerRadius = cornerRadius
+        self.horizontalPadding = horizontalPadding
+        self.verticalPadding = verticalPadding
+        self.strokeWidth = strokeWidth
+    }
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, horizontalPadding)
-            .padding(.vertical, verticalPadding)
-            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight)
-            .foregroundStyle(foreground)
-            .background {
+        // A fixed-height strut sets the ideal size. `minHeight` alone stays under the
+        // text line at AX5 (a 44 pt floor measured 42.25 on homeBookOption_crane).
+        ZStack {
+            Color.clear
+                .frame(width: 1, height: minimumHeight)
+                .accessibilityHidden(true)
+            configuration.label
+                .padding(.horizontal, horizontalPadding)
+                .padding(.vertical, verticalPadding)
+                .frame(maxWidth: fillsWidth ? .infinity : nil)
+        }
+        .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight)
+        .foregroundStyle(foreground)
+        .background {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(fill)
+        }
+        .overlay {
+            if let stroke {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(fill)
+                    .strokeBorder(stroke, lineWidth: strokeWidth)
             }
-            .overlay {
-                if let stroke {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(stroke, lineWidth: 1)
-                }
-            }
-            .contentShape(Rectangle())
+        }
+        .contentShape(Rectangle())
     }
 }
 
@@ -431,22 +478,15 @@ private struct HomeMinimumHitPlainButtonStyle: ButtonStyle {
     var fillsWidth: Bool = true
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight, alignment: .leading)
-            .contentShape(Rectangle())
-    }
-}
-
-/// Primary book row and None. Padding, 44 pt floor, and the card fill sit on the button body.
-private struct HomeBookOptionButtonStyle: ButtonStyle {
-    var selected: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, minHeight: HomeBookOptionHit.minimumHeight, alignment: .leading)
-            .background(HomeBookOptionRowFill(selected: selected))
-            .contentShape(Rectangle())
+        ZStack {
+            Color.clear
+                .frame(width: 1, height: minimumHeight)
+                .accessibilityHidden(true)
+            configuration.label
+                .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
+        }
+        .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 

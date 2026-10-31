@@ -515,7 +515,8 @@ struct HomeBookTests {
         #expect(HomeBooks(primary: .dp, secondary: .crane).selectingSecondary(nil) == HomeBooks(primary: .dp))
     }
 
-    /// HC-01…04 floors. Default visuals are 50 / 48 / 44. Picker rows use the same 44 pt button-body floor.
+    /// HC-01…04 floors. Default CTA visuals are 50 / 48 / 44.
+    /// Picker rows use the 48 pt CTA floor: a 44 pt floor measured 42.25 under AX5.
     @Test func homeCTAHitFloorsStayAtLeast44() {
         #expect(HomeCTAButton.hardMinimumHit == 44)
         #expect(HomeCTAButton.Kind.primary.minimumHeight == 50)
@@ -524,8 +525,8 @@ struct HomeBookTests {
         #expect(HomeCTAButton.Kind.primary.minimumHeight >= HomeCTAButton.hardMinimumHit)
         #expect(HomeCTAButton.Kind.secondary.minimumHeight >= HomeCTAButton.hardMinimumHit)
         #expect(HomeSecondaryCard.minimumHitHeight >= HomeCTAButton.hardMinimumHit)
-        #expect(HomeBookOptionHit.minimumHeight == 44)
-        #expect(HomeBookOptionHit.minimumHeight == HomeCTAButton.hardMinimumHit)
+        #expect(HomeBookOptionHit.minimumHeight == HomeCTAButton.Kind.secondary.minimumHeight)
+        #expect(HomeBookOptionHit.minimumHeight > 43)
     }
 
     /// HC-07 / HC-10: DP hero stays Start DP. Home CTA copy makes no lift or class claim.
