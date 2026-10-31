@@ -61,6 +61,11 @@ struct HomeBookChip: View {
     }
 }
 
+/// On Main picker rows (`homeBookOption_*`). Same 44 pt button-body floor as the CTAs.
+enum HomeBookOptionHit {
+    static let minimumHeight: CGFloat = HomeCTAButton.hardMinimumHit
+}
+
 struct HomeBookPickerSheet: View {
     @Binding var books: HomeBooks
     @Environment(\.dismiss) private var dismiss
@@ -120,9 +125,9 @@ struct HomeBookPickerSheet: View {
             books = books.selectingPrimary(book)
             dismiss()
         } label: {
-            optionLabel(book, selected: selected, showsCheck: selected)
+            optionLabel(book, showsCheck: selected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HomeBookOptionButtonStyle(selected: selected))
         .accessibilityLabel(book.voiceName)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookOption_\(book.rawValue)")
@@ -142,12 +147,8 @@ struct HomeBookPickerSheet: View {
                     checkmark
                 }
             }
-            .padding(.horizontal, 14)
-            .frame(minHeight: 44)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(rowFill(selected: selected))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HomeBookOptionButtonStyle(selected: selected))
         .accessibilityLabel("None")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookSecondaryNone")
@@ -177,10 +178,8 @@ struct HomeBookPickerSheet: View {
                 }
                 .padding(.leading, 14)
                 .padding(.trailing, isSecondary ? 4 : 14)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(HomeMinimumHitPlainButtonStyle())
             .disabled(isPrimary)
             .accessibilityLabel(book.voiceName)
             .accessibilityAddTraits(isSecondary ? .isSelected : [])
@@ -194,9 +193,8 @@ struct HomeBookPickerSheet: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.teal)
                         .padding(.horizontal, 8)
-                        .frame(minHeight: 44)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(HomeMinimumHitPlainButtonStyle(fillsWidth: false))
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.trailing, 6)
                 .accessibilityIdentifier("homeBookMakePrimary")
@@ -213,7 +211,7 @@ struct HomeBookPickerSheet: View {
             .accessibilityHidden(true)
     }
 
-    private func optionLabel(_ book: HomeBook, selected: Bool, showsCheck: Bool) -> some View {
+    private func optionLabel(_ book: HomeBook, showsCheck: Bool) -> some View {
         HStack(spacing: 12) {
             bookIcon(book)
             Text(book.chipTitle)
@@ -225,20 +223,10 @@ struct HomeBookPickerSheet: View {
                 checkmark
             }
         }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 44)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(rowFill(selected: selected))
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func rowFill(selected: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(AppTheme.card)
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(selected ? AppTheme.teal : AppTheme.cardBorder, lineWidth: selected ? 1.5 : 1)
-            }
+        HomeBookOptionRowFill(selected: selected)
     }
 
     private var checkmark: some View {
@@ -433,6 +421,45 @@ private struct HomeMinimumHitButtonStyle: ButtonStyle {
                 }
             }
             .contentShape(Rectangle())
+    }
+}
+
+/// Hit floor for picker rows that already draw their own chrome (secondary option, Make primary).
+/// Label-only `minHeight` compresses under AX5, the same way the Home CTAs did.
+private struct HomeMinimumHitPlainButtonStyle: ButtonStyle {
+    var minimumHeight: CGFloat = HomeBookOptionHit.minimumHeight
+    var fillsWidth: Bool = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight, alignment: .leading)
+            .contentShape(Rectangle())
+    }
+}
+
+/// Primary book row and None. Padding, 44 pt floor, and the card fill sit on the button body.
+private struct HomeBookOptionButtonStyle: ButtonStyle {
+    var selected: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: HomeBookOptionHit.minimumHeight, alignment: .leading)
+            .background(HomeBookOptionRowFill(selected: selected))
+            .contentShape(Rectangle())
+    }
+}
+
+private struct HomeBookOptionRowFill: View {
+    var selected: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(AppTheme.card)
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(selected ? AppTheme.teal : AppTheme.cardBorder, lineWidth: selected ? 1.5 : 1)
+            }
     }
 }
 
