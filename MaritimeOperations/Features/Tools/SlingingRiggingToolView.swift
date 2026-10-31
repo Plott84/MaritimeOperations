@@ -199,18 +199,7 @@ private struct SlingPane: View {
     }
 
     private var hitchBar: some View {
-        ToolSegmentBar(
-            title: "Hitch",
-            selection: $model.hitch,
-            options: RiggingMath.Hitch.allCases.map { hitch in
-                ToolSegmentOption(
-                    value: hitch,
-                    title: hitch.rawValue,
-                    accessibilityLabel: hitch.rawValue,
-                    accessibilityIdentifier: "rigging.hitch.\(hitch.rawValue)"
-                )
-            }
-        )
+        HitchSegmentBar(selection: $model.hitch)
     }
 
     @ViewBuilder

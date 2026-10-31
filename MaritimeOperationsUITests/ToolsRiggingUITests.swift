@@ -171,6 +171,86 @@ final class ToolsRiggingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Aid, not authority."].exists)
     }
 
+    /// HI-01, HI-02, and the straight worked example after each hitch is chosen.
+    /// VoiceOver (HI-03) and Dynamic Type xxxLarge (HI-04) need a Mac pass.
+    func testHitchIconsKeepTheWorkedExample() throws {
+        let app = XCUIApplication.launchedClean()
+        app.buttons["tab_tools"].tap()
+        let tile = app.descendants(matching: .any)["toolTile.rigging"]
+        XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        var swipes = 0
+        while !tile.isHittable && swipes < 4 {
+            app.swipeUp()
+            swipes += 1
+        }
+        tile.tap()
+        XCTAssertTrue(app.navigationBars["Slinging & Rigging"].waitForExistence(timeout: 5))
+
+        let straight = app.buttons["rigging.hitch.Straight"]
+        let choke = app.buttons["rigging.hitch.Choke"]
+        let basket = app.buttons["rigging.hitch.Basket"]
+        XCTAssertTrue(straight.waitForExistence(timeout: 3))
+        reveal(app, "rigging.hitch.Straight")
+        XCTAssertTrue(choke.waitForExistence(timeout: 3))
+        XCTAssertTrue(basket.waitForExistence(timeout: 3))
+        XCTAssertEqual(straight.label, "Straight")
+        XCTAssertEqual(choke.label, "Choke")
+        XCTAssertEqual(basket.label, "Basket")
+        XCTAssertGreaterThanOrEqual(straight.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(choke.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(basket.frame.height, 44)
+        XCTAssertEqual(straight.frame.width, choke.frame.width, accuracy: 1)
+        XCTAssertEqual(choke.frame.width, basket.frame.width, accuracy: 1)
+        XCTAssertTrue(straight.isSelected)
+        XCTAssertFalse(choke.isSelected)
+        XCTAssertFalse(basket.isSelected)
+
+        reveal(app, "rigging.hitch.Choke")
+        choke.tap()
+        XCTAssertTrue(choke.isSelected)
+        XCTAssertFalse(straight.isSelected)
+        let chokeNote = app.descendants(matching: .any)["rigging.chokeCaption"]
+        XCTAssertTrue(chokeNote.waitForExistence(timeout: 2))
+        XCTAssertTrue(chokeNote.label.contains("Choke angle"))
+
+        reveal(app, "rigging.hitch.Basket")
+        basket.tap()
+        XCTAssertTrue(basket.isSelected)
+        XCTAssertFalse(choke.isSelected)
+        XCTAssertFalse(chokeNote.exists)
+
+        reveal(app, "rigging.hitch.Straight")
+        straight.tap()
+        XCTAssertTrue(straight.isSelected)
+
+        type(app, "rigging.load", "6.0")
+        type(app, "rigging.length", "4")
+        type(app, "rigging.height", "3.06")
+        type(app, "rigging.tag", "5")
+        reveal(app, "rigging.required")
+        let straightRequired = app.descendants(matching: .any)["rigging.required"]
+        XCTAssertTrue(straightRequired.waitForExistence(timeout: 3))
+        XCTAssertTrue(straightRequired.label.contains("4.29"), straightRequired.label)
+        XCTAssertFalse(straightRequired.label.contains("4.28"), straightRequired.label)
+
+        scrollToTop(app)
+        reveal(app, "rigging.hitch.Choke")
+        choke.tap()
+        reveal(app, "rigging.required")
+        let chokeRequired = app.descendants(matching: .any)["rigging.required"]
+        XCTAssertTrue(chokeRequired.waitForExistence(timeout: 3))
+        XCTAssertTrue(chokeRequired.label.contains("5.36"), chokeRequired.label)
+        XCTAssertFalse(chokeRequired.label.contains("4.29"), chokeRequired.label)
+
+        scrollToTop(app)
+        reveal(app, "rigging.hitch.Straight")
+        straight.tap()
+        reveal(app, "rigging.required")
+        let restored = app.descendants(matching: .any)["rigging.required"]
+        XCTAssertTrue(restored.waitForExistence(timeout: 3))
+        XCTAssertTrue(restored.label.contains("4.29"), restored.label)
+    }
+
     func testNegativeAngleShowsFieldError() throws {
         let app = XCUIApplication.launchedClean()
         app.buttons["tab_tools"].tap()
