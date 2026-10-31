@@ -75,4 +75,66 @@ struct DuoSizeClassTests {
     @Test func slingingHitchKeepsIconLabels() {
         #expect(RiggingMath.Hitch.allCases.map(\.rawValue) == ["Straight", "Choke", "Basket"])
     }
+
+    @Test func tabTitlesNeverSayLog() {
+        #expect(AppTab.allCases.map(\.title) == ["Main", "Entries", "Tools", "Export"])
+        #expect(!AppTab.allCases.map(\.title).contains("Log"))
+        #expect(AppTab.log.title == "Entries")
+    }
+
+    @Test func regularEntriesDefaultsToDPAndNamesTheEmptyDetail() {
+        let order = LogBook.entriesListOrder
+        #expect(DuoEntriesColumn.defaultSelection(available: order, primary: .crane) == .dp)
+        #expect(DuoEntriesColumn.defaultSelection(available: order, primary: .dp) == .dp)
+        #expect(DuoEntriesColumn.defaultSelection(available: [.crane, .rov], primary: .rov) == .rov)
+        #expect(DuoEntriesColumn.defaultSelection(available: [.anchorHandling, .crane], primary: .dp) == .anchorHandling)
+        #expect(DuoEntriesColumn.defaultSelection(available: [], primary: .dp) == nil)
+        #expect(DuoEntriesColumn.emptyDetail == "Select a book")
+        #expect(DuoEntriesColumn.sidebarMin == DuoSidebar.min)
+        #expect(DuoEntriesColumn.sidebarIdeal == DuoSidebar.ideal)
+        #expect(DuoEntriesColumn.sidebarMax == DuoSidebar.max)
+        #expect(DuoSidebar.min == 300)
+        #expect(DuoSidebar.max == 340)
+    }
+
+    @Test func softBEmptyBookCTAsStay() {
+        #expect(BookEmptyCopy.of(.dp).cta == "Start DP")
+        #expect(BookEmptyCopy.of(.crane).cta == "New lift")
+        #expect(BookEmptyCopy.of(.anchorHandling).cta == "New rig move")
+        #expect(BookEmptyCopy.of(.rov).cta == "New ROV entry")
+        #expect(HomeBooks.entriesFootnote == "Star up to two books for Main (HB-13). Export lives on the Export tab.")
+    }
+
+    @Test func compactExportIsOneColumnAndRegularSplitsThePreview() {
+        let compact = DuoExportLayout.columns(split: false)
+        #expect(compact.left == [.books, .dateRange, .preview, .disclaimer, .share])
+        #expect(compact.right.isEmpty)
+
+        let split = DuoExportLayout.columns(split: true)
+        #expect(split.left == [.books, .dateRange])
+        #expect(split.right == [.preview, .disclaimer, .share])
+        #expect(!split.left.contains(.share))
+        #expect(!split.right.contains(.books))
+    }
+
+    @Test func exportDisclaimerAndShareHold() {
+        #expect(
+            ExportDisclaimer.text
+                == "Personal aid only. This export is not an official IMCA DP Logbook record, and it is not a sign-off or certificate."
+        )
+        #expect(ExportDisclaimer.booksCaption == "ROV and Crane hours are never added to DP totals.")
+        #expect(ExportDisclaimer.previewFooter == "DP hours are only from the DP book.")
+        var none = ExportBookSelection()
+        none.set(.dp, on: false)
+        none.set(.anchorHandling, on: false)
+        none.set(.rov, on: false)
+        none.set(.crane, on: false)
+        #expect(!none.canShare)
+        #expect(ExportBookSelection().canShare)
+        #expect(DPHoursScope.books == Set([LogBook.dp]))
+        #expect(DPHoursScope.counts(.dp))
+        #expect(!DPHoursScope.counts(.rov))
+        #expect(!DPHoursScope.counts(.crane))
+        #expect(!DPHoursScope.counts(.anchorHandling))
+    }
 }

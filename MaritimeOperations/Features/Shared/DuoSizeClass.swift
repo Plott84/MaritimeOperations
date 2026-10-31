@@ -9,9 +9,10 @@ import SwiftUI
 ///
 /// Deployment is iOS 26.2. `ArrangementView` and the Duo right-edge tab strip
 /// need the iOS 27.1 SDK, so this pass does not use them and does not raise
-/// the deployment target. Home uses a size-class column split. Tools uses
-/// `NavigationSplitView`. Tabs stay the Soft C bottom bar (Main · Entries ·
-/// Tools · Export) at every size class.
+/// the deployment target. Home and Export use a size-class column split.
+/// Tools and Entries use `NavigationSplitView`. Tabs stay the Soft C bottom
+/// bar (Main · Entries · Tools · Export) at every size class. The tab title
+/// is Entries, never Log.
 ///
 /// Layout does not read device names, idiom, orientation, or `UIScreen.main`,
 /// and it does not compare the scene to an inferred Duo canvas size.
@@ -40,13 +41,55 @@ enum DuoSizeClass {
     }
 }
 
+/// Preferred sidebar for Tools and Entries. A flexible column width, not a Duo canvas size.
+enum DuoSidebar {
+    static let min: CGFloat = 300
+    static let ideal: CGFloat = 320
+    static let max: CGFloat = 340
+}
+
 /// Preferred Tools sidebar. A flexible column width, not a Duo canvas size.
 enum DuoToolsColumn {
     static let emptyDetail = "Select a tool"
     static let defaultToolID = DeckTool.splitDefault.rawValue
-    static let sidebarMin: CGFloat = 300
-    static let sidebarIdeal: CGFloat = 320
-    static let sidebarMax: CGFloat = 340
+    static let sidebarMin: CGFloat = DuoSidebar.min
+    static let sidebarIdeal: CGFloat = DuoSidebar.ideal
+    static let sidebarMax: CGFloat = DuoSidebar.max
+}
+
+/// Regular Entries: books sidebar and the selected book’s list. Default is DP
+/// when that book is in the list, otherwise the primary starred book, otherwise the first.
+enum DuoEntriesColumn {
+    static let emptyDetail = "Select a book"
+    static let sidebarMin: CGFloat = DuoSidebar.min
+    static let sidebarIdeal: CGFloat = DuoSidebar.ideal
+    static let sidebarMax: CGFloat = DuoSidebar.max
+
+    static func defaultSelection(available: [LogBook], primary: HomeBook) -> LogBook? {
+        if available.contains(.dp) { return .dp }
+        let starred = primary.logBook
+        if available.contains(starred) { return starred }
+        return available.first
+    }
+}
+
+/// Export regions. Compact is one column. Regular puts controls on the left
+/// and the preview, disclaimer, and Share strip on the right.
+enum DuoExportRegion: Equatable {
+    case books
+    case dateRange
+    case preview
+    case disclaimer
+    case share
+}
+
+enum DuoExportLayout {
+    static func columns(split: Bool) -> (left: [DuoExportRegion], right: [DuoExportRegion]) {
+        if split {
+            return ([.books, .dateRange], [.preview, .disclaimer, .share])
+        }
+        return ([.books, .dateRange, .preview, .disclaimer, .share], [])
+    }
 }
 
 /// Which Home regions each size class shows. The DP hero is the primary block
@@ -85,7 +128,7 @@ enum DuoHomeLayout {
     }
 }
 
-/// Reads both size classes and reports whether Home / Tools should split.
+/// Reads both size classes and reports whether Home, Tools, Entries, and Export should split.
 struct DuoSizeClassReader<Content: View>: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
