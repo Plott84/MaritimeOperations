@@ -38,6 +38,12 @@ public struct CraneHeelPresentation: Equatable, Sendable {
     public static let inputsEyebrow = "INPUTS"
     /// Kept footer. (The mock's "Example numbers · Builder case C" line is intentionally NOT in the app.)
     public static let footer = "Deck estimate for static heel. Not a class or loading-computer calculation."
+    /// Soft B: Pivot off CL is behind More, collapsed until opened. Empty pivot stays on CL.
+    public static let moreTitle = "More"
+    public static let moreOptional = "optional"
+    public static let moreCollapsedHint = "Pivot off CL · Crane on CL assumed when empty"
+    public static let pivotMoreStartsCollapsed = true
+    public static let moreAccessibilityIdentifier = "craneHeel.more"
     public static let dash = "—"
     public static let sliderTicks = ["0 Bow", "90 Stbd", "180 Aft", "270 Port", "360"]
     public static let ringAccessibilityLabel = "Boom azimuth"

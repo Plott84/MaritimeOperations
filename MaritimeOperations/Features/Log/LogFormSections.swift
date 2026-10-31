@@ -386,6 +386,60 @@ struct LogFormBookHeader: View {
 
 // MARK: - Book screen pieces
 
+/// Soft B empty book: icon, exact title and body, one teal CTA at least 44 pt tall.
+struct BookEmptyCard: View {
+    let book: LogBook
+    var onAction: () -> Void
+
+    private var copy: BookEmptyCopy { .of(book) }
+
+    var body: some View {
+        GlassCard {
+            VStack(spacing: 14) {
+                LogBookIcon(book: book, scale: 1.35)
+                    .font(.title.weight(.semibold))
+                    .foregroundStyle(AppTheme.teal)
+                    .frame(width: 64, height: 64)
+                    .background(AppTheme.teal.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .accessibilityHidden(true)
+
+                Text(copy.title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("bookEmptyTitle_\(book.rawValue)")
+
+                Text(copy.message)
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: onAction) {
+                    HStack(spacing: 8) {
+                        Image(systemName: copy.opensMainTimer ? "play.fill" : "plus")
+                            .accessibilityHidden(true)
+                        Text(copy.cta)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .font(.headline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(AppTheme.onTeal)
+                .background(AppTheme.teal, in: Capsule())
+                .accessibilityIdentifier(copy.accessibilityIdentifier)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+        }
+    }
+}
+
 /// Header card at the top of a book: caps eyebrow, title, row count, "New entry" pill.
 struct LogBookHeaderCard: View {
     let book: LogBook
@@ -524,7 +578,7 @@ struct LogBookRow: View {
     }
 }
 
-/// "Export <book>" row, disabled until Export is built (same as the AH book).
+/// Per-book export row. Soft B does not mount this — the Export tab owns export.
 struct LogBookExportRow: View {
     let book: LogBook
     let idPrefix: String

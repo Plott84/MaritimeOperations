@@ -13,33 +13,29 @@ struct ROVBookView: View {
         ZStack {
             AppCanvas()
             List {
-                Section {
-                    LogBookHeaderCard(
-                        book: .rov,
-                        heading: "ROV dives",
-                        count: entries.count,
-                        idPrefix: "rov",
-                        addLabel: "New ROV entry"
-                    ) {
-                        showingAdd = true
-                    }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-
                 if entries.isEmpty {
                     Section {
-                        Text("No ROV entries yet.")
-                            .font(.subheadline)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 8)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                        BookEmptyCard(book: .rov) { showingAdd = true }
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                     }
                 } else {
+                    Section {
+                        LogBookHeaderCard(
+                            book: .rov,
+                            heading: "ROV dives",
+                            count: entries.count,
+                            idPrefix: "rov",
+                            addLabel: "New ROV entry"
+                        ) {
+                            showingAdd = true
+                        }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    }
+
                     Section {
                         ForEach(entries, id: \.id) { entry in
                             Button {
@@ -68,13 +64,6 @@ struct ROVBookView: View {
                             .accessibilityIdentifier("rovRow-\(entry.id.uuidString)")
                         }
                     }
-                }
-
-                Section {
-                    LogBookExportRow(book: .rov, idPrefix: "rov")
-                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)

@@ -5,6 +5,8 @@ struct EntriesView: View {
     @Query(sort: \DPEntry.date, order: .reverse) private var entries: [DPEntry]
     @Environment(\.modelContext) private var modelContext
     var session: ActiveDPSessionStore
+    /// Soft B empty CTA. Switches to the Main timer. Does not start a session.
+    var onStartDP: () -> Void = {}
     @AppStorage("dp.oldHoursText") private var oldHoursText = ""
     @FocusState private var oldHoursFocused: Bool
     @State private var showingAdd = false
@@ -28,6 +30,15 @@ struct EntriesView: View {
         ZStack {
             AppCanvas()
             List {
+                if entries.isEmpty {
+                    Section {
+                        BookEmptyCard(book: .dp, onAction: onStartDP)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+                }
+
                 Section {
                     summaryCard
                         .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
@@ -35,20 +46,7 @@ struct EntriesView: View {
                         .listRowSeparator(.hidden)
                 }
 
-                if entries.isEmpty {
-                    Section {
-                        Text("No entries yet. Add a DP log line, or stop the timer on Main.")
-                            .font(.subheadline)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 8)
-                            .padding(.top, 8)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                    }
-                } else {
+                if !entries.isEmpty {
                     Section {
                         ForEach(entries, id: \.id) { entry in
                             Button {
@@ -121,28 +119,18 @@ struct EntriesView: View {
     private var summaryCard: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label {
-                            Text("LOGBOOK")
-                                .font(.caption.weight(.semibold))
-                                .tracking(1.1)
-                        } icon: {
-                            Image(systemName: "waveform.path.ecg")
-                        }
-                        .foregroundStyle(AppTheme.teal)
-                        Text("DP Sessions")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(AppTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Label {
+                        Text("LOGBOOK")
+                            .font(.caption.weight(.semibold))
+                            .tracking(1.1)
+                    } icon: {
+                        Image(systemName: "waveform.path.ecg")
                     }
-                    Spacer()
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.black.opacity(0.25)))
-                        .overlay(Circle().stroke(AppTheme.fieldBorder, lineWidth: 1))
-                        .accessibilityHidden(true)
+                    .foregroundStyle(AppTheme.teal)
+                    Text("DP Sessions")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
                 }
 
                 Text("Review timed sessions, aggregate DP hours, and manual catch-up entries. Complete vessel, position, class, code, and notes when the job allows.")
@@ -190,34 +178,19 @@ struct EntriesView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(spacing: 10) {
-                    Button {
-                        showingAdd = true
-                    } label: {
-                        Label("Add", systemImage: "plus")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .background(AppTheme.surfaceElevated, in: Capsule())
-                    .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
-                    .accessibilityIdentifier("addManualEntryPill")
-
-                    Button {} label: {
-                        Label("Share DP Entries", systemImage: "square.and.arrow.up")
-                            .font(.subheadline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .background(Color.black.opacity(0.2), in: Capsule())
-                    .overlay(Capsule().stroke(AppTheme.fieldBorder, lineWidth: 1))
-                    .disabled(true)
-                    .accessibilityLabel("Share DP Entries")
+                Button {
+                    showingAdd = true
+                } label: {
+                    Label("Add", systemImage: "plus")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .padding(.vertical, 12)
                 }
+                .buttonStyle(.plain)
+                .foregroundStyle(AppTheme.textPrimary)
+                .background(AppTheme.surfaceElevated, in: Capsule())
+                .overlay(Capsule().strokeBorder(AppTheme.fieldBorder, lineWidth: 1))
+                .accessibilityIdentifier("addManualEntryPill")
             }
         }
     }
