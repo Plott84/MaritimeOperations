@@ -8,6 +8,11 @@ struct RootView: View {
     @State private var showingAddCrane = false
     @State private var showingAddROV = false
     @State private var logPath: [LogBook] = []
+    /// Regular-width Entries detail. Compact pushes `logPath` instead.
+    @State private var entriesBook: LogBook? = DuoEntriesColumn.defaultSelection(
+        available: LogBook.entriesListOrder,
+        primary: .dp
+    )
     @State private var showImport = false
     @State private var importPreload: ImportReadFile?
     @State private var importToast: String?
@@ -26,24 +31,39 @@ struct RootView: View {
                     )
                 }
             case .log:
-                NavigationStack(path: $logPath) {
-                    LogView()
-                        .navigationDestination(for: LogBook.self) { book in
-                            switch book {
-                            case .dp:
-                                EntriesView(session: session, onStartDP: { tab = .main })
-                            case .anchorHandling:
-                                RigMovesView(showingAdd: $showingAddRigMove)
-                            case .rov:
-                                ROVBookView()
-                            case .crane:
-                                CraneBookView()
-                            }
+                // Compact: Soft B books push. Regular: books | entry list. Bottom tabs either way.
+                DuoSizeClassReader { split in
+                    if split {
+                        EntriesSplitView(
+                            session: session,
+                            selection: $entriesBook,
+                            showingAddRigMove: $showingAddRigMove,
+                            onStartDP: { tab = .main }
+                        )
+                    } else {
+                        NavigationStack(path: $logPath) {
+                            LogView()
+                                .navigationDestination(for: LogBook.self) { book in
+                                    BookDestination(
+                                        book: book,
+                                        session: session,
+                                        showingAddRigMove: $showingAddRigMove,
+                                        onStartDP: { tab = .main }
+                                    )
+                                }
                         }
+                    }
                 }
             case .tools:
-                NavigationStack {
-                    ToolsHomeView()
+                // Compact: grouped push list. Regular: list | detail. Bottom tabs either way.
+                DuoSizeClassReader { split in
+                    if split {
+                        ToolsSplitView()
+                    } else {
+                        NavigationStack {
+                            ToolsHomeView()
+                        }
+                    }
                 }
             case .export:
                 NavigationStack {
@@ -117,6 +137,9 @@ struct RootView: View {
         importPreload = nil
         showingAddRigMove = false
         logPath = report.logPath
+        if let book = report.logPath.first {
+            entriesBook = book
+        }
         tab = .log
         importToast = report.toastText
     }
@@ -124,6 +147,9 @@ struct RootView: View {
     /// Switch to Entries, optionally straight into a book (and its New entry form).
     private func open(_ book: LogBook?, addingEntry: Bool = false) {
         logPath = book.map { [$0] } ?? []
+        if let book {
+            entriesBook = book
+        }
         tab = .log
         showingAddRigMove = addingEntry
     }

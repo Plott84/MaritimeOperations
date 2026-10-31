@@ -26,6 +26,13 @@ extension LogBookStats {
 
 /// Entries tab: one card per book. Tap a card to open the book. Stars put up to two books on Main.
 struct LogView: View {
+    /// Nil keeps the compact push list. A binding selects a book for the regular-width detail.
+    var selection: Binding<LogBook?>?
+
+    init(selection: Binding<LogBook?>? = nil) {
+        self.selection = selection
+    }
+
     @Query private var entries: [DPEntry]
     @Query private var moves: [RigMove]
     @Query private var rovEntries: [ROVEntry]
@@ -90,42 +97,7 @@ struct LogView: View {
         let stacked = dynamicTypeSize.isAccessibilitySize
         return GlassCard(padding: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                NavigationLink(value: book) {
-                    HStack(alignment: .center, spacing: 12) {
-                        if !stacked {
-                            LogBookIcon(book: book, scale: 1.2)
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(AppTheme.teal)
-                                .frame(width: 44, height: 44)
-                                .background(AppTheme.teal.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .accessibilityHidden(true)
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(book.title)
-                                .font(.title3.weight(.bold))
-                                .foregroundStyle(AppTheme.textPrimary)
-                                .lineLimit(nameLineLimit)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text(book.subtitle)
-                                .font(.footnote)
-                                .foregroundStyle(AppTheme.textSecondary)
-                                .lineLimit(nameLineLimit)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 8)
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(book.spokenTitle)
-                .accessibilityValue(spokenStats(book))
-                .accessibilityHint("Opens the book.")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("logBook_\(book.rawValue)")
+                bookOpener(book, stacked: stacked)
 
                 Rectangle()
                     .fill(AppTheme.border)
@@ -142,6 +114,74 @@ struct LogView: View {
                 }
             }
         }
+        .overlay {
+            if selection?.wrappedValue == book {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(AppTheme.teal, lineWidth: 1.5)
+            }
+        }
+    }
+
+    /// Compact rows push. Regular rows set the split selection and keep the same book ids.
+    @ViewBuilder
+    private func bookOpener(_ book: LogBook, stacked: Bool) -> some View {
+        if let selection {
+            let selected = selection.wrappedValue == book
+            Button {
+                selection.wrappedValue = book
+            } label: {
+                bookRow(book, stacked: stacked)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(book.spokenTitle)
+            .accessibilityValue(spokenStats(book))
+            .accessibilityHint("Opens the book.")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("logBook_\(book.rawValue)")
+        } else {
+            NavigationLink(value: book) {
+                bookRow(book, stacked: stacked)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(book.spokenTitle)
+            .accessibilityValue(spokenStats(book))
+            .accessibilityHint("Opens the book.")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("logBook_\(book.rawValue)")
+        }
+    }
+
+    private func bookRow(_ book: LogBook, stacked: Bool) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            if !stacked {
+                LogBookIcon(book: book, scale: 1.2)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(AppTheme.teal)
+                    .frame(width: 44, height: 44)
+                    .background(AppTheme.teal.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(book.title)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .lineLimit(nameLineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(book.subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .lineLimit(nameLineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .contentShape(Rectangle())
     }
 
     /// Two lines at the default size. Accessibility sizes wrap fully so the name is not clipped.
