@@ -59,14 +59,16 @@ struct LogView: View {
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.textSecondary)
                         .accessibilityAddTraits(.isHeader)
-                    ForEach(LogBook.allCases) { book in
+                    ForEach(LogBook.entriesListOrder) { book in
                         bookCard(book)
                     }
                     Label {
                         Text(HomeBooks.entriesFootnote)
+                            .fixedSize(horizontal: false, vertical: true)
                     } icon: {
                         Image(systemName: "star.fill")
                             .foregroundStyle(AppTheme.teal)
+                            .accessibilityHidden(true)
                     }
                     .font(.footnote)
                     .foregroundStyle(AppTheme.textSecondary)
@@ -102,13 +104,12 @@ struct LogView: View {
                             Text(book.title)
                                 .font(.title3.weight(.bold))
                                 .foregroundStyle(AppTheme.textPrimary)
+                                .lineLimit(nameLineLimit)
                                 .fixedSize(horizontal: false, vertical: true)
-                            if book == .anchorHandling {
-                                AHTag(title: "Rig Moves")
-                            }
                             Text(book.subtitle)
                                 .font(.footnote)
                                 .foregroundStyle(AppTheme.textSecondary)
+                                .lineLimit(nameLineLimit)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: 8)
@@ -141,6 +142,11 @@ struct LogView: View {
                 }
             }
         }
+    }
+
+    /// Two lines at the default size. Accessibility sizes wrap fully so the name is not clipped.
+    private var nameLineLimit: Int? {
+        dynamicTypeSize.isAccessibilitySize ? nil : 2
     }
 
     /// "86.0 h total  12 entries", "4 rig moves", "7.5 h piloting  3 entries", "21.0 h operated  5 entries".

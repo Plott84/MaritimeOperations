@@ -147,7 +147,7 @@ struct HomeBooks: Equatable {
     var secondary: HomeBook?
 
     static let secondaryStorageKey = "homeBookSecondary"
-    static let entriesFootnote = "The first On Main star is the primary book. A second book sits under it. A third replaces the secondary."
+    static let entriesFootnote = "Star up to two books for Main (HB-13). Export lives on the Export tab."
 
     init(primary: HomeBook = .dp, secondary: HomeBook? = nil) {
         self.primary = primary

@@ -14,25 +14,21 @@ struct RigMovesView: View {
         ZStack {
             AppCanvas()
             List {
-                Section {
-                    headerCard
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
-
                 if moves.isEmpty {
                     Section {
-                        Text("No rig moves yet.")
-                            .font(.subheadline)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 8)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                        BookEmptyCard(book: .anchorHandling) { showingAdd = true }
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                     }
                 } else {
+                    Section {
+                        headerCard
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+
                     Section {
                         ForEach(moves, id: \.id) { move in
                             Button {
@@ -54,13 +50,6 @@ struct RigMovesView: View {
                             .accessibilityIdentifier("rigMoveRow-\(move.id.uuidString)")
                         }
                     }
-                }
-
-                Section {
-                    exportRow
-                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)
@@ -109,10 +98,7 @@ struct RigMovesView: View {
     }
 
     private var headerCard: some View {
-        VStack(spacing: 12) {
-            AHTag(title: "Rig Moves")
-                .accessibilityLabel("Filter: Rig Moves")
-            GlassCard {
+        GlassCard {
                 VStack(alignment: .leading, spacing: 10) {
                     Label {
                         Text("ANCHOR HANDLING")
@@ -160,7 +146,6 @@ struct RigMovesView: View {
                     .accessibilityIdentifier("addRigMovePill")
                 }
             }
-        }
     }
 
     private func row(_ move: RigMove) -> some View {
@@ -229,37 +214,5 @@ struct RigMovesView: View {
             parts.append(AppFormatters.hoursString(hours).replacingOccurrences(of: " h", with: " hours"))
         }
         return parts.joined(separator: ", ")
-    }
-
-    private var exportRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
-                Image(systemName: "doc.text")
-                    .accessibilityHidden(true)
-                Text("Export Anchor handling")
-                    .font(.subheadline.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .accessibilityHidden(true)
-            }
-            .foregroundStyle(AppTheme.textSecondary)
-            .padding(14)
-            .frame(minHeight: 44)
-            .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Export Anchor handling")
-            .accessibilityValue("Not available yet")
-            .accessibilityIdentifier("ahExportBook")
-            Text("Exports this book only. Export comes in a later build.")
-                .font(.caption)
-                .foregroundStyle(AppTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }

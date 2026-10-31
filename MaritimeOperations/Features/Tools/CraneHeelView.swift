@@ -11,7 +11,7 @@ import SwiftUI
 //   2. LIFT         — Start · on deck / End · over side segment, Start + End rows (heel on End only), top-view ring
 //                     (drag writes the active angle field), quick angles, Exact azimuth + Outreach fields.
 //   3. CRANE        — hook load.
-//   4. SHIP         — Δ, GM, distance between tanks, pivot off CL ("On CL").
+//   4. SHIP         — Δ, GM, distance between tanks. Pivot off CL sits behind More (collapsed).
 //
 // App helpers this file relies on (already in MaritimeOperations, see WIRING.md):
 //   AppCanvas, GlassCard, AppTheme.{teal, gold, danger, surface, textPrimary, textSecondary, fieldBorder},
@@ -26,6 +26,8 @@ struct CraneHeelView: View {
     /// Which position the ring, quick buttons and the two Lift fields edit. End first (the lift over the side).
     @State private var position: CraneHeelPresentation.LiftPosition = .end
     @FocusState private var focusedField: CraneHeelPresentation.Field?
+    /// Soft B: Pivot off CL is hidden until More is opened. Empty still means on CL.
+    @State private var showsPivotOffset = !CraneHeelPresentation.pivotMoreStartsCollapsed
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -418,10 +420,65 @@ struct CraneHeelView: View {
             numberField(.tankDistance, title: P.Field.tankDistance.title, state: state)
                 .padding(.top, 4)
             if let h = P.Field.tankDistance.helper { helperText(h) }
-            numberField(.pivotOffset, title: P.Field.pivotOffset.title, state: state)
-                .padding(.top, 4)
-            if let h = P.Field.pivotOffset.helper { helperText(h) }
+            pivotMore(state)
         }
+    }
+
+    /// Collapsed caption only. Opened, the same Pivot field as locked B2 (empty = on CL).
+    private func pivotMore(_ state: CraneHeelPresentation) -> some View {
+        let open = showsPivotOffset
+        return VStack(alignment: .leading, spacing: 8) {
+            pivotMoreButton(open: open)
+            if open {
+                numberField(.pivotOffset, title: P.Field.pivotOffset.title, state: state)
+                if let h = P.Field.pivotOffset.helper { helperText(h) }
+            }
+        }
+    }
+
+    private func pivotMoreButton(open: Bool) -> some View {
+        Button {
+            if open, focusedField == .pivotOffset { focusedField = nil }
+            if reduceMotion {
+                showsPivotOffset.toggle()
+            } else {
+                withAnimation(.easeOut(duration: 0.2)) { showsPivotOffset.toggle() }
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(P.moreTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    Text(P.moreOptional)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .rotationEffect(.degrees(open ? 90 : 0))
+                        .accessibilityHidden(true)
+                }
+                if !open {
+                    Text(P.moreCollapsedHint)
+                        .font(.footnote)
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(P.moreTitle), \(P.moreOptional)")
+        .accessibilityValue(open ? "Expanded" : "Collapsed")
+        .accessibilityHint(open ? "Hides pivot off centreline" : P.moreCollapsedHint)
+        .accessibilityIdentifier(P.moreAccessibilityIdentifier)
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Helpers

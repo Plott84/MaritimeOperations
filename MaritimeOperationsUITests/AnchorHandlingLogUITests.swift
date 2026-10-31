@@ -13,10 +13,11 @@ final class AnchorHandlingLogUITests: XCTestCase {
         app.buttons["tab_log"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["logBook_dp"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["logBook_anchorHandling"].exists)
-        XCTAssertTrue(app.staticTexts["The first On Main star is the primary book. A second book sits under it. A third replaces the secondary."].exists)
+        XCTAssertTrue(app.staticTexts["Star up to two books for Main (HB-13). Export lives on the Export tab."].exists)
+        XCTAssertFalse(app.staticTexts["Rig Moves"].exists)
 
         app.descendants(matching: .any)["logBook_anchorHandling"].tap()
-        XCTAssertTrue(app.staticTexts["No rig moves yet."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No rig moves yet"].waitForExistence(timeout: 5))
         app.buttons["navAddRigMove"].tap()
         XCTAssertTrue(app.navigationBars["New entry"].waitForExistence(timeout: 5))
 

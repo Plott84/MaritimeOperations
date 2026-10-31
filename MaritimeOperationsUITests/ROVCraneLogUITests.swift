@@ -17,7 +17,7 @@ final class ROVCraneLogUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["logBook_crane"].exists)
 
         app.openLogBook(.rov)
-        XCTAssertTrue(app.staticTexts["No ROV entries yet."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No ROV entries yet"].waitForExistence(timeout: 5))
         app.buttons["navAddROVEntry"].tap()
         XCTAssertTrue(app.navigationBars["New ROV entry"].waitForExistence(timeout: 5))
 
@@ -105,7 +105,7 @@ final class ROVCraneLogUITests: XCTestCase {
     func testAddCraneEntryShowsInLog() throws {
         let app = XCUIApplication.launchedClean()
         app.openLogBook(.crane)
-        XCTAssertTrue(app.staticTexts["No crane entries yet."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No Crane entries yet"].waitForExistence(timeout: 5))
         app.buttons["navAddCraneEntry"].tap()
         XCTAssertTrue(app.navigationBars["New crane entry"].waitForExistence(timeout: 5))
 
@@ -475,7 +475,7 @@ final class ROVCraneLogUITests: XCTestCase {
             : alert.buttons["Delete"]
         confirm.tap()
         XCTAssertFalse(app.bookRow(containing: "Swipe Drop ROV").waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["No ROV entries yet."].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["No ROV entries yet"].waitForExistence(timeout: 4))
     }
 
     func testCraneSwipeDeleteCancelKeepsRow() throws {
@@ -514,7 +514,7 @@ final class ROVCraneLogUITests: XCTestCase {
             : alert.buttons["Delete"]
         confirm.tap()
         XCTAssertFalse(app.bookRow(containing: "Swipe Drop Crane").waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["No crane entries yet."].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["No Crane entries yet"].waitForExistence(timeout: 4))
     }
 
     // MARK: Helpers

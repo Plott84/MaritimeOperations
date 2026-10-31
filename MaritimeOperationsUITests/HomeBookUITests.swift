@@ -118,7 +118,7 @@ final class HomeBookUITests: XCTestCase {
         let app = openCraneHome()
         app.buttons["Open Crane log"].tap()
         XCTAssertTrue(app.navigationBars["Crane"].waitForExistence(timeout: 6))
-        XCTAssertTrue(app.staticTexts["No crane entries yet."].exists)
+        XCTAssertTrue(app.staticTexts["No Crane entries yet"].exists)
     }
 
     func testHB07_startDPKeepsPrefill() throws {

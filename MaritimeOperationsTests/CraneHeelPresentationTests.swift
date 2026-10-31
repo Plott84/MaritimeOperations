@@ -141,6 +141,30 @@ final class CraneHeelPresentationTests: XCTestCase {
         XCTAssertFalse(P.footer.contains("Example"))
     }
 
+    /// Soft B chrome: Pivot stays behind More. Aid line, pivot field copy, and B2 math stay put.
+    func testSoftBMoreCollapsesPivotWithoutChangingHeelCopy() {
+        XCTAssertEqual(P.moreTitle, "More")
+        XCTAssertEqual(P.moreOptional, "optional")
+        XCTAssertEqual(P.moreCollapsedHint, "Pivot off CL · Crane on CL assumed when empty")
+        XCTAssertTrue(P.pivotMoreStartsCollapsed)
+        XCTAssertEqual(P.moreAccessibilityIdentifier, "craneHeel.more")
+        XCTAssertEqual(P.footer, "Deck estimate for static heel. Not a class or loading-computer calculation.")
+        XCTAssertEqual(P.Field.pivotOffset.title, "Pivot off CL (m) · optional")
+        XCTAssertEqual(P.Field.pivotOffset.placeholder, "On CL")
+        XCTAssertEqual(P.Field.pivotOffset.helper, "Crane pivot off centreline, + to stbd. Empty = on CL.")
+        let blob = [P.moreTitle, P.moreOptional, P.moreCollapsedHint, P.footer].joined(separator: "\n")
+        XCTAssertFalse(blob.contains("SAFE"))
+        XCTAssertFalse(blob.contains("OK to lift"))
+        let b2 = P.Inputs(
+            azimuth: "90", outreach: "20", hookLoad: "80", displacement: "8000", gm: "1.5",
+            tankDistance: "12", startAzimuth: "180", startOutreach: "12"
+        )
+        let shown = P(inputs: b2)
+        XCTAssertEqual(shown.heelValueText, "+7.6")
+        XCTAssertEqual(shown.sideText, "Stbd")
+        XCTAssertEqual(shown.ballast?.value, "133.3")
+    }
+
     // MARK: Field copy
 
     func testFieldLabelsHelpersAndIDs() {
