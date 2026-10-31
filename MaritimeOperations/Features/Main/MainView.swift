@@ -11,6 +11,7 @@ struct MainView: View {
     @AppStorage(HomeBooks.secondaryStorageKey) private var homeBookSecondaryRaw = ""
     @AppStorage(DPDaysSettings.targetTextKey) private var dayTargetText = DPDaysSettings.defaultTargetText
     @AppStorage(DPDaysSettings.certificateKey) private var certificateISO = ""
+    @AppStorage("dp.oldHoursText") private var oldHoursText = ""
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var session: ActiveDPSessionStore
     var onOpenRigMoves: () -> Void
@@ -47,41 +48,15 @@ struct MainView: View {
     var body: some View {
         ZStack {
             AppCanvas()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HomeBookChip(books: books) { showHomeBookPicker = true }
-                    switch homeBook {
-                    case .dp:
-                        timerCard
-                        if !session.isRunning {
-                            startDPPrefillCard
-                        }
-                        dpDaysCard
-                    case .crane:
-                        craneHero
-                    case .ah:
-                        anchorHero
-                    case .rov:
-                        rovHero
-                    }
-                    // Prefill and DP days stay with the DP hero. The secondary card sits under that block.
-                    if books.secondary != nil {
-                        secondaryCard
-                    }
-                    HomeActivityCard(
-                        book: homeBook,
-                        items: activityItems,
-                        primaryTitle: primaryTitle,
-                        primarySymbol: primarySymbol,
-                        onOpen: openActivity,
-                        onEmptyPrimary: performPrimary
-                    )
+            // Compact column matches DuoHomeLayout.columns(split: false).
+            // Regular columns match DuoHomeLayout.columns(split: true): hero | books + activity.
+            DuoSizeClassReader { split in
+                if split {
+                    regularColumns
+                } else {
+                    compactColumn
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
             }
-            .scrollEdgeEffectStyle(.hard, for: .top)
         }
         .navigationTitle("Main")
         .navigationBarTitleDisplayMode(.inline)
@@ -115,6 +90,105 @@ struct MainView: View {
         } message: {
             Text(saveErrorMessage ?? "")
         }
+    }
+
+    /// Soft C single column. Chip, primary hero, optional secondary card, Latest Activity.
+    private var compactColumn: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HomeBookChip(books: books) { showHomeBookPicker = true }
+                primaryHeroBlock
+                if books.secondary != nil {
+                    secondaryCard
+                }
+                activityCard
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+        .scrollEdgeEffectStyle(.hard, for: .top)
+    }
+
+    /// Regular width. Left is the primary hero (DP timer when DP is on Main).
+    /// Right is Your books, the optional secondary compact card, then Latest Activity.
+    private var regularColumns: some View {
+        HStack(alignment: .top, spacing: 0) {
+            columnScroll {
+                primaryHeroBlock
+            }
+            Rectangle()
+                .fill(AppTheme.cardBorder)
+                .frame(width: 1)
+                .frame(maxHeight: .infinity)
+                .accessibilityHidden(true)
+            columnScroll {
+                HomeYourBooksCard(
+                    books: books,
+                    stats: logStats,
+                    onEdit: { showHomeBookPicker = true },
+                    onOpen: { onOpenBook($0.logBook) }
+                )
+                if books.secondary != nil {
+                    secondaryCard
+                }
+                activityCard
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func columnScroll<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                content()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .scrollEdgeEffectStyle(.hard, for: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Primary hero. DP keeps the timer, idle prefill, and DP days. No second action on that hero.
+    @ViewBuilder private var primaryHeroBlock: some View {
+        switch homeBook {
+        case .dp:
+            timerCard
+            if !session.isRunning {
+                startDPPrefillCard
+            }
+            dpDaysCard
+        case .crane:
+            craneHero
+        case .ah:
+            anchorHero
+        case .rov:
+            rovHero
+        }
+    }
+
+    private var activityCard: some View {
+        HomeActivityCard(
+            book: homeBook,
+            items: activityItems,
+            primaryTitle: primaryTitle,
+            primarySymbol: primarySymbol,
+            onOpen: openActivity,
+            onEmptyPrimary: performPrimary
+        )
+    }
+
+    private var logStats: LogBookStats {
+        LogBookStats(
+            entries: entries,
+            moves: rigMoves,
+            rovEntries: rovEntries,
+            craneEntries: craneEntries,
+            oldDPHoursText: oldHoursText
+        )
     }
 
     private var activityItems: [HomeActivityItem] {

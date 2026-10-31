@@ -42,8 +42,15 @@ struct RootView: View {
                         }
                 }
             case .tools:
-                NavigationStack {
-                    ToolsHomeView()
+                // Compact: grouped push list. Regular: list | detail. Bottom tabs either way.
+                DuoSizeClassReader { split in
+                    if split {
+                        ToolsSplitView()
+                    } else {
+                        NavigationStack {
+                            ToolsHomeView()
+                        }
+                    }
                 }
             case .export:
                 NavigationStack {
