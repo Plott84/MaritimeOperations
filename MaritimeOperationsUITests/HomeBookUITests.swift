@@ -40,7 +40,9 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].exists)
         XCTAssertFalse(app.buttons["New Rig Move"].exists)
         XCTAssertFalse(app.buttons["homeSecondaryCTA"].exists)
-        XCTAssertEqual(app.buttons["homePrimaryCTA"].label, "Start DP")
+        let primary = app.buttons["homePrimaryCTA"]
+        XCTAssertEqual(primary.label, "Start DP")
+        XCTAssertGreaterThan(primary.frame.height, 43, "HC-01 default hero hit")
     }
 
     /// HB-12: tab bar is Main, Entries, Tools, Export. Each item is a 44 pt hit.
@@ -134,7 +136,8 @@ final class HomeBookUITests: XCTestCase {
             "-UIPreferredContentSizeCategoryName",
             "UICTContentSizeCategoryAccessibilityExtraExtraExtraLarge"
         ])
-        let start = app.buttons["Start DP"].firstMatch
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].waitForExistence(timeout: 8))
+        let start = app.buttons["homePrimaryCTA"]
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         XCTAssertGreaterThan(start.frame.height, 43, "Hero CTA hit target")
         XCTAssertEqual(start.label, "Start DP")
@@ -150,7 +153,8 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertGreaterThan(crane.frame.height, 43)
         crane.tap()
 
-        let lift = app.buttons["New lift"]
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_crane"].waitForExistence(timeout: 5))
+        let lift = app.buttons["homePrimaryCTA"]
         XCTAssertTrue(lift.waitForExistence(timeout: 5))
         var swipes = 0
         while !lift.isHittable && swipes < 5 {
@@ -160,10 +164,50 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertTrue(lift.isHittable)
         XCTAssertGreaterThan(lift.frame.height, 43, "Crane hero CTA hit target")
         XCTAssertEqual(lift.label, "New lift")
-        let log = app.buttons["Open Crane log"]
+        let log = app.buttons["homeSecondaryCTA"]
         XCTAssertTrue(log.exists)
         XCTAssertEqual(log.label, "Open Crane log")
+        XCTAssertGreaterThan(log.frame.height, 43, "Crane secondary CTA hit target")
         XCTAssertFalse(app.staticTexts["DP TIMER"].exists)
+    }
+
+    /// HC-04: AX5 secondary card CTA stays a full-width hit of at least 44 pt, still nested.
+    func testHC04_ax5SecondaryCardHitHeight() throws {
+        let app = XCUIApplication.launchedClean(extraArguments: [
+            "-UIPreferredContentSizeCategoryName",
+            "UICTContentSizeCategoryAccessibilityExtraExtraExtraLarge"
+        ])
+        XCTAssertTrue(app.buttons["homeBookStar"].waitForExistence(timeout: 8))
+        app.buttons["homeBookStar"].tap()
+        let crane = app.buttons["homeBookSecondaryOption_crane"]
+        XCTAssertTrue(crane.waitForExistence(timeout: 5))
+        var swipes = 0
+        while !crane.isHittable && swipes < 6 {
+            app.swipeUp()
+            swipes += 1
+        }
+        crane.tap()
+        let close = app.buttons["homeBookClose"]
+        XCTAssertTrue(close.waitForExistence(timeout: 3))
+        close.tap()
+
+        XCTAssertTrue(app.staticTexts["DP TIMER"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_crane"].exists)
+        let primary = app.buttons["homePrimaryCTA"]
+        XCTAssertEqual(primary.label, "Start DP")
+        XCTAssertGreaterThan(primary.frame.height, 43, "Hero CTA hit target at AX5")
+        let secondary = app.buttons["homeBookSecondaryCTA"]
+        XCTAssertTrue(secondary.waitForExistence(timeout: 5))
+        swipes = 0
+        while !secondary.isHittable && swipes < 6 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(secondary.isHittable)
+        XCTAssertGreaterThan(secondary.frame.height, 43, "Secondary card CTA hit target at AX5")
+        XCTAssertEqual(secondary.label, "Crane on Main, New lift")
+        XCTAssertFalse(app.buttons["New Rig Move"].exists)
     }
 
     /// A second Entries star sits under the primary. It does not replace the DP hero.
@@ -194,6 +238,8 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["homeHero_dp"].exists)
         XCTAssertFalse(app.descendants(matching: .any)["homeHero_crane"].exists)
         XCTAssertTrue(app.buttons["Start DP"].firstMatch.exists)
+        XCTAssertEqual(app.buttons["homePrimaryCTA"].label, "Start DP")
+        XCTAssertGreaterThan(app.buttons["homePrimaryCTA"].frame.height, 43)
         XCTAssertFalse(app.buttons["New Rig Move"].exists)
         XCTAssertFalse(app.buttons["homeSecondaryCTA"].exists)
         XCTAssertFalse(app.buttons["Open Crane log"].exists)
@@ -258,7 +304,12 @@ final class HomeBookUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["homeBookSecondaryCard_dp"].exists)
         XCTAssertTrue(app.buttons["New lift"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Open Crane log"].exists)
+        XCTAssertEqual(app.buttons["homePrimaryCTA"].label, "New lift")
+        XCTAssertGreaterThan(app.buttons["homePrimaryCTA"].frame.height, 43)
+        XCTAssertEqual(app.buttons["homeSecondaryCTA"].label, "Open Crane log")
+        XCTAssertGreaterThan(app.buttons["homeSecondaryCTA"].frame.height, 43)
         XCTAssertEqual(app.buttons["homeBookSecondaryCTA"].label, "D P on Main, Start DP")
+        XCTAssertGreaterThan(app.buttons["homeBookSecondaryCTA"].frame.height, 43)
         XCTAssertEqual(app.staticTexts["homeBookSecondaryStatus"].label, "00:00 · Ready")
         XCTAssertFalse(app.staticTexts["00:00"].exists)
         XCTAssertFalse(app.buttons["New Rig Move"].exists)

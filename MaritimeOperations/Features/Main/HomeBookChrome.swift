@@ -315,7 +315,22 @@ struct HomeEyebrowHeader: View {
 }
 
 struct HomeCTAButton: View {
-    enum Kind { case primary, secondary }
+    enum Kind {
+        case primary
+        case secondary
+
+        /// Default visual height (50 / 48). Also the button-body floor: a minHeight on the
+        /// label alone compresses under AX5 (measured ~42.25) and fails `frame.height > 43`.
+        var minimumHeight: CGFloat {
+            switch self {
+            case .primary: return 50
+            case .secondary: return 48
+            }
+        }
+    }
+
+    /// Every Home CTA hit target stays at least this tall, including AX5.
+    static let hardMinimumHit: CGFloat = 44
 
     var title: String
     var systemImage: String
@@ -328,36 +343,43 @@ struct HomeCTAButton: View {
 
     var body: some View {
         Button(action: action) {
-            label
-                .font(.headline)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.horizontal, 12)
-                .padding(.vertical, kind == .primary ? 12 : 10)
-                .contentShape(Rectangle())
+            HomeCTALabel(
+                title: title,
+                systemImage: systemImage,
+                stacksIcon: dynamicTypeSize.isAccessibilitySize
+            )
+            .font(.headline)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(kind == .primary ? AppTheme.onTeal : AppTheme.textPrimary)
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(kind == .primary ? AppTheme.teal : AppTheme.surfaceElevated)
-        }
-        .overlay {
-            if kind == .secondary {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
-            }
-        }
+        .buttonStyle(HomeMinimumHitButtonStyle(
+            minimumHeight: kind.minimumHeight,
+            fillsWidth: true,
+            fill: kind == .primary ? AppTheme.teal : AppTheme.surfaceElevated,
+            foreground: kind == .primary ? AppTheme.onTeal : AppTheme.textPrimary,
+            stroke: kind == .secondary ? AppTheme.fieldBorder : nil,
+            cornerRadius: 16,
+            horizontalPadding: 12,
+            verticalPadding: kind == .primary ? 12 : 10
+        ))
         .accessibilityIdentifier(identifier)
         .accessibilityLabel(spokenTitle ?? title)
     }
+}
 
-    /// AX5 stacks the icon so the title uses the full width and wraps instead of clipping.
-    @ViewBuilder private var label: some View {
+/// Icon beside the title at the default size. At accessibility sizes the icon stacks
+/// above the title so the words use the full width and wrap instead of clipping.
+private struct HomeCTALabel: View {
+    var title: String
+    var systemImage: String
+    var stacksIcon: Bool
+    /// nil wraps. The compact card keeps one line until the card itself stacks.
+    var lineLimit: Int? = nil
+
+    var body: some View {
         let titleText = Text(title)
             .multilineTextAlignment(.center)
-            .lineLimit(nil)
+            .lineLimit(lineLimit)
             .fixedSize(horizontal: false, vertical: true)
-        if dynamicTypeSize.isAccessibilitySize {
+        if stacksIcon {
             VStack(spacing: 4) {
                 Image(systemName: systemImage)
                 titleText
@@ -372,8 +394,53 @@ struct HomeCTAButton: View {
     }
 }
 
+extension View {
+    /// Card id that keeps nested CTA identifiers queryable.
+    /// A bare `accessibilityIdentifier` on the hero or secondary card flattens the tree
+    /// so UI tests can see `homeHero_dp` and miss `homePrimaryCTA`.
+    func homeAccessibilityContainer(_ identifier: String) -> some View {
+        accessibilityElement(children: .contain)
+            .accessibilityIdentifier(identifier)
+    }
+}
+
+/// Minimum height lives on the button body (the style), not on label text.
+/// Label-only `minHeight` is what AX5 compresses below 44.
+private struct HomeMinimumHitButtonStyle: ButtonStyle {
+    var minimumHeight: CGFloat
+    var fillsWidth: Bool
+    var fill: Color
+    var foreground: Color
+    var stroke: Color?
+    var cornerRadius: CGFloat
+    var horizontalPadding: CGFloat
+    var verticalPadding: CGFloat
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, horizontalPadding)
+            .padding(.vertical, verticalPadding)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight)
+            .foregroundStyle(foreground)
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(fill)
+            }
+            .overlay {
+                if let stroke {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .strokeBorder(stroke, lineWidth: 1)
+                }
+            }
+            .contentShape(Rectangle())
+    }
+}
+
 /// Compact card under the hero. One status line and the book's start action. Not a second hero.
 struct HomeSecondaryCard: View {
+    /// Compact card CTA. Default visual and hard floor are both 44 pt.
+    static let minimumHitHeight: CGFloat = HomeCTAButton.hardMinimumHit
+
     let book: HomeBook
     var status: String
     var cta: String
@@ -412,22 +479,24 @@ struct HomeSecondaryCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button(action: action) {
-                    Label {
-                        Text(cta)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(stacked ? nil : 1)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } icon: {
-                        Image(systemName: systemImage)
-                    }
+                    HomeCTALabel(
+                        title: cta,
+                        systemImage: systemImage,
+                        stacksIcon: stacked,
+                        lineLimit: stacked ? nil : 1
+                    )
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(AppTheme.onTeal)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: stacked ? .infinity : nil, minHeight: 44)
-                    .background(AppTheme.teal, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(HomeMinimumHitButtonStyle(
+                    minimumHeight: Self.minimumHitHeight,
+                    fillsWidth: stacked,
+                    fill: AppTheme.teal,
+                    foreground: AppTheme.onTeal,
+                    stroke: nil,
+                    cornerRadius: 14,
+                    horizontalPadding: 14,
+                    verticalPadding: 10
+                ))
                 .fixedSize(horizontal: !stacked, vertical: false)
                 .layoutPriority(1)
                 .accessibilityIdentifier("homeBookSecondaryCTA")
@@ -435,7 +504,7 @@ struct HomeSecondaryCard: View {
                 .accessibilityValue(status)
             }
         }
-        .accessibilityIdentifier("homeBookSecondaryCard_\(book.rawValue)")
+        .homeAccessibilityContainer("homeBookSecondaryCard_\(book.rawValue)")
     }
 
     @ViewBuilder private var eyebrowIcon: some View {
@@ -491,7 +560,7 @@ struct HomeQuickStartCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .accessibilityIdentifier("homeHero_\(book.rawValue)")
+        .homeAccessibilityContainer("homeHero_\(book.rawValue)")
     }
 
     @ViewBuilder private var summary: some View {

@@ -514,4 +514,35 @@ struct HomeBookTests {
         #expect(rejected == HomeBooks(primary: .dp, secondary: .crane))
         #expect(HomeBooks(primary: .dp, secondary: .crane).selectingSecondary(nil) == HomeBooks(primary: .dp))
     }
+
+    /// HC-01…04 floors. Default visuals are 50 / 48 / 44. The hard hit is 44 at every size, including AX5.
+    @Test func homeCTAHitFloorsStayAtLeast44() {
+        #expect(HomeCTAButton.hardMinimumHit == 44)
+        #expect(HomeCTAButton.Kind.primary.minimumHeight == 50)
+        #expect(HomeCTAButton.Kind.secondary.minimumHeight == 48)
+        #expect(HomeSecondaryCard.minimumHitHeight == 44)
+        #expect(HomeCTAButton.Kind.primary.minimumHeight >= HomeCTAButton.hardMinimumHit)
+        #expect(HomeCTAButton.Kind.secondary.minimumHeight >= HomeCTAButton.hardMinimumHit)
+        #expect(HomeSecondaryCard.minimumHitHeight >= HomeCTAButton.hardMinimumHit)
+    }
+
+    /// HC-07 / HC-10: DP hero stays Start DP. Home CTA copy makes no lift or class claim.
+    /// "saves" in the DP caption is not the word "safe".
+    @Test func homeHeroCopyMakesNoLiftClaim() {
+        let banned = ["safe", "class"]
+        for book in HomeBook.allCases {
+            let copy = book.hero
+            let blob = [copy.eyebrow, copy.primary, copy.secondary ?? "", copy.caption].joined(separator: "\n")
+            let words = blob.lowercased().split { !$0.isLetter }.map(String.init)
+            for word in banned {
+                #expect(!words.contains(word), "\(word) in \(book.rawValue) hero")
+            }
+            #expect(!blob.lowercased().contains("ok to lift"))
+            #expect(copy.primary != "New Rig Move")
+        }
+        #expect(HomeBook.dp.hero.primary == "Start DP")
+        #expect(HomeBook.dp.hero.secondary == nil)
+        #expect(HomeSecondaryLine.cta(book: .dp) == "Start DP")
+        #expect(HomeSecondaryLine.cta(book: .crane) == "New lift")
+    }
 }
