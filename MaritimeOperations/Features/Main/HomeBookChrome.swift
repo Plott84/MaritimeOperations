@@ -61,6 +61,12 @@ struct HomeBookChip: View {
     }
 }
 
+/// On Main picker rows (`homeBookOption_*`) go through `HomeMinimumHitButtonStyle`.
+/// A 44 pt floor still measured 42.25 under AX5, so short rows use the secondary CTA floor (48).
+enum HomeBookOptionHit {
+    static let minimumHeight: CGFloat = HomeCTAButton.Kind.secondary.minimumHeight
+}
+
 struct HomeBookPickerSheet: View {
     @Binding var books: HomeBooks
     @Environment(\.dismiss) private var dismiss
@@ -120,12 +126,27 @@ struct HomeBookPickerSheet: View {
             books = books.selectingPrimary(book)
             dismiss()
         } label: {
-            optionLabel(book, selected: selected, showsCheck: selected)
+            optionLabel(book, showsCheck: selected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(bookOptionStyle(selected: selected))
         .accessibilityLabel(book.voiceName)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookOption_\(book.rawValue)")
+    }
+
+    /// Same button-body style as Home CTAs. Card fill keeps the picker row look.
+    private func bookOptionStyle(selected: Bool) -> HomeMinimumHitButtonStyle {
+        HomeMinimumHitButtonStyle(
+            minimumHeight: HomeBookOptionHit.minimumHeight,
+            fillsWidth: true,
+            fill: AppTheme.card,
+            foreground: AppTheme.textPrimary,
+            stroke: selected ? AppTheme.teal : AppTheme.cardBorder,
+            cornerRadius: 14,
+            horizontalPadding: 14,
+            verticalPadding: 10,
+            strokeWidth: selected ? 1.5 : 1
+        )
     }
 
     private var noneOption: some View {
@@ -142,12 +163,8 @@ struct HomeBookPickerSheet: View {
                     checkmark
                 }
             }
-            .padding(.horizontal, 14)
-            .frame(minHeight: 44)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(rowFill(selected: selected))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(bookOptionStyle(selected: selected))
         .accessibilityLabel("None")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("homeBookSecondaryNone")
@@ -177,10 +194,8 @@ struct HomeBookPickerSheet: View {
                 }
                 .padding(.leading, 14)
                 .padding(.trailing, isSecondary ? 4 : 14)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(HomeMinimumHitPlainButtonStyle())
             .disabled(isPrimary)
             .accessibilityLabel(book.voiceName)
             .accessibilityAddTraits(isSecondary ? .isSelected : [])
@@ -194,9 +209,8 @@ struct HomeBookPickerSheet: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.teal)
                         .padding(.horizontal, 8)
-                        .frame(minHeight: 44)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(HomeMinimumHitPlainButtonStyle(fillsWidth: false))
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.trailing, 6)
                 .accessibilityIdentifier("homeBookMakePrimary")
@@ -213,7 +227,7 @@ struct HomeBookPickerSheet: View {
             .accessibilityHidden(true)
     }
 
-    private func optionLabel(_ book: HomeBook, selected: Bool, showsCheck: Bool) -> some View {
+    private func optionLabel(_ book: HomeBook, showsCheck: Bool) -> some View {
         HStack(spacing: 12) {
             bookIcon(book)
             Text(book.chipTitle)
@@ -225,20 +239,10 @@ struct HomeBookPickerSheet: View {
                 checkmark
             }
         }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 44)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(rowFill(selected: selected))
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func rowFill(selected: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(AppTheme.card)
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(selected ? AppTheme.teal : AppTheme.cardBorder, lineWidth: selected ? 1.5 : 1)
-            }
+        HomeBookOptionRowFill(selected: selected)
     }
 
     private var checkmark: some View {
@@ -315,7 +319,22 @@ struct HomeEyebrowHeader: View {
 }
 
 struct HomeCTAButton: View {
-    enum Kind { case primary, secondary }
+    enum Kind {
+        case primary
+        case secondary
+
+        /// Default visual height (50 / 48). Also the button-body floor: a minHeight on the
+        /// label alone compresses under AX5 (measured ~42.25) and fails `frame.height > 43`.
+        var minimumHeight: CGFloat {
+            switch self {
+            case .primary: return 50
+            case .secondary: return 48
+            }
+        }
+    }
+
+    /// Every Home CTA hit target stays at least this tall, including AX5.
+    static let hardMinimumHit: CGFloat = 44
 
     var title: String
     var systemImage: String
@@ -328,36 +347,43 @@ struct HomeCTAButton: View {
 
     var body: some View {
         Button(action: action) {
-            label
-                .font(.headline)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.horizontal, 12)
-                .padding(.vertical, kind == .primary ? 12 : 10)
-                .contentShape(Rectangle())
+            HomeCTALabel(
+                title: title,
+                systemImage: systemImage,
+                stacksIcon: dynamicTypeSize.isAccessibilitySize
+            )
+            .font(.headline)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(kind == .primary ? AppTheme.onTeal : AppTheme.textPrimary)
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(kind == .primary ? AppTheme.teal : AppTheme.surfaceElevated)
-        }
-        .overlay {
-            if kind == .secondary {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
-            }
-        }
+        .buttonStyle(HomeMinimumHitButtonStyle(
+            minimumHeight: kind.minimumHeight,
+            fillsWidth: true,
+            fill: kind == .primary ? AppTheme.teal : AppTheme.surfaceElevated,
+            foreground: kind == .primary ? AppTheme.onTeal : AppTheme.textPrimary,
+            stroke: kind == .secondary ? AppTheme.fieldBorder : nil,
+            cornerRadius: 16,
+            horizontalPadding: 12,
+            verticalPadding: kind == .primary ? 12 : 10
+        ))
         .accessibilityIdentifier(identifier)
         .accessibilityLabel(spokenTitle ?? title)
     }
+}
 
-    /// AX5 stacks the icon so the title uses the full width and wraps instead of clipping.
-    @ViewBuilder private var label: some View {
+/// Icon beside the title at the default size. At accessibility sizes the icon stacks
+/// above the title so the words use the full width and wrap instead of clipping.
+private struct HomeCTALabel: View {
+    var title: String
+    var systemImage: String
+    var stacksIcon: Bool
+    /// nil wraps. The compact card keeps one line until the card itself stacks.
+    var lineLimit: Int? = nil
+
+    var body: some View {
         let titleText = Text(title)
             .multilineTextAlignment(.center)
-            .lineLimit(nil)
+            .lineLimit(lineLimit)
             .fixedSize(horizontal: false, vertical: true)
-        if dynamicTypeSize.isAccessibilitySize {
+        if stacksIcon {
             VStack(spacing: 4) {
                 Image(systemName: systemImage)
                 titleText
@@ -372,8 +398,116 @@ struct HomeCTAButton: View {
     }
 }
 
+extension View {
+    /// Card id that keeps nested CTA identifiers queryable.
+    /// A bare `accessibilityIdentifier` on the hero or secondary card flattens the tree
+    /// so UI tests can see `homeHero_dp` and miss `homePrimaryCTA`.
+    func homeAccessibilityContainer(_ identifier: String) -> some View {
+        accessibilityElement(children: .contain)
+            .accessibilityIdentifier(identifier)
+    }
+}
+
+/// Minimum height lives on the button body (the style), not on label text.
+/// Label-only `minHeight` is what AX5 compresses below 44.
+private struct HomeMinimumHitButtonStyle: ButtonStyle {
+    var minimumHeight: CGFloat
+    var fillsWidth: Bool
+    var fill: Color
+    var foreground: Color
+    var stroke: Color?
+    var cornerRadius: CGFloat
+    var horizontalPadding: CGFloat
+    var verticalPadding: CGFloat
+    var strokeWidth: CGFloat
+
+    init(
+        minimumHeight: CGFloat,
+        fillsWidth: Bool,
+        fill: Color,
+        foreground: Color,
+        stroke: Color?,
+        cornerRadius: CGFloat,
+        horizontalPadding: CGFloat,
+        verticalPadding: CGFloat,
+        strokeWidth: CGFloat = 1
+    ) {
+        self.minimumHeight = minimumHeight
+        self.fillsWidth = fillsWidth
+        self.fill = fill
+        self.foreground = foreground
+        self.stroke = stroke
+        self.cornerRadius = cornerRadius
+        self.horizontalPadding = horizontalPadding
+        self.verticalPadding = verticalPadding
+        self.strokeWidth = strokeWidth
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        // A fixed-height strut sets the ideal size. `minHeight` alone stays under the
+        // text line at AX5 (a 44 pt floor measured 42.25 on homeBookOption_crane).
+        ZStack {
+            Color.clear
+                .frame(width: 1, height: minimumHeight)
+                .accessibilityHidden(true)
+            configuration.label
+                .padding(.horizontal, horizontalPadding)
+                .padding(.vertical, verticalPadding)
+                .frame(maxWidth: fillsWidth ? .infinity : nil)
+        }
+        .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight)
+        .foregroundStyle(foreground)
+        .background {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(fill)
+        }
+        .overlay {
+            if let stroke {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(stroke, lineWidth: strokeWidth)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+/// Hit floor for picker rows that already draw their own chrome (secondary option, Make primary).
+/// Label-only `minHeight` compresses under AX5, the same way the Home CTAs did.
+private struct HomeMinimumHitPlainButtonStyle: ButtonStyle {
+    var minimumHeight: CGFloat = HomeBookOptionHit.minimumHeight
+    var fillsWidth: Bool = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 1, height: minimumHeight)
+                .accessibilityHidden(true)
+            configuration.label
+                .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
+        }
+        .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minimumHeight, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct HomeBookOptionRowFill: View {
+    var selected: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(AppTheme.card)
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(selected ? AppTheme.teal : AppTheme.cardBorder, lineWidth: selected ? 1.5 : 1)
+            }
+    }
+}
+
 /// Compact card under the hero. One status line and the book's start action. Not a second hero.
 struct HomeSecondaryCard: View {
+    /// Compact card CTA. Default visual and hard floor are both 44 pt.
+    static let minimumHitHeight: CGFloat = HomeCTAButton.hardMinimumHit
+
     let book: HomeBook
     var status: String
     var cta: String
@@ -412,22 +546,24 @@ struct HomeSecondaryCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button(action: action) {
-                    Label {
-                        Text(cta)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(stacked ? nil : 1)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } icon: {
-                        Image(systemName: systemImage)
-                    }
+                    HomeCTALabel(
+                        title: cta,
+                        systemImage: systemImage,
+                        stacksIcon: stacked,
+                        lineLimit: stacked ? nil : 1
+                    )
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(AppTheme.onTeal)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: stacked ? .infinity : nil, minHeight: 44)
-                    .background(AppTheme.teal, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(HomeMinimumHitButtonStyle(
+                    minimumHeight: Self.minimumHitHeight,
+                    fillsWidth: stacked,
+                    fill: AppTheme.teal,
+                    foreground: AppTheme.onTeal,
+                    stroke: nil,
+                    cornerRadius: 14,
+                    horizontalPadding: 14,
+                    verticalPadding: 10
+                ))
                 .fixedSize(horizontal: !stacked, vertical: false)
                 .layoutPriority(1)
                 .accessibilityIdentifier("homeBookSecondaryCTA")
@@ -435,7 +571,7 @@ struct HomeSecondaryCard: View {
                 .accessibilityValue(status)
             }
         }
-        .accessibilityIdentifier("homeBookSecondaryCard_\(book.rawValue)")
+        .homeAccessibilityContainer("homeBookSecondaryCard_\(book.rawValue)")
     }
 
     @ViewBuilder private var eyebrowIcon: some View {
@@ -491,7 +627,7 @@ struct HomeQuickStartCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .accessibilityIdentifier("homeHero_\(book.rawValue)")
+        .homeAccessibilityContainer("homeHero_\(book.rawValue)")
     }
 
     @ViewBuilder private var summary: some View {

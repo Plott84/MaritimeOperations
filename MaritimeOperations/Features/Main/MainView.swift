@@ -172,7 +172,7 @@ struct MainView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .accessibilityIdentifier("homeHero_dp")
+        .homeAccessibilityContainer("homeHero_dp")
     }
 
     private var craneHero: some View {
