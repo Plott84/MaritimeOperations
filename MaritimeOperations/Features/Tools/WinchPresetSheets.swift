@@ -16,8 +16,32 @@ struct WinchSaveSheet: View {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var nameMatch: NamedWinchPresetStore.NameMatch {
+        store.match(name: name)
+    }
+
+    /// Shown under the caption. Too-long wins over a full library. A full library with an empty field still explains why a new name will not save.
+    private var blockReason: String? {
+        switch nameMatch {
+        case .tooLong:
+            return NamedWinchCopy.nameTooLong
+        case .libraryFull:
+            return NamedWinchCopy.libraryFull
+        case .empty:
+            return store.all().count >= NamedWinchPresetStore.maxPresets ? NamedWinchCopy.libraryFull : nil
+        case .available, .collision:
+            return nil
+        }
+    }
+
     private var canAttempt: Bool {
-        inputs != nil && !trimmedName.isEmpty
+        guard inputs != nil, !trimmedName.isEmpty else { return false }
+        switch nameMatch {
+        case .available, .collision:
+            return true
+        case .empty, .tooLong, .libraryFull:
+            return false
+        }
     }
 
     var body: some View {
@@ -50,6 +74,14 @@ struct WinchSaveSheet: View {
                             .foregroundStyle(AppTheme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("winchSaveCaption")
+
+                        if let blockReason {
+                            Text(blockReason)
+                                .font(.footnote)
+                                .foregroundStyle(AppTheme.danger)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("winchSaveRejection")
+                        }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
@@ -102,7 +134,7 @@ struct WinchSaveSheet: View {
     private func attemptSave() {
         guard inputs != nil else { return }
         switch store.match(name: name) {
-        case .empty:
+        case .empty, .tooLong, .libraryFull:
             break
         case .available:
             commit()

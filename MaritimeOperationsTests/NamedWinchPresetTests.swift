@@ -330,6 +330,72 @@ struct NamedWinchPresetTests {
         #expect(tug.dimsSummary == "d 52 \u{00B7} D0 900 \u{00B7} W 1 600 \u{00B7} Df 2 200")
     }
 
+    @Test func trimmedNameOf64CharactersSavesAnd65IsRejected() {
+        let (store, _) = freshStore()
+        let sixtyFour = String(repeating: "A", count: 64)
+        let sixtyFive = String(repeating: "B", count: 65)
+        #expect(NamedWinchPresetStore.maxNameLength == 64)
+        #expect(store.match(name: "  \(sixtyFour)  ") == .available(trimmed: sixtyFour))
+
+        let saved = store.save(name: "  \(sixtyFour)  ", inputs: aFrame(), at: t0)
+        #expect(saved?.name == sixtyFour)
+        #expect(saved?.name.count == 64)
+        #expect(store.all().count == 1)
+
+        #expect(store.match(name: sixtyFive) == .tooLong)
+        #expect(store.match(name: "  \(sixtyFive)  ") == .tooLong)
+        #expect(store.save(name: sixtyFive, inputs: starboard(), at: t1) == nil)
+        #expect(store.all().count == 1)
+        #expect(store.all().first?.name == sixtyFour)
+        #expect(store.all().first?.inputs == aFrame())
+        #expect(store.all().first?.updatedAt == t0)
+
+        let accented = String(repeating: "é", count: 64)
+        #expect(store.save(name: accented, inputs: starboard(), at: t1)?.name == accented)
+        #expect(store.save(name: accented + "é", inputs: aFrame(), at: t2) == nil)
+        #expect(store.all().count == 2)
+        #expect(store.all().first { $0.name == accented }?.inputs == starboard())
+    }
+
+    @Test func fiftyFirstNewPresetIsRefusedAndOverwriteStillWorks() {
+        let (store, _) = freshStore()
+        #expect(NamedWinchPresetStore.maxPresets == 50)
+        for index in 1...NamedWinchPresetStore.maxPresets {
+            let saved = store.save(
+                name: "Winch \(index)",
+                inputs: aFrame(wire: Double(index)),
+                at: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+            #expect(saved?.name == "Winch \(index)")
+        }
+        #expect(store.all().count == 50)
+        #expect(store.match(name: "   ") == .empty)
+
+        #expect(store.match(name: "Winch 51") == .libraryFull)
+        #expect(store.save(name: "Winch 51", inputs: starboard(), at: t2) == nil)
+        #expect(store.all().count == 50)
+        #expect(store.all().contains { $0.name == "Winch 51" } == false)
+        #expect(store.all().first { $0.name == "Winch 1" }?.wireDiameterMm == 1)
+        #expect(store.all().first { $0.name == "Winch 1" }?.updatedAt == Date(timeIntervalSince1970: 1))
+
+        // Length is checked before capacity, so a too-long name is not reported as a full library.
+        #expect(store.match(name: String(repeating: "Z", count: 65)) == .tooLong)
+
+        #expect(store.match(name: "winch 1") == .collision(existingDisplayName: "Winch 1"))
+        let replaced = store.save(name: "winch 1", inputs: starboard(), at: t2)
+        #expect(replaced?.name == "winch 1")
+        #expect(replaced?.inputs == starboard())
+        #expect(replaced?.updatedAt == t2)
+        #expect(store.all().count == 50)
+        #expect(store.all().contains { $0.name == "Winch 51" } == false)
+        #expect(store.match(name: "A-frame port") == .libraryFull)
+    }
+
+    @Test func capCopyStatesTheLimits() {
+        #expect(NamedWinchCopy.nameTooLong == "Name can be at most 64 characters.")
+        #expect(NamedWinchCopy.libraryFull == "This device already has 50 saved winches. Save over an existing name to update it.")
+    }
+
     @Test func ws08CopyMatchesLockedStrings() {
         #expect(NamedWinchCopy.navTitle == "Winch capacity")
         #expect(NamedWinchCopy.load == "Load")

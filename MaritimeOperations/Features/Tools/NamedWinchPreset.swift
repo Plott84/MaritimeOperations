@@ -198,6 +198,10 @@ enum NamedWinchFormat {
 /// Local named presets. UserDefaults JSON is enough for this tool alone — no iCloud, no logbook schema.
 struct NamedWinchPresetStore: Sendable {
     static let storageKey = "namedWinchPresets.v1"
+    /// Hard cap on stored presets. A 51st new name is refused; replacing one of the 50 still works.
+    static let maxPresets = 50
+    /// Trimmed name, counted in characters (extended grapheme clusters). Longer names are refused, not truncated.
+    static let maxNameLength = 64
 
     var defaults: UserDefaults
 
@@ -207,26 +211,36 @@ struct NamedWinchPresetStore: Sendable {
 
     enum NameMatch: Equatable, Sendable {
         case empty
+        case tooLong
+        case libraryFull
         case available(trimmed: String)
         case collision(existingDisplayName: String)
     }
 
     /// Case-insensitive match on the trimmed name. Does not write.
+    /// A name over 64 characters is `.tooLong` even when the library is full.
+    /// A new name is `.libraryFull` at 50 presets. An existing name is still `.collision`, so overwrite stays available.
     func match(name: String) -> NameMatch {
         let trimmed = Self.trimmed(name)
         guard !trimmed.isEmpty else { return .empty }
-        if let existing = loadRaw().first(where: { Self.nameKey($0.name) == Self.nameKey(trimmed) }) {
+        guard trimmed.count <= Self.maxNameLength else { return .tooLong }
+        let items = loadRaw()
+        if let existing = items.first(where: { Self.nameKey($0.name) == Self.nameKey(trimmed) }) {
             return .collision(existingDisplayName: existing.name)
         }
+        guard items.count < Self.maxPresets else { return .libraryFull }
         return .available(trimmed: trimmed)
     }
 
     /// Insert, or replace the case-insensitive match.
-    /// Display casing becomes the trimmed name just saved. Empty names do not write.
+    /// Display casing becomes the trimmed name just saved.
+    /// Empty names, names over 64 characters, and a 51st preset do not write.
+    /// Replacing one of the existing 50 still writes.
     @discardableResult
     func save(name: String, inputs: NamedWinchInputs, at date: Date = .now) -> NamedWinchPreset? {
         let trimmed = Self.trimmed(name)
         guard !trimmed.isEmpty else { return nil }
+        guard trimmed.count <= Self.maxNameLength else { return nil }
         var items = loadRaw()
         let key = Self.nameKey(trimmed)
         let preset: NamedWinchPreset
@@ -234,6 +248,7 @@ struct NamedWinchPresetStore: Sendable {
             preset = NamedWinchPreset(id: items[index].id, name: trimmed, inputs: inputs, updatedAt: date)
             items[index] = preset
         } else {
+            guard items.count < Self.maxPresets else { return nil }
             preset = NamedWinchPreset(name: trimmed, inputs: inputs, updatedAt: date)
             items.append(preset)
         }
@@ -307,6 +322,8 @@ enum NamedWinchCopy {
     static let loadTitle = "Load winch"
     static let namePlaceholder = "A-frame port"
     static let saveCaption = "Saves the input values on this device. Not shared."
+    static let nameTooLong = "Name can be at most \(NamedWinchPresetStore.maxNameLength) characters."
+    static let libraryFull = "This device already has \(NamedWinchPresetStore.maxPresets) saved winches. Save over an existing name to update it."
     static let replaceBody = "A winch with this name already exists. Replace it with the current values?"
     static let cancel = "Cancel"
     static let replace = "Replace"
@@ -325,6 +342,7 @@ enum NamedWinchCopy {
     static var lockedStrings: [String] {
         [
             navTitle, load, save, loaded, saveTitle, loadTitle, namePlaceholder, saveCaption,
+            nameTooLong, libraryFull,
             replaceBody, cancel, replace, emptyTitle, emptyBody, aid, replaceTitle("A-frame"),
             clearLoaded, loadHint, saveHint, loadRowHint
         ]
