@@ -9,8 +9,10 @@ final class RigMovesUITests: XCTestCase {
     func testEmptyBookAndRequiredRigName() throws {
         let app = XCUIApplication.launchedClean()
         app.openLogBook(.anchorHandling)
-        XCTAssertTrue(app.staticTexts["No rig moves yet."].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Rig moves"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["No rig moves yet"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Add a rig move to the Anchor handling book."].exists)
+        XCTAssertTrue(app.buttons["New rig move"].exists)
+        XCTAssertFalse(app.staticTexts["Rig Moves"].exists)
 
         let add = app.buttons["addRigMovePill"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))

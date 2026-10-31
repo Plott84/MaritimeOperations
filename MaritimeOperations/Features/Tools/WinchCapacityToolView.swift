@@ -12,6 +12,11 @@ struct WinchCapacityToolView: View {
     @State private var pullText = ""
     /// Live result snapshot — recomputed on every keystroke and on keyboard Done.
     @State private var eval = Eval(outcome: nil, errorField: nil, errorReason: nil, showPull: false)
+    @State private var loadState = NamedWinchLoadState()
+    @State private var showSave = false
+    @State private var showLoad = false
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private enum Field: Hashable {
         case d, d0, w, df, free, dead, pull
@@ -144,6 +149,37 @@ struct WinchCapacityToolView: View {
         return Eval(outcome: outcome, errorField: field, errorReason: reason, showPull: showPull)
     }
 
+    /// Joined field text. Load/save records this snapshot; a later edit clears the Loaded chip.
+    private var fieldFingerprint: String {
+        [dText, d0Text, wText, dfText, freeText, deadText, pullText].joined(separator: "\u{1f}")
+    }
+
+    private var capturedInputs: NamedWinchInputs? {
+        NamedWinchInputs.capture(
+            wire: dText,
+            barrel: d0Text,
+            width: wText,
+            flange: dfText,
+            freeSpace: freeText,
+            deadWraps: deadText,
+            firstLayerPull: pullText
+        )
+    }
+
+    private func apply(_ preset: NamedWinchPreset) {
+        let text = preset.inputs.fieldText
+        dText = text.wire
+        d0Text = text.barrel
+        wText = text.width
+        dfText = text.flange
+        freeText = text.freeSpace
+        deadText = text.deadWraps
+        pullText = text.firstLayerPull
+        // Same update as the fields, so the fingerprint onChange sees a matching snapshot and keeps the chip.
+        loadState.show(name: preset.name, fields: fieldFingerprint)
+        recompute()
+    }
+
     /// Tools-tab status line, only for a valid result.
     private var lastResultSummary: String? {
         guard case .ok(let r)? = eval.outcome, r.workingLengthM.isFinite else { return nil }
@@ -156,6 +192,9 @@ struct WinchCapacityToolView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        if let loadedName = loadState.loadedName {
+                            loadedChip(loadedName)
+                        }
                         // HOW TO MEASURE card first (Pixel winch3 mock)
                         GlassCard {
                             VStack(alignment: .leading, spacing: 8) {
@@ -267,6 +306,12 @@ struct WinchCapacityToolView: View {
                         GlassCard {
                             resultsBlock
                         }
+
+                        Text(NamedWinchCopy.aid)
+                            .font(.footnote)
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("winchAid")
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
@@ -274,22 +319,98 @@ struct WinchCapacityToolView: View {
                 }
             }
         }
-        .navigationTitle("Winch capacity")
+        .navigationTitle(NamedWinchCopy.navTitle)
         .navigationBarTitleDisplayMode(.inline)
         .systemGlassNavigation()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack(spacing: 12) {
+                    Button {
+                        ToolsKeyboard.dismiss()
+                        showLoad = true
+                    } label: {
+                        Text(NamedWinchCopy.load)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(AppTheme.teal)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(NamedWinchCopy.loadHint)
+                    .accessibilityIdentifier("winchLoad")
+
+                    Button {
+                        ToolsKeyboard.dismiss()
+                        showSave = true
+                    } label: {
+                        Text(NamedWinchCopy.save)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(AppTheme.onTeal)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(AppTheme.teal, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(NamedWinchCopy.saveHint)
+                    .accessibilityIdentifier("winchSave")
+                }
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
         .toolsKeyboardDone { recompute() }
+        .sheet(isPresented: $showSave) {
+            WinchSaveSheet(inputs: capturedInputs) { preset in
+                loadState.show(name: preset.name, fields: fieldFingerprint)
+            }
+        }
+        .sheet(isPresented: $showLoad) {
+            WinchLoadSheet { preset in
+                apply(preset)
+            }
+        }
         .onDisappear {
             // Save once, on leaving, only if a valid result is on screen (not per keystroke).
             if let s = lastResultSummary { ToolLastResultStore().save(s, for: .winch) }
         }
         .onAppear { recompute() }
-        .onChange(of: dText) { _, _ in recompute() }
-        .onChange(of: d0Text) { _, _ in recompute() }
-        .onChange(of: wText) { _, _ in recompute() }
-        .onChange(of: dfText) { _, _ in recompute() }
-        .onChange(of: freeText) { _, _ in recompute() }
-        .onChange(of: deadText) { _, _ in recompute() }
-        .onChange(of: pullText) { _, _ in recompute() }
+        .onChange(of: fieldFingerprint) { _, newValue in
+            recompute()
+            loadState.fieldsChanged(to: newValue)
+        }
+    }
+
+    private func loadedChip(_ name: String) -> some View {
+        HStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Text(NamedWinchCopy.loaded)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppTheme.gold)
+                Text(name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
+                    .truncationMode(.tail)
+                Button {
+                    loadState.clearChip()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(NamedWinchCopy.clearLoaded)
+                .accessibilityIdentifier("winchLoadedClear")
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, 4)
+            .padding(.vertical, 4)
+            .background(AppTheme.card, in: Capsule())
+            .overlay {
+                Capsule().strokeBorder(AppTheme.cardBorder, lineWidth: 1)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("winchLoadedChip")
+            Spacer(minLength: 0)
+        }
     }
 
     @ViewBuilder

@@ -443,6 +443,8 @@ struct ROVCraneModelTests {
 
     @Test func logBooksKeepOrderAndRawValues() {
         #expect(LogBook.allCases.map(\.rawValue) == ["dp", "anchorHandling", "rov", "crane"])
+        #expect(LogBook.entriesListOrder == [.dp, .anchorHandling, .crane, .rov])
+        #expect(Set(LogBook.entriesListOrder) == Set(LogBook.allCases))
         #expect(LogBook.rov.subtitle == "ROV dives · piloting hours")
         #expect(LogBook.crane.subtitle == "Crane work · hours operated")
         #expect(HomeBook(logBook: .crane).rawValue == "crane")

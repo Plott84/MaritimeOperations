@@ -70,7 +70,7 @@ final class SwipeDeleteUITests: XCTestCase {
 
         XCTAssertFalse(app.staticTexts["Swipe Drop Vessel"].waitForExistence(timeout: 3))
         XCTAssertTrue(
-            app.staticTexts["No entries yet. Add a DP log line, or stop the timer on Main."].waitForExistence(timeout: 4)
+            app.staticTexts["No DP entries yet"].waitForExistence(timeout: 4)
         )
     }
 
@@ -100,7 +100,7 @@ final class SwipeDeleteUITests: XCTestCase {
         confirm.tap()
 
         XCTAssertFalse(app.ahRow(containing: "Swipe Drop Rig").waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["No rig moves yet."].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["No rig moves yet"].waitForExistence(timeout: 4))
     }
 
     func testRigMoveSwipeDeleteCancelKeepsRow() throws {

@@ -39,11 +39,53 @@ struct HomeBookTests {
         #expect(HomeBook.changeHint == "Double tap to change.")
         #expect(HomeBook.pickerTitle == "On Main")
         #expect(HomeBook.pickerFootnote == "Primary gets the big card. Secondary sits under it. Max two.")
-        #expect(HomeBooks.entriesFootnote == "The first On Main star is the primary book. A second book sits under it. A third replaces the secondary.")
+        #expect(HomeBooks.entriesFootnote == "Star up to two books for Main (HB-13). Export lives on the Export tab.")
         let pair = HomeBooks(primary: .dp, secondary: .crane)
         #expect(pair.chipLine == "On Main · ★ DP · ★ Crane · Change ›")
         #expect(pair.voiceLabel == "On Main, D P, Crane")
         #expect(HomeBooks(primary: .crane, secondary: .dp).voiceLabel == "On Main, Crane, D P")
+    }
+
+    /// Soft B empty books: Soft #19 CTA, no New Rig Move, no lift-clearance language.
+    @Test func softBEmptyBooksUseThePrimaryCTA() {
+        let dp = BookEmptyCopy.of(.dp)
+        #expect(dp.title == "No DP entries yet")
+        #expect(dp.message == "Start DP on Main, or add a manual line. Sessions land here under Entries · DP.")
+        #expect(dp.cta == "Start DP")
+        #expect(dp.opensMainTimer)
+        #expect(dp.accessibilityIdentifier == "bookEmptyCTA_dp")
+
+        let ah = BookEmptyCopy.of(.anchorHandling)
+        #expect(ah.title == "No rig moves yet")
+        #expect(ah.message == "Add a rig move to the Anchor handling book.")
+        #expect(ah.cta == "New rig move")
+        #expect(!ah.opensMainTimer)
+        #expect(ah.accessibilityIdentifier == "addRigMovePill")
+
+        let crane = BookEmptyCopy.of(.crane)
+        #expect(crane.title == "No Crane entries yet")
+        #expect(crane.message == "New lift opens the Crane entry form. Saved lifts land here under Entries · Crane.")
+        #expect(crane.cta == "New lift")
+        #expect(!crane.opensMainTimer)
+        #expect(crane.accessibilityIdentifier == "craneAddEntryPill")
+
+        let rov = BookEmptyCopy.of(.rov)
+        #expect(rov.title == "No ROV entries yet")
+        #expect(rov.message == "Add an ROV entry to this book.")
+        #expect(rov.cta == "New ROV entry")
+        #expect(!rov.opensMainTimer)
+        #expect(rov.accessibilityIdentifier == "rovAddEntryPill")
+
+        #expect(BookEmptyCopy.of(.dp).cta != "New Rig Move")
+        for book in LogBook.allCases {
+            let copy = BookEmptyCopy.of(book)
+            let blob = "\(copy.title)\n\(copy.message)\n\(copy.cta)"
+            #expect(!blob.contains("New Rig Move"))
+            #expect(!blob.contains("SAFE"))
+            #expect(!blob.contains("OK to lift"))
+            #expect(!blob.contains("to Log"))
+            #expect(!copy.title.hasSuffix("."))
+        }
     }
 
     @Test func logStarMapsOntoTheSameBook() {

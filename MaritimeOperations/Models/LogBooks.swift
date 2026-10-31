@@ -59,6 +59,58 @@ enum LogBook: String, CaseIterable, Identifiable, Hashable {
         case .anchorHandling, .rov, .crane: return nil
         }
     }
+
+    /// Entries list order (Soft B): DP, Anchor handling, Crane, ROV.
+    /// `allCases` stays DP, Anchor handling, ROV, Crane so stored raw values and export order do not move.
+    static let entriesListOrder: [LogBook] = [.dp, .anchorHandling, .crane, .rov]
+}
+
+/// Soft B empty book. One primary CTA. The AX callout on the mock is not shipped.
+struct BookEmptyCopy: Equatable, Sendable {
+    var title: String
+    var message: String
+    var cta: String
+    /// DP switches to the Main timer. The other books open their new-entry form.
+    var opensMainTimer: Bool
+    /// DP is `bookEmptyCTA_dp`. The other books reuse the populated add-pill id.
+    var accessibilityIdentifier: String
+
+    static func of(_ book: LogBook) -> BookEmptyCopy {
+        switch book {
+        case .dp:
+            return BookEmptyCopy(
+                title: "No DP entries yet",
+                message: "Start DP on Main, or add a manual line. Sessions land here under Entries · DP.",
+                cta: "Start DP",
+                opensMainTimer: true,
+                accessibilityIdentifier: "bookEmptyCTA_dp"
+            )
+        case .anchorHandling:
+            return BookEmptyCopy(
+                title: "No rig moves yet",
+                message: "Add a rig move to the Anchor handling book.",
+                cta: "New rig move",
+                opensMainTimer: false,
+                accessibilityIdentifier: "addRigMovePill"
+            )
+        case .crane:
+            return BookEmptyCopy(
+                title: "No Crane entries yet",
+                message: "New lift opens the Crane entry form. Saved lifts land here under Entries · Crane.",
+                cta: "New lift",
+                opensMainTimer: false,
+                accessibilityIdentifier: "craneAddEntryPill"
+            )
+        case .rov:
+            return BookEmptyCopy(
+                title: "No ROV entries yet",
+                message: "Add an ROV entry to this book.",
+                cta: "New ROV entry",
+                opensMainTimer: false,
+                accessibilityIdentifier: "rovAddEntryPill"
+            )
+        }
+    }
 }
 
 /// Which books feed DP hours: the DP total (DP book, Log and Main cards) and the DP export

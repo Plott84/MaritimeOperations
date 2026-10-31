@@ -31,7 +31,7 @@ struct RootView: View {
                         .navigationDestination(for: LogBook.self) { book in
                             switch book {
                             case .dp:
-                                EntriesView(session: session)
+                                EntriesView(session: session, onStartDP: { tab = .main })
                             case .anchorHandling:
                                 RigMovesView(showingAdd: $showingAddRigMove)
                             case .rov:

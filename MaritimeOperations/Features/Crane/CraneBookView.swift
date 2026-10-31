@@ -13,33 +13,29 @@ struct CraneBookView: View {
         ZStack {
             AppCanvas()
             List {
-                Section {
-                    LogBookHeaderCard(
-                        book: .crane,
-                        heading: "Crane work",
-                        count: entries.count,
-                        idPrefix: "crane",
-                        addLabel: "New crane entry"
-                    ) {
-                        showingAdd = true
-                    }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-
                 if entries.isEmpty {
                     Section {
-                        Text("No crane entries yet.")
-                            .font(.subheadline)
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 8)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                        BookEmptyCard(book: .crane) { showingAdd = true }
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                     }
                 } else {
+                    Section {
+                        LogBookHeaderCard(
+                            book: .crane,
+                            heading: "Crane work",
+                            count: entries.count,
+                            idPrefix: "crane",
+                            addLabel: "New crane entry"
+                        ) {
+                            showingAdd = true
+                        }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    }
+
                     Section {
                         ForEach(entries, id: \.id) { entry in
                             Button {
@@ -72,13 +68,6 @@ struct CraneBookView: View {
                             .accessibilityIdentifier("craneRow-\(entry.id.uuidString)")
                         }
                     }
-                }
-
-                Section {
-                    LogBookExportRow(book: .crane, idPrefix: "crane")
-                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)
