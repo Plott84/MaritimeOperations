@@ -14,6 +14,7 @@ struct ToolsSplitView: View {
                     max: DuoToolsColumn.sidebarMax
                 )
         } detail: {
+            // One column of the selected tool. No second split in this pane.
             if let selection {
                 selection.detail
             } else {

@@ -72,6 +72,18 @@ struct DuoSizeClassTests {
         #expect(DuoToolsColumn.sidebarIdeal <= DuoToolsColumn.sidebarMax)
     }
 
+    @Test func toolDetailStaysOneColumnAndFormsStackOnRegular() {
+        #expect(!DuoToolDetail.nestedSplit)
+        #expect(DuoToolDetail.stacksFormTiles(split: false, accessibilitySize: false) == false)
+        #expect(DuoToolDetail.stacksFormTiles(split: false, accessibilitySize: true))
+        #expect(DuoToolDetail.stacksFormTiles(split: true, accessibilitySize: false))
+        #expect(DeckTool.allCases.contains(.winch))
+        #expect(DeckTool.allCases.contains(.portUnlocode))
+        #expect(DeckTool.allCases.contains(.craneHeel))
+        #expect(!DeckTool.allCases.map(\.rawValue).contains("navarea"))
+        #expect(HomeCTAButton.hardMinimumHit == 44)
+    }
+
     @Test func slingingHitchKeepsIconLabels() {
         #expect(RiggingMath.Hitch.allCases.map(\.rawValue) == ["Straight", "Choke", "Basket"])
     }

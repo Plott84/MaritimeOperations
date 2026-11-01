@@ -19,6 +19,7 @@ struct ImportSheet: View {
 
     var body: some View {
         sheetChrome
+            .duoRegularPageSheet()
     }
 
     private var scrollContent: some View {
@@ -281,6 +282,7 @@ struct ImportSheet: View {
                 .font(.body.weight(.heavy))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
+                .frame(minHeight: HomeCTAButton.hardMinimumHit)
         }
         .buttonStyle(.plain)
         .foregroundStyle(session.canImport ? ImportTokens.onTeal : ImportTokens.secondary)

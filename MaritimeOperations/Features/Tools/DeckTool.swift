@@ -15,8 +15,15 @@ enum DeckTool: String, CaseIterable, Identifiable, Hashable {
     /// Regular-width Tools opens on Winch capacity.
     static let splitDefault: DeckTool = .winch
 
+    /// Right pane of the one Tools split. Fills that pane. Does not open another split.
     @ViewBuilder
     var detail: some View {
+        screen
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var screen: some View {
         switch self {
         case .catenary: CatenaryToolView()
         case .winch: WinchCapacityToolView()

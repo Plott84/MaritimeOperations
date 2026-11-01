@@ -92,6 +92,42 @@ enum DuoExportLayout {
     }
 }
 
+/// Tools detail is the one right pane of the outer split. Each shipped tool
+/// stays a single column of its existing cards. Entry-form tile grids stack
+/// on that same regular width. No nested split, and no canvas point width.
+enum DuoToolDetail {
+    static let nestedSplit = false
+
+    static func stacksFormTiles(split: Bool, accessibilitySize: Bool) -> Bool {
+        split || accessibilitySize
+    }
+}
+
+extension View {
+    /// Regular-width Import and Winch sheets use a page size from the scene.
+    /// Compact presentation is left as the system sheet. No fixed point size.
+    @ViewBuilder
+    func duoRegularPageSheet() -> some View {
+        modifier(DuoRegularPageSheet())
+    }
+}
+
+private struct DuoRegularPageSheet: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    func body(content: Content) -> some View {
+        if DuoSizeClass.usesSplit(
+            horizontal: DuoAxisClass(horizontalSizeClass),
+            vertical: DuoAxisClass(verticalSizeClass)
+        ) {
+            content.presentationSizing(.page)
+        } else {
+            content
+        }
+    }
+}
+
 /// Which Home regions each size class shows. The DP hero is the primary block
 /// when DP is on Main (timer, idle prefill, DP days). Another primary book
 /// keeps that book's hero on the left. The secondary book is the existing

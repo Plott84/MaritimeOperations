@@ -9,6 +9,8 @@ struct AddCraneEntryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Query private var dpLines: [DPEntry]
     @Query private var ahEntries: [RigMove]
     @Query private var rovEntries: [ROVEntry]
@@ -277,10 +279,21 @@ struct AddCraneEntryView: View {
         }
     }
 
+    /// Regular width and accessibility sizes use one column. Compact keeps the phone pair.
+    private var stackFormTiles: Bool {
+        DuoToolDetail.stacksFormTiles(
+            split: DuoSizeClass.usesSplit(
+                horizontal: DuoAxisClass(horizontalSizeClass),
+                vertical: DuoAxisClass(verticalSizeClass)
+            ),
+            accessibilitySize: dynamicTypeSize.isAccessibilitySize
+        )
+    }
+
     // Plain Grid/VStack, not LazyVGrid: both tiles stay in the view tree for VoiceOver and UI tests.
     @ViewBuilder
     private var weatherTiles: some View {
-        if dynamicTypeSize.isAccessibilitySize {
+        if stackFormTiles {
             VStack(spacing: 8) {
                 windTile
                 waveTile

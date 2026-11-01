@@ -9,6 +9,8 @@ struct AddRigMoveView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Query(sort: \DPEntry.date, order: .reverse) private var entries: [DPEntry]
     @Query(sort: \RigMove.createdAt, order: .reverse) private var moves: [RigMove]
     @Query private var rovEntries: [ROVEntry]
@@ -502,11 +504,22 @@ struct AddRigMoveView: View {
         }
     }
 
+    /// Regular width and accessibility sizes use one column. Compact keeps the phone grid.
+    private var stackFormTiles: Bool {
+        DuoToolDetail.stacksFormTiles(
+            split: DuoSizeClass.usesSplit(
+                horizontal: DuoAxisClass(horizontalSizeClass),
+                vertical: DuoAxisClass(verticalSizeClass)
+            ),
+            accessibilitySize: dynamicTypeSize.isAccessibilitySize
+        )
+    }
+
     // Plain Grid/VStack, not LazyVGrid: all six tiles stay in the view tree, so VoiceOver,
     // UI tests and keyboard focus can reach a tile that is below the fold.
     @ViewBuilder
     private var detailTiles: some View {
-        if dynamicTypeSize.isAccessibilitySize {
+        if stackFormTiles {
             VStack(spacing: 8) {
                 anchorCountTile
                 anchorIDsTile
