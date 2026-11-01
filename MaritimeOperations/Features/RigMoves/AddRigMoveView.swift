@@ -504,7 +504,7 @@ struct AddRigMoveView: View {
         }
     }
 
-    /// Regular width and accessibility sizes use one column. Compact keeps the phone grid.
+    /// Accessibility sizes use one column. Regular width keeps the phone grid.
     private var stackFormTiles: Bool {
         DuoToolDetail.stacksFormTiles(
             split: DuoSizeClass.usesSplit(

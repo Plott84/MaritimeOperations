@@ -16,6 +16,7 @@ enum DeckTool: String, CaseIterable, Identifiable, Hashable {
     static let splitDefault: DeckTool = .winch
 
     /// Right pane of the one Tools split. Fills that pane. Does not open another split.
+    /// Width follows the pane. No readable-width constant until a Sim measure.
     @ViewBuilder
     var detail: some View {
         screen

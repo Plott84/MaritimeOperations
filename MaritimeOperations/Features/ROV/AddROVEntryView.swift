@@ -204,7 +204,7 @@ struct AddROVEntryView: View {
         }
     }
 
-    /// Regular width and accessibility sizes use one column. Compact keeps the phone pair.
+    /// Accessibility sizes use one column. Regular width keeps the phone pair.
     private var stackFormTiles: Bool {
         DuoToolDetail.stacksFormTiles(
             split: DuoSizeClass.usesSplit(

@@ -93,13 +93,17 @@ enum DuoExportLayout {
 }
 
 /// Tools detail is the one right pane of the outer split. Each shipped tool
-/// stays a single column of its existing cards. Entry-form tile grids stack
-/// on that same regular width. No nested split, and no canvas point width.
+/// fills that pane. Entry forms stay one column; phone field pairs stay pairs
+/// on regular width. Accessibility sizes still stack those tiles. No nested
+/// split. A readable-width cap stays out of code until a Sim measure.
 enum DuoToolDetail {
     static let nestedSplit = false
 
+    /// `split` is part of the call so regular width is explicit. It does not
+    /// stack tiles: the phone SoT pairs remain. Accessibility sizes stack.
     static func stacksFormTiles(split: Bool, accessibilitySize: Bool) -> Bool {
-        split || accessibilitySize
+        _ = split
+        return accessibilitySize
     }
 }
 

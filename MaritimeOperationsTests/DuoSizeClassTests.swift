@@ -72,11 +72,12 @@ struct DuoSizeClassTests {
         #expect(DuoToolsColumn.sidebarIdeal <= DuoToolsColumn.sidebarMax)
     }
 
-    @Test func toolDetailStaysOneColumnAndFormsStackOnRegular() {
+    @Test func toolDetailStaysOneColumnAndKeepsPhoneFieldPairs() {
         #expect(!DuoToolDetail.nestedSplit)
         #expect(DuoToolDetail.stacksFormTiles(split: false, accessibilitySize: false) == false)
         #expect(DuoToolDetail.stacksFormTiles(split: false, accessibilitySize: true))
-        #expect(DuoToolDetail.stacksFormTiles(split: true, accessibilitySize: false))
+        #expect(DuoToolDetail.stacksFormTiles(split: true, accessibilitySize: false) == false)
+        #expect(DuoToolDetail.stacksFormTiles(split: true, accessibilitySize: true))
         #expect(DeckTool.allCases.contains(.winch))
         #expect(DeckTool.allCases.contains(.portUnlocode))
         #expect(DeckTool.allCases.contains(.craneHeel))
