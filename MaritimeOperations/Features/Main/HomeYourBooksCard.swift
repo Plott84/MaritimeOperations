@@ -50,7 +50,7 @@ struct HomeYourBooksCard: View {
                 Text("Edit ›")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AppTheme.teal)
-                    .frame(minHeight: 44)
+                    .frame(minHeight: HomeCTAButton.hardMinimumHit)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Edit")
@@ -94,7 +94,7 @@ struct HomeYourBooksCard: View {
                     .accessibilityHidden(true)
             }
             .padding(.vertical, 8)
-            .frame(minHeight: 44)
+            .frame(minHeight: HomeCTAButton.hardMinimumHit)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

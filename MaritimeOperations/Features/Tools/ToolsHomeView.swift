@@ -176,6 +176,7 @@ struct ToolsHomeView: View {
     private func toolRow(_ tool: ToolTile) -> some View {
         if let selection {
             let selected = selection.wrappedValue == tool.kind.deckTool
+            let spoken = spokenRow(tool)
             Button {
                 selection.wrappedValue = tool.kind.deckTool
             } label: {
@@ -191,6 +192,13 @@ struct ToolsHomeView: View {
                         .padding(.vertical, 2)
                 }
             }
+            // The button is the accessibility element so `toolTile.*` survives the selection wrapper.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(spoken.label)
+            .accessibilityHint(spoken.hint)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
         } else {
             NavigationLink {
                 destination(for: tool.kind)
@@ -201,8 +209,18 @@ struct ToolsHomeView: View {
         }
     }
 
+    /// Same words the compact row speaks. Selection mode repeats them on the button.
+    private func spokenRow(_ tool: ToolTile) -> (label: String, hint: String) {
+        let st = status(for: tool)
+        return (
+            "\(tool.title), \(st.text)",
+            tool.voiceOverHint ?? (st.isEmpty ? "" : tool.hint)
+        )
+    }
+
     private func row(_ tool: ToolTile) -> some View {
         let st = status(for: tool)
+        let spoken = spokenRow(tool)
         return HStack(alignment: .center, spacing: 12) {
             Image(systemName: tool.systemImage)
                 .font(.body.weight(.semibold))
@@ -233,10 +251,10 @@ struct ToolsHomeView: View {
         .frame(minHeight: 58)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(tool.title), \(st.text)")
+        .accessibilityLabel(spoken.label)
         // Empty rows already speak the blurb as the visible subtitle. A last-result row keeps the blurb as the hint.
         // Gyro & Compass always hints at both checks.
-        .accessibilityHint(tool.voiceOverHint ?? (st.isEmpty ? "" : tool.hint))
+        .accessibilityHint(spoken.hint)
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
     }

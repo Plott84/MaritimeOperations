@@ -9,13 +9,19 @@ struct RootView: View {
     @State private var showingAddROV = false
     @State private var logPath: [LogBook] = []
     /// Regular-width Entries detail. Compact pushes `logPath` instead.
-    @State private var entriesBook: LogBook? = DuoEntriesColumn.defaultSelection(
-        available: LogBook.entriesListOrder,
-        primary: .dp
-    )
+    /// Seeded once from the On Main primary so a list without DP falls back to that star.
+    @State private var entriesBook: LogBook?
     @State private var showImport = false
     @State private var importPreload: ImportReadFile?
     @State private var importToast: String?
+
+    init() {
+        let primary = HomeBooks.load(defaults: .standard).primary
+        _entriesBook = State(initialValue: DuoEntriesColumn.defaultSelection(
+            available: LogBook.entriesListOrder,
+            primary: primary
+        ))
+    }
 
     var body: some View {
         Group {
