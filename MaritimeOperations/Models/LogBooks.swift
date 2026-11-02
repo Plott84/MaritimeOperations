@@ -184,13 +184,13 @@ struct LogBookStats: Equatable {
         return n == 1 ? "entry" : "entries"
     }
 
-    /// VoiceOver value of a Log card. DP and AH copy is unchanged from the AH build (UI tests read it).
+    /// VoiceOver value of a Log card. One record uses the singular noun.
     func logSpokenValue(for book: LogBook) -> String {
         switch book {
         case .dp:
-            return "\(Self.hoursNumber(dpHours)) hours total, \(dpEntries) entries"
+            return "\(Self.hoursNumber(dpHours)) hours total, \(Self.entriesText(dpEntries))"
         case .anchorHandling:
-            return "\(rigMoves) rig moves"
+            return rigMoves == 1 ? "1 rig move" : "\(rigMoves) rig moves"
         case .rov:
             return "\(Self.hoursNumber(rovPilotingHours)) piloting hours, \(Self.entriesText(rovEntries))"
         case .crane:

@@ -33,26 +33,14 @@ struct ExportView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppCanvas()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    booksCard
-                    includedLine
-                    dateRangeCard
-                    previewCard
-                    disclaimerCard
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                // Breathing room above sticky Share strip (safeAreaInset below).
-                .padding(.bottom, 20)
+        // Compact column matches DuoExportLayout.columns(split: false).
+        // Regular columns match DuoExportLayout.columns(split: true).
+        DuoSizeClassReader { split in
+            if split {
+                exportSplit
+            } else {
+                exportCompact
             }
-        }
-        // Sticky Share / Print / Copy above the floating tab bar so the
-        // full disclaimer always scrolls clear of the action strip.
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            stickyActions
         }
         .navigationTitle("Export")
         .navigationBarTitleDisplayMode(.inline)
@@ -86,6 +74,77 @@ struct ExportView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showCopyToast)
+    }
+
+    /// Soft C export sheet: one column, Share pinned above the tab bar.
+    private var exportCompact: some View {
+        ZStack {
+            AppCanvas()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    booksCard
+                    includedLine
+                    dateRangeCard
+                    previewCard
+                    disclaimerCard
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                // Breathing room above sticky Share strip (safeAreaInset below).
+                .padding(.bottom, 20)
+            }
+        }
+        // Sticky Share / Print / Copy above the floating tab bar so the
+        // full disclaimer always scrolls clear of the action strip.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            stickyActions
+        }
+    }
+
+    /// Regular width. Left: books and date range. Right: preview, disclaimer, Share.
+    private var exportSplit: some View {
+        ZStack {
+            AppCanvas()
+            exportColumns
+        }
+    }
+
+    private var exportColumns: some View {
+        HStack(alignment: .top, spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    booksCard
+                    includedLine
+                    dateRangeCard
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Rectangle()
+                .fill(AppTheme.cardBorder)
+                .frame(width: 1)
+                .frame(maxHeight: .infinity)
+                .accessibilityHidden(true)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    previewCard
+                    disclaimerCard
+                    actionButtons
+                        .padding(.top, 4)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Books
@@ -328,12 +387,26 @@ struct ExportView: View {
     /// Sticky action strip — solid navy (no glass). Nested above RootView’s
     /// floating tab-bar safeAreaInset so Share never covers the disclaimer.
     private var stickyActions: some View {
+        actionButtons
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity)
+            // Nested safeAreaInset does not sit above RootView’s floating tab bar;
+            // reserve matching clearance so Share / Print / Copy stay fully readable.
+            .padding(.bottom, 78)
+            .background(AppTheme.background)
+    }
+
+    /// Share, Print, Copy summary, and Import. Share stays disabled with zero books.
+    private var actionButtons: some View {
         VStack(spacing: 8) {
             Button(action: shareTapped) {
                 Label("Share…", systemImage: "square.and.arrow.up")
                     .font(.body.weight(.heavy))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
+                    .frame(minHeight: HomeCTAButton.hardMinimumHit)
             }
             .buttonStyle(.plain)
             .foregroundStyle(books.canShare ? AppTheme.onTeal : ExportTokens.secondary)
@@ -383,14 +456,6 @@ struct ExportView: View {
             .accessibilityHint("Opens Import for an export PDF or CSV.")
             .accessibilityIdentifier("exportImport")
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
-        // Nested safeAreaInset does not sit above RootView’s floating tab bar;
-        // reserve matching clearance so Share / Print / Copy stay fully readable.
-        .padding(.bottom, 78)
-        .background(AppTheme.background)
         .accessibilityElement(children: .contain)
     }
 

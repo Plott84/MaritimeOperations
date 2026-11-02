@@ -332,6 +332,7 @@ struct WinchCapacityToolView: View {
                         Text(NamedWinchCopy.load)
                             .font(.body.weight(.semibold))
                             .foregroundStyle(AppTheme.teal)
+                            .frame(minHeight: HomeCTAButton.hardMinimumHit)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(NamedWinchCopy.loadHint)
@@ -346,6 +347,7 @@ struct WinchCapacityToolView: View {
                             .foregroundStyle(AppTheme.onTeal)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
+                            .frame(minHeight: HomeCTAButton.hardMinimumHit)
                             .background(AppTheme.teal, in: Capsule())
                     }
                     .buttonStyle(.plain)

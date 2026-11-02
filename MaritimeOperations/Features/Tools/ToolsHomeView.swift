@@ -4,6 +4,13 @@ import SwiftUI
 /// Until a tool has a saved result on this device, its row shows a one-line blurb.
 /// After that, the last-input status line replaces the blurb. Port keeps its own count line.
 struct ToolsHomeView: View {
+    /// Nil keeps the compact push list. A binding selects a row for the regular-width detail.
+    var selection: Binding<DeckTool?>?
+
+    init(selection: Binding<DeckTool?>? = nil) {
+        self.selection = selection
+    }
+
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var statuses: [ToolTile.Kind: String] = [:]
     @State private var portCountText: String?
@@ -59,12 +66,7 @@ struct ToolsHomeView: View {
                                     if index > 0 {
                                         Divider().overlay(AppTheme.cardBorder).padding(.leading, 62)
                                     }
-                                    NavigationLink {
-                                        destination(for: tool.kind)
-                                    } label: {
-                                        row(tool)
-                                    }
-                                    .buttonStyle(.plain)
+                                    toolRow(tool)
                                 }
                             }
                             .background(
@@ -166,19 +168,59 @@ struct ToolsHomeView: View {
 
     @ViewBuilder
     private func destination(for kind: ToolTile.Kind) -> some View {
-        switch kind {
-        case .catenary: CatenaryToolView()
-        case .winch: WinchCapacityToolView()
-        case .gyro: GyroCompassToolView()
-        case .chainLocker: ChainLockerToolView()
-        case .craneHeel: CraneHeelView()
-        case .rigging: SlingingRiggingToolView()
-        case .portUnlocode: PortUnlocodeToolView()
+        kind.deckTool.detail
+    }
+
+    /// Compact rows push. Regular rows set the split selection and keep the same row ids.
+    @ViewBuilder
+    private func toolRow(_ tool: ToolTile) -> some View {
+        if let selection {
+            let selected = selection.wrappedValue == tool.kind.deckTool
+            let spoken = spokenRow(tool)
+            Button {
+                selection.wrappedValue = tool.kind.deckTool
+            } label: {
+                row(tool)
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(AppTheme.teal.opacity(0.14))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                }
+            }
+            // The button is the accessibility element so `toolTile.*` survives the selection wrapper.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(spoken.label)
+            .accessibilityHint(spoken.hint)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
+        } else {
+            NavigationLink {
+                destination(for: tool.kind)
+            } label: {
+                row(tool)
+            }
+            .buttonStyle(.plain)
         }
+    }
+
+    /// Same words the compact row speaks. Selection mode repeats them on the button.
+    private func spokenRow(_ tool: ToolTile) -> (label: String, hint: String) {
+        let st = status(for: tool)
+        return (
+            "\(tool.title), \(st.text)",
+            tool.voiceOverHint ?? (st.isEmpty ? "" : tool.hint)
+        )
     }
 
     private func row(_ tool: ToolTile) -> some View {
         let st = status(for: tool)
+        let spoken = spokenRow(tool)
         return HStack(alignment: .center, spacing: 12) {
             Image(systemName: tool.systemImage)
                 .font(.body.weight(.semibold))
@@ -209,10 +251,10 @@ struct ToolsHomeView: View {
         .frame(minHeight: 58)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(tool.title), \(st.text)")
+        .accessibilityLabel(spoken.label)
         // Empty rows already speak the blurb as the visible subtitle. A last-result row keeps the blurb as the hint.
         // Gyro & Compass always hints at both checks.
-        .accessibilityHint(tool.voiceOverHint ?? (st.isEmpty ? "" : tool.hint))
+        .accessibilityHint(spoken.hint)
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("toolTile.\(tool.kind.rawValue)")
     }
@@ -221,6 +263,17 @@ struct ToolsHomeView: View {
 private struct ToolTile: Identifiable {
     enum Kind: String { case gyro, catenary, winch, chainLocker, craneHeel, rigging, portUnlocode
         var lastResultKind: ToolLastResultKind? { ToolLastResultKind(rawValue: rawValue) }
+        var deckTool: DeckTool {
+            switch self {
+            case .gyro: return .gyro
+            case .catenary: return .catenary
+            case .winch: return .winch
+            case .chainLocker: return .chainLocker
+            case .craneHeel: return .craneHeel
+            case .rigging: return .rigging
+            case .portUnlocode: return .portUnlocode
+            }
+        }
     }
     var id: String { kind.rawValue }
     let kind: Kind

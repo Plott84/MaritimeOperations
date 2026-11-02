@@ -103,6 +103,7 @@ struct WinchSaveSheet: View {
                             .foregroundStyle(AppTheme.onTeal)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
+                            .frame(minHeight: HomeCTAButton.hardMinimumHit)
                             .background(AppTheme.teal, in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -127,6 +128,7 @@ struct WinchSaveSheet: View {
         }
         .presentationBackground(AppTheme.background)
         .presentationDragIndicator(.visible)
+        .duoRegularPageSheet()
         .accessibilityIdentifier("winchSaveSheet")
         .onAppear { nameFocused = true }
     }
@@ -201,6 +203,7 @@ struct WinchLoadSheet: View {
         }
         .presentationBackground(AppTheme.background)
         .presentationDragIndicator(.visible)
+        .duoRegularPageSheet()
         .accessibilityIdentifier("winchLoadSheet")
         .onAppear { presets = store.all() }
     }
