@@ -474,15 +474,44 @@ struct ROVCraneModelTests {
         #expect(stats.countCaption(for: .crane) == "entry")
         #expect(stats.countCaption(for: .anchorHandling) == "rig move")
 
-        // DP and AH copy unchanged from the AH build (UI tests read these).
-        #expect(stats.logSpokenValue(for: .dp) == "\(LogBookStats.hoursNumber(86)) hours total, 1 entries")
-        #expect(stats.logSpokenValue(for: .anchorHandling) == "1 rig moves")
+        #expect(stats.logSpokenValue(for: .dp) == "\(LogBookStats.hoursNumber(86)) hours total, 1 entry")
+        #expect(stats.logSpokenValue(for: .anchorHandling) == "1 rig move")
         #expect(stats.mainSpokenValue(for: .dp) == "\(LogBookStats.hoursNumber(86)) hours, 1 entry")
         #expect(stats.mainCountText(for: .anchorHandling) == "1 rig move")
 
         #expect(stats.logSpokenValue(for: .rov) == "\(LogBookStats.hoursNumber(7.5)) piloting hours, 3 entries")
         #expect(stats.logSpokenValue(for: .crane) == "\(LogBookStats.hoursNumber(21)) hours operated, 1 entry")
         #expect(stats.mainSpokenValue(for: .rov) == "\(LogBookStats.hoursNumber(7.5)) piloting hours, 3 entries")
+    }
+
+    @Test func logSpokenCountIsSingularForOne() {
+        func spoken(_ book: LogBook, count: Int) -> String {
+            var stats = LogBookStats()
+            switch book {
+            case .dp: stats.dpEntries = count
+            case .anchorHandling: stats.rigMoves = count
+            case .rov: stats.rovEntries = count
+            case .crane: stats.craneEntries = count
+            }
+            return stats.logSpokenValue(for: book)
+        }
+
+        #expect(spoken(.anchorHandling, count: 0) == "0 rig moves")
+        #expect(spoken(.anchorHandling, count: 1) == "1 rig move")
+        #expect(spoken(.anchorHandling, count: 2) == "2 rig moves")
+
+        let zeroHours = LogBookStats.hoursNumber(0)
+        #expect(spoken(.dp, count: 0) == "\(zeroHours) hours total, 0 entries")
+        #expect(spoken(.dp, count: 1) == "\(zeroHours) hours total, 1 entry")
+        #expect(spoken(.dp, count: 2) == "\(zeroHours) hours total, 2 entries")
+
+        #expect(spoken(.rov, count: 0) == "\(zeroHours) piloting hours, 0 entries")
+        #expect(spoken(.rov, count: 1) == "\(zeroHours) piloting hours, 1 entry")
+        #expect(spoken(.rov, count: 3) == "\(zeroHours) piloting hours, 3 entries")
+
+        #expect(spoken(.crane, count: 0) == "\(zeroHours) hours operated, 0 entries")
+        #expect(spoken(.crane, count: 1) == "\(zeroHours) hours operated, 1 entry")
+        #expect(spoken(.crane, count: 4) == "\(zeroHours) hours operated, 4 entries")
     }
 
     // MARK: Helpers
