@@ -417,4 +417,128 @@ struct NamedWinchPresetTests {
             #expect(!line.localizedCaseInsensitiveContains("ok to lift"))
         }
     }
+
+    // MARK: - Factory catalog (Salt 200 AHTS)
+
+    /// Tor Viking secondary / work drum. Double-drive 1st layer is 170 t.
+    /// Outer layer on that sheet is 72 t and is not the stored pull.
+    /// Max weight of wire or rope spooled on the drum is 200 t. That is not a Soft A field.
+    @Test func salt200AHTSFactoryInputsMatchTorVikingSecondaryDrum() {
+        #expect(NamedWinchFactory.presets.map(\.name) == ["Salt 200 AHTS"])
+        let salt = NamedWinchFactory.salt200AHTS
+        #expect(salt.name == "Salt 200 AHTS")
+        #expect(salt.id == NamedWinchFactory.salt200AHTSID)
+        #expect(salt.wireDiameterMm == 87)
+        #expect(salt.barrelDiameterMm == 1500)
+        #expect(salt.drumWidthMm == 4800)
+        #expect(salt.flangeDiameterMm == 4500)
+        #expect(salt.freeSpaceMm == 400)
+        #expect(salt.deadWraps == 3)
+        #expect(salt.deadWraps == WinchCapacityMath.defaultDeadWraps)
+        #expect(salt.firstLayerPullTonnes == 170)
+        #expect(salt.inputs == NamedWinchInputs(
+            wireDiameterMm: 87,
+            barrelDiameterMm: 1500,
+            drumWidthMm: 4800,
+            flangeDiameterMm: 4500,
+            freeSpaceMm: 400,
+            deadWraps: 3,
+            firstLayerPullTonnes: 170
+        ))
+        #expect(salt.inputs.fieldText == NamedWinchFieldText(
+            wire: "87",
+            barrel: "1500",
+            width: "4800",
+            flange: "4500",
+            freeSpace: "400",
+            deadWraps: "3",
+            firstLayerPull: "170"
+        ))
+        #expect(salt.dimsSummary == "d 87 \u{00B7} D0 1 500 \u{00B7} W 4 800 \u{00B7} Df 4 500")
+    }
+
+    @Test func loadListShowsSalt200WhenTheUserLibraryIsEmpty() {
+        let (store, _) = freshStore()
+        #expect(store.all().isEmpty)
+        let listed = store.loadList()
+        #expect(listed.map(\.name) == ["Salt 200 AHTS"])
+        #expect(listed.first?.id == NamedWinchFactory.salt200AHTSID)
+        #expect(listed.first?.inputs == NamedWinchFactory.salt200AHTS.inputs)
+        #expect(store.match(name: "Salt 200 AHTS") == .collision(existingDisplayName: "Salt 200 AHTS"))
+        #expect(store.match(name: "  salt 200 ahts ") == .collision(existingDisplayName: "Salt 200 AHTS"))
+    }
+
+    @Test func loadListSortsSavedPresetsAheadOfSalt200() {
+        let (store, _) = freshStore()
+        store.save(name: "Port tugger", inputs: aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200, pull: 40), at: t0)
+        store.save(name: "A-frame port", inputs: aFrame(), at: t1)
+        #expect(store.all().map(\.name) == ["A-frame port", "Port tugger"])
+        #expect(store.loadList().map(\.name) == ["A-frame port", "Port tugger", "Salt 200 AHTS"])
+        #expect(store.loadList().last?.inputs == NamedWinchFactory.salt200AHTS.inputs)
+    }
+
+    @Test func savingSalt200AHTSShadowsTheFactoryRow() {
+        let (store, _) = freshStore()
+        let custom = aFrame(wire: 76, barrel: 1400, width: 2000, flange: 3600, free: 350, dead: 2, pull: 40)
+        let saved = store.save(name: "  salt 200 ahts  ", inputs: custom, at: t1)
+
+        #expect(saved?.name == "salt 200 ahts")
+        #expect(store.all().count == 1)
+        #expect(store.all().first?.inputs == custom)
+        let listed = store.loadList()
+        #expect(listed.count == 1)
+        #expect(listed.first?.id == saved?.id)
+        #expect(listed.first?.name == "salt 200 ahts")
+        #expect(listed.first?.inputs == custom)
+        #expect(listed.contains { $0.id == NamedWinchFactory.salt200AHTSID } == false)
+        #expect(store.match(name: "Salt 200 AHTS") == .collision(existingDisplayName: "salt 200 ahts"))
+    }
+
+    @Test func clearingTheUserLibraryRestoresSalt200() {
+        let (store, defaults) = freshStore()
+        let custom = aFrame(wire: 76, barrel: 1400, width: 2000, flange: 3600, pull: 40)
+        store.save(name: "Salt 200 AHTS", inputs: custom, at: t1)
+        store.save(name: "Port tugger", inputs: aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200), at: t0)
+        #expect(store.loadList().first?.inputs == custom)
+
+        defaults.removeObject(forKey: NamedWinchPresetStore.storageKey)
+        #expect(store.all().isEmpty)
+        #expect(store.loadList().map(\.name) == ["Salt 200 AHTS"])
+        #expect(store.loadList().first?.id == NamedWinchFactory.salt200AHTSID)
+        #expect(store.loadList().first?.inputs == NamedWinchFactory.salt200AHTS.inputs)
+        #expect(store.loadList().first?.firstLayerPullTonnes == 170)
+
+        defaults.set(Data("nope".utf8), forKey: NamedWinchPresetStore.storageKey)
+        #expect(store.all().isEmpty)
+        #expect(store.loadList().map(\.name) == ["Salt 200 AHTS"])
+
+        defaults.set(Data("[]".utf8), forKey: NamedWinchPresetStore.storageKey)
+        #expect(store.all().isEmpty)
+        #expect(store.loadList().first?.barrelDiameterMm == 1500)
+        #expect(store.loadList().first?.drumWidthMm == 4800)
+        #expect(store.loadList().first?.flangeDiameterMm == 4500)
+    }
+
+    @Test func fullLibraryRefusesANewSalt200SaveAndKeepsTheFactoryRow() {
+        let (store, _) = freshStore()
+        for index in 1...NamedWinchPresetStore.maxPresets {
+            store.save(
+                name: "Winch \(index)",
+                inputs: aFrame(wire: Double(index)),
+                at: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+        }
+        #expect(store.all().count == 50)
+        #expect(store.match(name: "Salt 200 AHTS") == .libraryFull)
+        #expect(store.save(name: "Salt 200 AHTS", inputs: starboard(), at: t2) == nil)
+        #expect(store.all().count == 50)
+        #expect(store.all().contains { NamedWinchPresetStore.nameKey($0.name) == "salt 200 ahts" } == false)
+
+        let listed = store.loadList()
+        #expect(listed.count == 51)
+        let factoryRow = listed.first { $0.name == "Salt 200 AHTS" }
+        #expect(factoryRow?.id == NamedWinchFactory.salt200AHTSID)
+        #expect(factoryRow?.inputs == NamedWinchFactory.salt200AHTS.inputs)
+        #expect(listed.last?.name == "Salt 200 AHTS")
+    }
 }

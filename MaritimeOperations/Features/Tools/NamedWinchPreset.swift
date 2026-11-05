@@ -195,7 +195,42 @@ enum NamedWinchFormat {
     }
 }
 
+/// Built-in winches. Not written to UserDefaults.
+/// `NamedWinchPresetStore.loadList()` shows these beside saved presets.
+/// Saving the same name (case-insensitive) stores a user preset that replaces the factory row.
+/// Clearing the user library does not remove these rows.
+enum NamedWinchFactory {
+    /// Stable Load-row identity. `UUID.uuidString` is uppercase.
+    static let salt200AHTSID = UUID(uuidString: "5A170200-A475-4C00-8000-000000000057")!
+
+    /// Older than any saved preset, so user rows sort above this one.
+    static let salt200AHTSUpdatedAt = Date(timeIntervalSince1970: 0)
+
+    /// Tor Viking secondary / work drum, double-drive 1st layer.
+    /// Sheet drum length is 4800 mm + 900 mm socket compartment; width is the 4800 mm winding length.
+    /// Flange is the 4500 mm drum outer diameter. Free space is the sheet's 400 mm radial free space.
+    /// Dead wraps are not on the sheet; this uses the Soft A default.
+    /// Max weight of wire or rope spooled on the drum is 200 t. That figure is not a Soft A field.
+    static let salt200AHTS = NamedWinchPreset(
+        id: salt200AHTSID,
+        name: "Salt 200 AHTS",
+        inputs: NamedWinchInputs(
+            wireDiameterMm: 87,
+            barrelDiameterMm: 1500,
+            drumWidthMm: 4800,
+            flangeDiameterMm: 4500,
+            freeSpaceMm: 400,
+            deadWraps: WinchCapacityMath.defaultDeadWraps,
+            firstLayerPullTonnes: 170
+        ),
+        updatedAt: salt200AHTSUpdatedAt
+    )
+
+    static let presets: [NamedWinchPreset] = [salt200AHTS]
+}
+
 /// Local named presets. UserDefaults JSON is enough for this tool alone — no iCloud, no logbook schema.
+/// Factory presets stay in `NamedWinchFactory` and are merged only by `loadList()`.
 struct NamedWinchPresetStore: Sendable {
     static let storageKey = "namedWinchPresets.v1"
     /// Hard cap on stored presets. A 51st new name is refused; replacing one of the 50 still works.
@@ -219,7 +254,9 @@ struct NamedWinchPresetStore: Sendable {
 
     /// Case-insensitive match on the trimmed name. Does not write.
     /// A name over 64 characters is `.tooLong` even when the library is full.
-    /// A new name is `.libraryFull` at 50 presets. An existing name is still `.collision`, so overwrite stays available.
+    /// A new name is `.libraryFull` at 50 presets. An existing stored name is still `.collision`, so overwrite stays available.
+    /// A factory name that is not stored yet is `.collision` while there is room, so Save asks before writing over that row.
+    /// At 50 stored presets that factory name is `.libraryFull`: it would be a new stored preset, not an overwrite of one of the 50.
     func match(name: String) -> NameMatch {
         let trimmed = Self.trimmed(name)
         guard !trimmed.isEmpty else { return .empty }
@@ -228,14 +265,19 @@ struct NamedWinchPresetStore: Sendable {
         if let existing = items.first(where: { Self.nameKey($0.name) == Self.nameKey(trimmed) }) {
             return .collision(existingDisplayName: existing.name)
         }
+        if let factory = Self.factoryPreset(named: trimmed) {
+            guard items.count < Self.maxPresets else { return .libraryFull }
+            return .collision(existingDisplayName: factory.name)
+        }
         guard items.count < Self.maxPresets else { return .libraryFull }
         return .available(trimmed: trimmed)
     }
 
-    /// Insert, or replace the case-insensitive match.
+    /// Insert, or replace the case-insensitive match in the user library.
     /// Display casing becomes the trimmed name just saved.
     /// Empty names, names over 64 characters, and a 51st preset do not write.
     /// Replacing one of the existing 50 still writes.
+    /// Saving a factory name writes a user preset. `loadList()` then shows that preset instead of the factory row.
     @discardableResult
     func save(name: String, inputs: NamedWinchInputs, at date: Date = .now) -> NamedWinchPreset? {
         let trimmed = Self.trimmed(name)
@@ -256,9 +298,32 @@ struct NamedWinchPresetStore: Sendable {
         return preset
     }
 
-    /// Most recently updated first.
+    /// Saved presets on this device, most recently updated first.
+    /// Factory rows are not included, so an empty library stays empty and a full library stays at 50.
+    /// The Load sheet uses `loadList()`.
     func all() -> [NamedWinchPreset] {
-        loadRaw().sorted { lhs, rhs in
+        Self.sortedByRecency(loadRaw())
+    }
+
+    /// Rows for the Load sheet. Saved presets, plus factory presets whose name the user has not saved over.
+    /// A stored preset with the same name (case-insensitive) replaces the factory row.
+    /// Clearing UserDefaults leaves the factory rows.
+    func loadList() -> [NamedWinchPreset] {
+        let saved = loadRaw()
+        let savedKeys = Set(saved.map { Self.nameKey($0.name) })
+        let factory = NamedWinchFactory.presets.filter { preset in
+            !savedKeys.contains(Self.nameKey(preset.name))
+        }
+        return Self.sortedByRecency(saved + factory)
+    }
+
+    private static func factoryPreset(named trimmed: String) -> NamedWinchPreset? {
+        let key = nameKey(trimmed)
+        return NamedWinchFactory.presets.first { nameKey($0.name) == key }
+    }
+
+    private static func sortedByRecency(_ items: [NamedWinchPreset]) -> [NamedWinchPreset] {
+        items.sorted { lhs, rhs in
             if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt > rhs.updatedAt }
             return lhs.name < rhs.name
         }

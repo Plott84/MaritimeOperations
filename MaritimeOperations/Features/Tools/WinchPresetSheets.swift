@@ -153,7 +153,8 @@ struct WinchSaveSheet: View {
     }
 }
 
-/// Pick a saved winch. Empty library has the locked copy and no delete affordance.
+/// Pick a winch. Rows come from `store.loadList()`: saved presets plus factory presets the user has not saved over.
+/// An empty merged list has the locked copy and no delete affordance.
 struct WinchLoadSheet: View {
     var onPick: (NamedWinchPreset) -> Void
 
@@ -166,7 +167,7 @@ struct WinchLoadSheet: View {
     init(onPick: @escaping (NamedWinchPreset) -> Void, store: NamedWinchPresetStore = NamedWinchPresetStore()) {
         self.onPick = onPick
         self.store = store
-        _presets = State(initialValue: store.all())
+        _presets = State(initialValue: store.loadList())
     }
 
     var body: some View {
@@ -205,7 +206,7 @@ struct WinchLoadSheet: View {
         .presentationDragIndicator(.visible)
         .duoRegularPageSheet()
         .accessibilityIdentifier("winchLoadSheet")
-        .onAppear { presets = store.all() }
+        .onAppear { presets = store.loadList() }
     }
 
     private var emptyState: some View {
