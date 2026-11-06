@@ -2,17 +2,31 @@ import Foundation
 import Testing
 @testable import MaritimeOperations
 
-/// Named winch presets (Soft A). Store behaviour behind WS-01…WS-04, WS-02a, and WS-07.
+/// Named winch presets (Soft A). Store behaviour behind WS-01…WS-04, WS-02a, WS-07, and the Salt 200 seed.
 struct NamedWinchPresetTests {
     private let t0 = Date(timeIntervalSince1970: 1_700_000_000)
     private let t1 = Date(timeIntervalSince1970: 1_700_000_100)
     private let t2 = Date(timeIntervalSince1970: 1_700_000_200)
 
+    /// Empty user library whose seed flag is already set, so reads stay empty (S200-02).
     private func freshStore() -> (NamedWinchPresetStore, UserDefaults) {
+        let (store, defaults, _) = makeStore(seededFlag: true)
+        return (store, defaults)
+    }
+
+    /// Empty library that has never decided the seed. The first read writes the four Salt 200 drums.
+    private func unseededStore() -> (NamedWinchPresetStore, UserDefaults, String) {
+        makeStore(seededFlag: false)
+    }
+
+    private func makeStore(seededFlag: Bool) -> (NamedWinchPresetStore, UserDefaults, String) {
         let name = "NamedWinchPresetTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
-        return (NamedWinchPresetStore(defaults: defaults), defaults)
+        if seededFlag {
+            defaults.set(true, forKey: NamedWinchPresetStore.factorySeedKey)
+        }
+        return (NamedWinchPresetStore(defaults: defaults), defaults, name)
     }
 
     /// A-frame port example from the locked mock.
@@ -246,6 +260,7 @@ struct NamedWinchPresetTests {
 
     @Test func ws04FreshStoreIsEmptyAndGarbageDoesNotCrash() {
         let (store, defaults) = freshStore()
+        // Seed flag is already set, so an empty library stays empty.
         #expect(store.all().isEmpty)
         #expect(NamedWinchCopy.emptyTitle == "No saved winches yet")
         #expect(NamedWinchCopy.emptyBody == "Tap Save on the Winch capacity form to keep a named set of inputs on this device.")
@@ -418,109 +433,211 @@ struct NamedWinchPresetTests {
         }
     }
 
-    // MARK: - Factory catalog (Salt 200 AHTS)
+    // MARK: - Salt 200 seed (S200)
 
-    /// Tor Viking secondary / work drum. Double-drive 1st layer is 170 t.
-    /// Outer layer on that sheet is 72 t and is not the stored pull.
-    /// Max weight of wire or rope spooled on the drum is 200 t. That is not a Soft A field.
-    @Test func salt200AHTSFactoryInputsMatchTorVikingSecondaryDrum() {
-        #expect(NamedWinchFactory.presets.map(\.name) == ["Salt 200 AHTS"])
-        let salt = NamedWinchFactory.salt200AHTS
-        #expect(salt.name == "Salt 200 AHTS")
-        #expect(salt.id == NamedWinchFactory.salt200AHTSID)
-        #expect(salt.wireDiameterMm == 87)
-        #expect(salt.barrelDiameterMm == 1500)
-        #expect(salt.drumWidthMm == 4800)
-        #expect(salt.flangeDiameterMm == 4500)
-        #expect(salt.freeSpaceMm == 400)
-        #expect(salt.deadWraps == 3)
-        #expect(salt.deadWraps == WinchCapacityMath.defaultDeadWraps)
-        #expect(salt.firstLayerPullTonnes == 170)
-        #expect(salt.inputs == NamedWinchInputs(
-            wireDiameterMm: 87,
-            barrelDiameterMm: 1500,
-            drumWidthMm: 4800,
-            flangeDiameterMm: 4500,
-            freeSpaceMm: 400,
-            deadWraps: 3,
-            firstLayerPullTonnes: 170
-        ))
-        #expect(salt.inputs.fieldText == NamedWinchFieldText(
-            wire: "87",
-            barrel: "1500",
-            width: "4800",
-            flange: "4500",
-            freeSpace: "400",
-            deadWraps: "3",
-            firstLayerPull: "170"
-        ))
-        #expect(salt.dimsSummary == "d 87 \u{00B7} D0 1 500 \u{00B7} W 4 800 \u{00B7} Df 4 500")
-    }
+    private let salt200Names = [
+        "Salt 200 \u{00B7} AH",
+        "Salt 200 \u{00B7} T/W STBD",
+        "Salt 200 \u{00B7} T/W PORT",
+        "Salt 200 \u{00B7} Secondary"
+    ]
 
-    @Test func loadListShowsSalt200WhenTheUserLibraryIsEmpty() {
-        let (store, _) = freshStore()
-        #expect(store.all().isEmpty)
+    /// Max spool weight 200 t on the secondary drum is not a Soft A field.
+    /// T/W starboard and port 170 t are inferred. AH pull stays unset.
+    @Test func s20001EmptyUnseededLibraryWritesTheFourSalt200Drums() {
+        #expect(NamedWinchPresetStore.factorySeedKey == "namedWinchPresets.factorySeeded.v1")
+        #expect(NamedWinchSeed.presets.map(\.name) == salt200Names)
+
+        let (store, defaults, _) = unseededStore()
+        #expect(defaults.bool(forKey: NamedWinchPresetStore.factorySeedKey) == false)
+
         let listed = store.loadList()
-        #expect(listed.map(\.name) == ["Salt 200 AHTS"])
-        #expect(listed.first?.id == NamedWinchFactory.salt200AHTSID)
-        #expect(listed.first?.inputs == NamedWinchFactory.salt200AHTS.inputs)
-        #expect(store.match(name: "Salt 200 AHTS") == .collision(existingDisplayName: "Salt 200 AHTS"))
-        #expect(store.match(name: "  salt 200 ahts ") == .collision(existingDisplayName: "Salt 200 AHTS"))
+        #expect(listed.map(\.name) == salt200Names)
+        #expect(store.all().map(\.name) == salt200Names)
+        #expect(defaults.bool(forKey: NamedWinchPresetStore.factorySeedKey))
+        #expect(store.all().count == 4)
+
+        let ah = listed[0]
+        #expect(ah.name == "Salt 200 \u{00B7} AH")
+        #expect(ah.wireDiameterMm == 87)
+        #expect(ah.barrelDiameterMm == 2500)
+        #expect(ah.drumWidthMm == 9620)
+        #expect(ah.flangeDiameterMm == 5050)
+        #expect(ah.freeSpaceMm == 400)
+        #expect(ah.deadWraps == 3)
+        #expect(ah.deadWraps == WinchCapacityMath.defaultDeadWraps)
+        #expect(ah.firstLayerPullTonnes == nil)
+        #expect(ah.inputs.fieldText.firstLayerPull == "")
+        #expect(ah.inputs.fieldText == NamedWinchFieldText(
+            wire: "87", barrel: "2500", width: "9620", flange: "5050",
+            freeSpace: "400", deadWraps: "3", firstLayerPull: ""
+        ))
+        #expect(ah.dimsSummary == "d 87 \u{00B7} D0 2 500 \u{00B7} W 9 620 \u{00B7} Df 5 050")
+        #expect(ah.inputs == NamedWinchSeed.ah.inputs)
+
+        let stbd = listed[1]
+        #expect(stbd.name == "Salt 200 \u{00B7} T/W STBD")
+        #expect(stbd.wireDiameterMm == 87)
+        #expect(stbd.barrelDiameterMm == 1800)
+        #expect(stbd.drumWidthMm == 3400)
+        #expect(stbd.flangeDiameterMm == 4300)
+        #expect(stbd.freeSpaceMm == 400)
+        #expect(stbd.deadWraps == 3)
+        #expect(stbd.firstLayerPullTonnes == 170)
+        #expect(stbd.dimsSummary == "d 87 \u{00B7} D0 1 800 \u{00B7} W 3 400 \u{00B7} Df 4 300")
+
+        let port = listed[2]
+        #expect(port.name == "Salt 200 \u{00B7} T/W PORT")
+        #expect(port.wireDiameterMm == 87)
+        #expect(port.barrelDiameterMm == 1800)
+        #expect(port.drumWidthMm == 2100)
+        #expect(port.flangeDiameterMm == 4300)
+        #expect(port.freeSpaceMm == 400)
+        #expect(port.deadWraps == 3)
+        #expect(port.firstLayerPullTonnes == 170)
+        #expect(port.dimsSummary == "d 87 \u{00B7} D0 1 800 \u{00B7} W 2 100 \u{00B7} Df 4 300")
+
+        let secondary = listed[3]
+        #expect(secondary.name == "Salt 200 \u{00B7} Secondary")
+        #expect(secondary.wireDiameterMm == 87)
+        #expect(secondary.barrelDiameterMm == 1500)
+        #expect(secondary.drumWidthMm == 4800)
+        #expect(secondary.flangeDiameterMm == 4500)
+        #expect(secondary.freeSpaceMm == 400)
+        #expect(secondary.deadWraps == 3)
+        #expect(secondary.firstLayerPullTonnes == 170)
+        #expect(secondary.inputs.fieldText.firstLayerPull == "170")
+        #expect(secondary.dimsSummary == "d 87 \u{00B7} D0 1 500 \u{00B7} W 4 800 \u{00B7} Df 4 500")
+
+        let relaunch = NamedWinchPresetStore(defaults: defaults)
+        #expect(relaunch.all().map(\.id) == listed.map(\.id))
+        #expect(relaunch.all().first?.firstLayerPullTonnes == nil)
+        #expect(relaunch.loadList().count == 4)
     }
 
-    @Test func loadListSortsSavedPresetsAheadOfSalt200() {
-        let (store, _) = freshStore()
-        store.save(name: "Port tugger", inputs: aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200, pull: 40), at: t0)
-        store.save(name: "A-frame port", inputs: aFrame(), at: t1)
-        #expect(store.all().map(\.name) == ["A-frame port", "Port tugger"])
-        #expect(store.loadList().map(\.name) == ["A-frame port", "Port tugger", "Salt 200 AHTS"])
-        #expect(store.loadList().last?.inputs == NamedWinchFactory.salt200AHTS.inputs)
+    @Test func matchAndSaveOnAnUnseededLibrarySeedFirst() {
+        let (matched, matchedDefaults, _) = unseededStore()
+        #expect(matched.match(name: "Port tugger") == .available(trimmed: "Port tugger"))
+        #expect(matchedDefaults.bool(forKey: NamedWinchPresetStore.factorySeedKey))
+        #expect(matched.all().map(\.name) == salt200Names)
+
+        let (savedStore, _, _) = unseededStore()
+        let saved = savedStore.save(
+            name: "Port tugger",
+            inputs: aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200, pull: 40),
+            at: t0
+        )
+        #expect(saved?.name == "Port tugger")
+        #expect(savedStore.all().count == 5)
+        #expect(savedStore.all().filter { salt200Names.contains($0.name) }.count == 4)
     }
 
-    @Test func savingSalt200AHTSShadowsTheFactoryRow() {
-        let (store, _) = freshStore()
-        let custom = aFrame(wire: 76, barrel: 1400, width: 2000, flange: 3600, free: 350, dead: 2, pull: 40)
-        let saved = store.save(name: "  salt 200 ahts  ", inputs: custom, at: t1)
-
-        #expect(saved?.name == "salt 200 ahts")
-        #expect(store.all().count == 1)
-        #expect(store.all().first?.inputs == custom)
-        let listed = store.loadList()
-        #expect(listed.count == 1)
-        #expect(listed.first?.id == saved?.id)
-        #expect(listed.first?.name == "salt 200 ahts")
-        #expect(listed.first?.inputs == custom)
-        #expect(listed.contains { $0.id == NamedWinchFactory.salt200AHTSID } == false)
-        #expect(store.match(name: "Salt 200 AHTS") == .collision(existingDisplayName: "salt 200 ahts"))
-    }
-
-    @Test func clearingTheUserLibraryRestoresSalt200() {
-        let (store, defaults) = freshStore()
-        let custom = aFrame(wire: 76, barrel: 1400, width: 2000, flange: 3600, pull: 40)
-        store.save(name: "Salt 200 AHTS", inputs: custom, at: t1)
-        store.save(name: "Port tugger", inputs: aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200), at: t0)
-        #expect(store.loadList().first?.inputs == custom)
-
-        defaults.removeObject(forKey: NamedWinchPresetStore.storageKey)
-        #expect(store.all().isEmpty)
-        #expect(store.loadList().map(\.name) == ["Salt 200 AHTS"])
-        #expect(store.loadList().first?.id == NamedWinchFactory.salt200AHTSID)
-        #expect(store.loadList().first?.inputs == NamedWinchFactory.salt200AHTS.inputs)
-        #expect(store.loadList().first?.firstLayerPullTonnes == 170)
-
-        defaults.set(Data("nope".utf8), forKey: NamedWinchPresetStore.storageKey)
-        #expect(store.all().isEmpty)
-        #expect(store.loadList().map(\.name) == ["Salt 200 AHTS"])
+    @Test func s20002DeletingTheSeededRowsDoesNotReinject() {
+        let (store, defaults, _) = unseededStore()
+        #expect(store.all().map(\.name) == salt200Names)
 
         defaults.set(Data("[]".utf8), forKey: NamedWinchPresetStore.storageKey)
-        #expect(store.all().isEmpty)
-        #expect(store.loadList().first?.barrelDiameterMm == 1500)
-        #expect(store.loadList().first?.drumWidthMm == 4800)
-        #expect(store.loadList().first?.flangeDiameterMm == 4500)
+        #expect(defaults.bool(forKey: NamedWinchPresetStore.factorySeedKey))
+
+        let reopen = NamedWinchPresetStore(defaults: defaults)
+        #expect(reopen.all().isEmpty)
+        #expect(reopen.loadList().isEmpty)
+        #expect(reopen.match(name: "Salt 200 \u{00B7} AH") == .available(trimmed: "Salt 200 \u{00B7} AH"))
     }
 
-    @Test func fullLibraryRefusesANewSalt200SaveAndKeepsTheFactoryRow() {
-        let (store, _) = freshStore()
+    @Test func wipingUserDefaultsIncludingTheSeedFlagSeedsAgain() {
+        let (store, defaults, suite) = unseededStore()
+        _ = store.all()
+        var edited = NamedWinchSeed.ah.inputs
+        edited.drumWidthMm = 1111
+        store.save(name: "Salt 200 \u{00B7} AH", inputs: edited, at: t1)
+        #expect(store.all().first { $0.name == "Salt 200 \u{00B7} AH" }?.drumWidthMm == 1111)
+
+        defaults.removePersistentDomain(forName: suite)
+        defaults.removeObject(forKey: NamedWinchPresetStore.storageKey)
+        defaults.removeObject(forKey: NamedWinchPresetStore.factorySeedKey)
+        let wiped = UserDefaults(suiteName: suite)!
+        let again = NamedWinchPresetStore(defaults: wiped)
+        #expect(again.loadList().map(\.name) == salt200Names)
+        #expect(again.all().first { $0.name == "Salt 200 \u{00B7} AH" }?.drumWidthMm == 9620)
+        #expect(again.all().first { $0.name == "Salt 200 \u{00B7} AH" }?.firstLayerPullTonnes == nil)
+        #expect(wiped.bool(forKey: NamedWinchPresetStore.factorySeedKey))
+    }
+
+    @Test func s20006NonEmptyLibrarySkipsSeedAndStaysSkippedAfterClear() {
+        let (store, defaults, _) = freshStore()
+        let tug = aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200, pull: 40)
+        let saved = store.save(name: "Port tugger", inputs: tug, at: t0)
+        defaults.removeObject(forKey: NamedWinchPresetStore.factorySeedKey)
+
+        let opened = NamedWinchPresetStore(defaults: defaults)
+        #expect(opened.all().count == 1)
+        #expect(opened.all().first == saved)
+        #expect(opened.loadList().map(\.name) == ["Port tugger"])
+        #expect(defaults.bool(forKey: NamedWinchPresetStore.factorySeedKey))
+
+        defaults.set(Data("[]".utf8), forKey: NamedWinchPresetStore.storageKey)
+        #expect(opened.all().isEmpty)
+        #expect(opened.loadList().isEmpty)
+        #expect(NamedWinchPresetStore(defaults: defaults).all().isEmpty)
+    }
+
+    @Test func s20005OverwriteSalt200AHReplacesTheOneRow() {
+        let (store, _, _) = unseededStore()
+        _ = store.all()
+        let original = store.all().first { $0.name == "Salt 200 \u{00B7} AH" }
+        var edited = NamedWinchSeed.ah.inputs
+        edited.drumWidthMm = 1000
+
+        #expect(store.match(name: "Salt 200 \u{00B7} AH") == .collision(existingDisplayName: "Salt 200 \u{00B7} AH"))
+        let replaced = store.save(name: "salt 200 \u{00B7} ah", inputs: edited, at: t1)
+
+        #expect(replaced?.id == original?.id)
+        #expect(replaced?.name == "salt 200 \u{00B7} ah")
+        #expect(replaced?.drumWidthMm == 1000)
+        #expect(replaced?.firstLayerPullTonnes == nil)
+        let ahRows = store.all().filter {
+            NamedWinchPresetStore.nameKey($0.name) == NamedWinchPresetStore.nameKey("Salt 200 \u{00B7} AH")
+        }
+        #expect(ahRows.count == 1)
+        #expect(ahRows.first?.inputs == edited)
+        #expect(store.all().count == 4)
+        #expect(store.all().contains { $0.name == "Salt 200 \u{00B7} T/W STBD" })
+        #expect(store.all().first { $0.name == "Salt 200 \u{00B7} Secondary" }?.firstLayerPullTonnes == 170)
+    }
+
+    @Test func seedInsertSkipsAnExistingNameAndStopsAtFifty() {
+        let custom = NamedWinchPreset(
+            name: "salt 200 \u{00B7} ah",
+            inputs: aFrame(width: 111, pull: nil),
+            updatedAt: t0
+        )
+        let merged = NamedWinchSeed.inserting(into: [custom])
+        #expect(merged.count == 4)
+        #expect(merged.first?.name == "salt 200 \u{00B7} ah")
+        #expect(merged.first?.drumWidthMm == 111)
+        #expect(merged.first?.firstLayerPullTonnes == nil)
+        let ahKeys = merged.filter {
+            NamedWinchPresetStore.nameKey($0.name) == NamedWinchPresetStore.nameKey("Salt 200 \u{00B7} AH")
+        }
+        #expect(ahKeys.count == 1)
+
+        let fillers = (1...49).map { index in
+            NamedWinchPreset(
+                name: "Winch \(index)",
+                inputs: aFrame(wire: Double(index)),
+                updatedAt: t0
+            )
+        }
+        let capped = NamedWinchSeed.inserting(into: fillers)
+        #expect(capped.count == 50)
+        #expect(capped.contains { $0.name == "Salt 200 \u{00B7} AH" })
+        #expect(capped.contains { $0.name == "Salt 200 \u{00B7} T/W STBD" } == false)
+        #expect(NamedWinchSeed.inserting(into: capped).count == 50)
+    }
+
+    @Test func fullLibraryDoesNotGainSeedRowsWhenTheFlagIsCleared() {
+        let (store, defaults) = freshStore()
         for index in 1...NamedWinchPresetStore.maxPresets {
             store.save(
                 name: "Winch \(index)",
@@ -528,17 +645,23 @@ struct NamedWinchPresetTests {
                 at: Date(timeIntervalSince1970: TimeInterval(index))
             )
         }
+        defaults.removeObject(forKey: NamedWinchPresetStore.factorySeedKey)
         #expect(store.all().count == 50)
-        #expect(store.match(name: "Salt 200 AHTS") == .libraryFull)
-        #expect(store.save(name: "Salt 200 AHTS", inputs: starboard(), at: t2) == nil)
+        #expect(store.loadList().count == 50)
+        #expect(store.all().contains { $0.name == "Salt 200 \u{00B7} AH" } == false)
+        #expect(defaults.bool(forKey: NamedWinchPresetStore.factorySeedKey))
+        #expect(store.match(name: "Salt 200 \u{00B7} Secondary") == .libraryFull)
+        #expect(store.save(name: "Salt 200 \u{00B7} Secondary", inputs: starboard(), at: t2) == nil)
         #expect(store.all().count == 50)
-        #expect(store.all().contains { NamedWinchPresetStore.nameKey($0.name) == "salt 200 ahts" } == false)
+    }
 
-        let listed = store.loadList()
-        #expect(listed.count == 51)
-        let factoryRow = listed.first { $0.name == "Salt 200 AHTS" }
-        #expect(factoryRow?.id == NamedWinchFactory.salt200AHTSID)
-        #expect(factoryRow?.inputs == NamedWinchFactory.salt200AHTS.inputs)
-        #expect(listed.last?.name == "Salt 200 AHTS")
+    @Test func s20007SeedNamesAddNoExtraChrome() {
+        #expect(NamedWinchCopy.aid == "Aid for deck estimates. Not a class or maker rating.")
+        for name in salt200Names {
+            #expect(name.contains("\u{00B7}"))
+            #expect(!name.localizedCaseInsensitiveContains("tor viking"))
+            #expect(!name.localizedCaseInsensitiveContains("safe"))
+            #expect(!name.localizedCaseInsensitiveContains("ok to lift"))
+        }
     }
 }

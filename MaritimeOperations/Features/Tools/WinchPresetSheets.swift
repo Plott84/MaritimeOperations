@@ -153,8 +153,8 @@ struct WinchSaveSheet: View {
     }
 }
 
-/// Pick a winch. Rows come from `store.loadList()`: saved presets plus factory presets the user has not saved over.
-/// An empty merged list has the locked copy and no delete affordance.
+/// Pick a saved winch. `loadList()` may seed an empty library once, then shows `all()`.
+/// An empty library has the locked copy and no delete affordance.
 struct WinchLoadSheet: View {
     var onPick: (NamedWinchPreset) -> Void
 
