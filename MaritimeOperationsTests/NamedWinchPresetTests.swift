@@ -565,7 +565,7 @@ struct NamedWinchPresetTests {
     }
 
     @Test func s20006NonEmptyLibrarySkipsSeedAndStaysSkippedAfterClear() {
-        let (store, defaults, _) = freshStore()
+        let (store, defaults) = freshStore()
         let tug = aFrame(wire: 52, barrel: 900, width: 1600, flange: 2200, pull: 40)
         let saved = store.save(name: "Port tugger", inputs: tug, at: t0)
         defaults.removeObject(forKey: NamedWinchPresetStore.factorySeedKey)
