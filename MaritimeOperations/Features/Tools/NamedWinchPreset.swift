@@ -195,9 +195,114 @@ enum NamedWinchFormat {
     }
 }
 
+/// Salt 200 drum values copied into the user library once.
+/// After that copy they are ordinary saved presets. This catalog is not merged into Load.
+enum NamedWinchSeed {
+    static let ahName = "Salt 200 \u{00B7} AH"
+    static let towStarboardName = "Salt 200 \u{00B7} T/W STBD"
+    static let towPortName = "Salt 200 \u{00B7} T/W PORT"
+    static let secondaryName = "Salt 200 \u{00B7} Secondary"
+
+    /// Newest stamp first so the existing recency sort lists AH, T/W STBD, T/W PORT, Secondary.
+    private static func stamp(_ stepsNewer: TimeInterval) -> Date {
+        Date(timeIntervalSince1970: 1_600_000_000 + stepsNewer)
+    }
+
+    /// Anchor-handling. Pull table is not on the captured sheet, so the optional stays empty.
+    /// Width is 9620 mm; the 1100 mm socket compartment is excluded.
+    static let ah = NamedWinchPreset(
+        id: UUID(uuidString: "5A170200-0001-4000-8000-0000000000A1")!,
+        name: ahName,
+        inputs: NamedWinchInputs(
+            wireDiameterMm: 87,
+            barrelDiameterMm: 2500,
+            drumWidthMm: 9620,
+            flangeDiameterMm: 5050,
+            freeSpaceMm: 400,
+            deadWraps: WinchCapacityMath.defaultDeadWraps,
+            firstLayerPullTonnes: nil
+        ),
+        updatedAt: stamp(3)
+    )
+
+    /// Towing winch starboard. 170 t is inferred until that drum's pull table is available.
+    static let towStarboard = NamedWinchPreset(
+        id: UUID(uuidString: "5A170200-0002-4000-8000-0000000000B2")!,
+        name: towStarboardName,
+        inputs: NamedWinchInputs(
+            wireDiameterMm: 87,
+            barrelDiameterMm: 1800,
+            drumWidthMm: 3400,
+            flangeDiameterMm: 4300,
+            freeSpaceMm: 400,
+            deadWraps: WinchCapacityMath.defaultDeadWraps,
+            firstLayerPullTonnes: 170
+        ),
+        updatedAt: stamp(2)
+    )
+
+    /// Towing winch port. 170 t is the same inference as starboard.
+    /// Width is 2100 mm; the 900 mm socket compartment is excluded.
+    static let towPort = NamedWinchPreset(
+        id: UUID(uuidString: "5A170200-0003-4000-8000-0000000000C3")!,
+        name: towPortName,
+        inputs: NamedWinchInputs(
+            wireDiameterMm: 87,
+            barrelDiameterMm: 1800,
+            drumWidthMm: 2100,
+            flangeDiameterMm: 4300,
+            freeSpaceMm: 400,
+            deadWraps: WinchCapacityMath.defaultDeadWraps,
+            firstLayerPullTonnes: 170
+        ),
+        updatedAt: stamp(1)
+    )
+
+    /// Secondary drum, double-drive 1st layer 170 t.
+    /// Width is 4800 mm; the 900 mm socket compartment is excluded.
+    /// Max spool weight 200 t is not a Soft A field.
+    static let secondary = NamedWinchPreset(
+        id: UUID(uuidString: "5A170200-0004-4000-8000-0000000000D4")!,
+        name: secondaryName,
+        inputs: NamedWinchInputs(
+            wireDiameterMm: 87,
+            barrelDiameterMm: 1500,
+            drumWidthMm: 4800,
+            flangeDiameterMm: 4500,
+            freeSpaceMm: 400,
+            deadWraps: WinchCapacityMath.defaultDeadWraps,
+            firstLayerPullTonnes: 170
+        ),
+        updatedAt: stamp(0)
+    )
+
+    /// Insertion order matches the preferred Load order.
+    static let presets: [NamedWinchPreset] = [ah, towStarboard, towPort, secondary]
+
+    /// Append catalog rows that are not already stored under the same case-insensitive name.
+    /// Stops at `limit` (the Soft A library cap). Does not replace an existing row.
+    static func inserting(into existing: [NamedWinchPreset], limit: Int = NamedWinchPresetStore.maxPresets) -> [NamedWinchPreset] {
+        var items = existing
+        var keys = Set(items.map { NamedWinchPresetStore.nameKey($0.name) })
+        for preset in presets {
+            guard items.count < limit else { break }
+            let key = NamedWinchPresetStore.nameKey(preset.name)
+            guard !keys.contains(key) else { continue }
+            items.append(preset)
+            keys.insert(key)
+        }
+        return items
+    }
+}
+
 /// Local named presets. UserDefaults JSON is enough for this tool alone — no iCloud, no logbook schema.
+/// An empty library is seeded once from `NamedWinchSeed` when `factorySeedKey` is unset.
 struct NamedWinchPresetStore: Sendable {
     static let storageKey = "namedWinchPresets.v1"
+    /// One-shot Bool stored beside `storageKey`. Missing or false: the seed has not been decided.
+    /// Set true after the four Salt 200 drums are written into an empty library, or after a non-empty library skips the seed.
+    /// A later empty library does not seed again. Wiping UserDefaults removes this key, so the next empty read can seed once more.
+    static let factorySeedKey = "namedWinchPresets.factorySeeded.v1"
     /// Hard cap on stored presets. A 51st new name is refused; replacing one of the 50 still works.
     static let maxPresets = 50
     /// Trimmed name, counted in characters (extended grapheme clusters). Longer names are refused, not truncated.
@@ -217,10 +322,12 @@ struct NamedWinchPresetStore: Sendable {
         case collision(existingDisplayName: String)
     }
 
-    /// Case-insensitive match on the trimmed name. Does not write.
+    /// Case-insensitive match on the trimmed name. Does not write a preset.
     /// A name over 64 characters is `.tooLong` even when the library is full.
     /// A new name is `.libraryFull` at 50 presets. An existing name is still `.collision`, so overwrite stays available.
+    /// Decides the one-shot seed before matching, so the first Save open can fill an empty library.
     func match(name: String) -> NameMatch {
+        ensureFactorySeed()
         let trimmed = Self.trimmed(name)
         guard !trimmed.isEmpty else { return .empty }
         guard trimmed.count <= Self.maxNameLength else { return .tooLong }
@@ -232,12 +339,14 @@ struct NamedWinchPresetStore: Sendable {
         return .available(trimmed: trimmed)
     }
 
-    /// Insert, or replace the case-insensitive match.
+    /// Insert, or replace the case-insensitive match in the user library.
     /// Display casing becomes the trimmed name just saved.
     /// Empty names, names over 64 characters, and a 51st preset do not write.
     /// Replacing one of the existing 50 still writes.
+    /// Decides the one-shot seed first, so a save on a fresh library lands beside the four Salt 200 drums.
     @discardableResult
     func save(name: String, inputs: NamedWinchInputs, at date: Date = .now) -> NamedWinchPreset? {
+        ensureFactorySeed()
         let trimmed = Self.trimmed(name)
         guard !trimmed.isEmpty else { return nil }
         guard trimmed.count <= Self.maxNameLength else { return nil }
@@ -256,9 +365,42 @@ struct NamedWinchPresetStore: Sendable {
         return preset
     }
 
-    /// Most recently updated first.
+    /// Saved presets on this device, most recently updated first.
+    /// Decides the one-shot seed first.
     func all() -> [NamedWinchPreset] {
-        loadRaw().sorted { lhs, rhs in
+        ensureFactorySeed()
+        return Self.sortedByRecency(loadRaw())
+    }
+
+    /// Rows for the Load sheet. Seeds once when allowed, then returns `all()`.
+    func loadList() -> [NamedWinchPreset] {
+        ensureFactorySeed()
+        return all()
+    }
+
+    /// Copy `NamedWinchSeed` into an empty library at most once.
+    /// A non-empty library sets the flag and is left unchanged.
+    /// Clearing the stored presets later does not seed again while the flag remains.
+    func ensureFactorySeed() {
+        guard !defaults.bool(forKey: Self.factorySeedKey) else { return }
+        let existing = loadRaw()
+        guard existing.isEmpty else {
+            defaults.set(true, forKey: Self.factorySeedKey)
+            return
+        }
+        let seeded = NamedWinchSeed.inserting(into: existing)
+        guard !seeded.isEmpty else {
+            defaults.set(true, forKey: Self.factorySeedKey)
+            return
+        }
+        persist(seeded)
+        if loadRaw().count == seeded.count {
+            defaults.set(true, forKey: Self.factorySeedKey)
+        }
+    }
+
+    private static func sortedByRecency(_ items: [NamedWinchPreset]) -> [NamedWinchPreset] {
+        items.sorted { lhs, rhs in
             if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt > rhs.updatedAt }
             return lhs.name < rhs.name
         }
