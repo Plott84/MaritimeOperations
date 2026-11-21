@@ -3,7 +3,7 @@ import SwiftData
 import UIKit
 
 /// Multi-book Export tab — Pixel sheet: books · date range · live preview · disclaimer · sticky Share / Print / Copy.
-/// Solid navy cards only — no Liquid Glass on this screen. Sticky actions use safeAreaInset so they clear the floating tab bar and never cover the disclaimer.
+/// Solid navy cards only — no Liquid Glass on this screen. Sticky actions use safeAreaInset so they stay above the disclaimer. The shared tab-bar inset keeps that strip above the tabs.
 struct ExportView: View {
     @Query private var dpEntries: [DPEntry]
     @Query private var moves: [RigMove]
@@ -384,17 +384,14 @@ struct ExportView: View {
 
     // MARK: - Actions
 
-    /// Sticky action strip — solid navy (no glass). Nested above RootView’s
-    /// floating tab-bar safeAreaInset so Share never covers the disclaimer.
+    /// Sticky action strip — solid navy (no glass). The shared tab-bar inset
+    /// places this strip above the tabs, so Share never covers the disclaimer.
     private var stickyActions: some View {
         actionButtons
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity)
-            // Nested safeAreaInset does not sit above RootView’s floating tab bar;
-            // reserve matching clearance so Share / Print / Copy stay fully readable.
-            .padding(.bottom, 78)
             .background(AppTheme.background)
     }
 

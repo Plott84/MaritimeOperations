@@ -14,6 +14,8 @@ struct RootView: View {
     @State private var showImport = false
     @State private var importPreload: ImportReadFile?
     @State private var importToast: String?
+    /// Measured floating-tab height. Scroll views under the bar use it as bottom inset.
+    @State private var tabBarHeight: CGFloat = 0
 
     init() {
         let primary = HomeBooks.load(defaults: .standard).primary
@@ -81,8 +83,22 @@ struct RootView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            FloatingTabBarScrollInset(height: tabBarHeight)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
         .safeAreaInset(edge: .bottom) {
             FloatingTabBar(selection: $tab)
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: FloatingTabBarHeightKey.self, value: proxy.size.height)
+                    }
+                }
+        }
+        .onPreferenceChange(FloatingTabBarHeightKey.self) { newHeight in
+            guard newHeight > 0, abs(tabBarHeight - newHeight) > 0.5 else { return }
+            tabBarHeight = newHeight
         }
         .preferredColorScheme(.dark)
         .tint(AppTheme.teal)
