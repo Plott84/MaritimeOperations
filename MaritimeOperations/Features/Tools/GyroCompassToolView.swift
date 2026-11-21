@@ -70,6 +70,7 @@ struct GyroCompassToolView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollsAboveFloatingTabBar()
             .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle(GyroCompassCopy.title)

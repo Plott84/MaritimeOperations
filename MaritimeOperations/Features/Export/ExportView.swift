@@ -3,7 +3,7 @@ import SwiftData
 import UIKit
 
 /// Multi-book Export tab — Pixel sheet: books · date range · live preview · disclaimer · sticky Share / Print / Copy.
-/// Solid navy cards only — no Liquid Glass on this screen. Sticky actions use safeAreaInset so they stay above the disclaimer. The shared tab-bar inset keeps that strip above the tabs.
+/// Solid navy cards only — no Liquid Glass on this screen. Sticky actions use safeAreaInset so they clear the floating tab bar and never cover the disclaimer.
 struct ExportView: View {
     @Query private var dpEntries: [DPEntry]
     @Query private var moves: [RigMove]
@@ -93,6 +93,7 @@ struct ExportView: View {
                 // Breathing room above sticky Share strip (safeAreaInset below).
                 .padding(.bottom, 20)
             }
+            .scrollsAboveFloatingTabBar()
         }
         // Sticky Share / Print / Copy above the floating tab bar so the
         // full disclaimer always scrolls clear of the action strip.
@@ -122,6 +123,7 @@ struct ExportView: View {
                 .padding(.bottom, 24)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollsAboveFloatingTabBar()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Rectangle()
@@ -142,6 +144,7 @@ struct ExportView: View {
                 .padding(.bottom, 24)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollsAboveFloatingTabBar()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -384,14 +387,17 @@ struct ExportView: View {
 
     // MARK: - Actions
 
-    /// Sticky action strip — solid navy (no glass). The shared tab-bar inset
-    /// places this strip above the tabs, so Share never covers the disclaimer.
+    /// Sticky action strip — solid navy (no glass). Nested above RootView’s
+    /// floating tab-bar safeAreaInset so Share never covers the disclaimer.
     private var stickyActions: some View {
         actionButtons
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity)
+            // The scroll-content margin does not move this strip. Keep the
+            // clearance that holds Share / Print / Copy above the tabs.
+            .padding(.bottom, 78)
             .background(AppTheme.background)
     }
 

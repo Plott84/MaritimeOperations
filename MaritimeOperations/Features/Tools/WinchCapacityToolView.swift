@@ -317,6 +317,7 @@ struct WinchCapacityToolView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 24)
                 }
+                .scrollsAboveFloatingTabBar()
             }
         }
         .navigationTitle(NamedWinchCopy.navTitle)

@@ -70,6 +70,7 @@ struct CraneBookView: View {
                     }
                 }
             }
+            .scrollsAboveFloatingTabBar()
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .padding(.bottom, 8)

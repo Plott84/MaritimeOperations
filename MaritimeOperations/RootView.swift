@@ -82,12 +82,8 @@ struct RootView: View {
                 }
             }
         }
+        .environment(\.floatingTabBarHeight, tabBarHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            FloatingTabBarScrollInset(height: tabBarHeight)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-        }
         .safeAreaInset(edge: .bottom) {
             FloatingTabBar(selection: $tab)
                 .background {
@@ -95,10 +91,10 @@ struct RootView: View {
                         Color.clear.preference(key: FloatingTabBarHeightKey.self, value: proxy.size.height)
                     }
                 }
-        }
-        .onPreferenceChange(FloatingTabBarHeightKey.self) { newHeight in
-            guard newHeight > 0, abs(tabBarHeight - newHeight) > 0.5 else { return }
-            tabBarHeight = newHeight
+                .onPreferenceChange(FloatingTabBarHeightKey.self) { newHeight in
+                    guard newHeight > 0, abs(tabBarHeight - newHeight) > 0.5 else { return }
+                    tabBarHeight = newHeight
+                }
         }
         .preferredColorScheme(.dark)
         .tint(AppTheme.teal)

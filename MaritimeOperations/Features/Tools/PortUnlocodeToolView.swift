@@ -250,6 +250,7 @@ struct PortUnlocodeToolView: View {
                 }
             }
         }
+        .scrollsAboveFloatingTabBar()
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier("portUnlocode.results")
     }
@@ -304,6 +305,7 @@ struct PortUnlocodeToolView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .scrollsAboveFloatingTabBar()
         .accessibilityIdentifier("portUnlocode.selected")
     }
 

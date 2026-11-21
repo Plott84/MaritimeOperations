@@ -107,6 +107,7 @@ struct MainView: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
+        .scrollsAboveFloatingTabBar()
         .scrollEdgeEffectStyle(.hard, for: .top)
     }
 
@@ -148,6 +149,7 @@ struct MainView: View {
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .scrollsAboveFloatingTabBar()
         .scrollEdgeEffectStyle(.hard, for: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

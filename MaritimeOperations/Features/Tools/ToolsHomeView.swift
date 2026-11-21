@@ -88,6 +88,7 @@ struct ToolsHomeView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollsAboveFloatingTabBar()
         }
         .navigationTitle("Tools")
         .navigationBarTitleDisplayMode(.inline)

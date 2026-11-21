@@ -151,6 +151,7 @@ struct ChainLockerToolView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollsAboveFloatingTabBar()
         }
         .navigationTitle("Chain locker")
         .navigationBarTitleDisplayMode(.inline)

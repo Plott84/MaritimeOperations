@@ -31,6 +31,7 @@ struct DPDaysSettingsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollsAboveFloatingTabBar()
             .scrollEdgeEffectStyle(.hard, for: .top)
         }
         .navigationTitle("Settings")
