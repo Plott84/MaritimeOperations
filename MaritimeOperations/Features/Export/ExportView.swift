@@ -93,6 +93,7 @@ struct ExportView: View {
                 // Breathing room above sticky Share strip (safeAreaInset below).
                 .padding(.bottom, 20)
             }
+            .scrollsAboveFloatingTabBar()
         }
         // Sticky Share / Print / Copy above the floating tab bar so the
         // full disclaimer always scrolls clear of the action strip.
@@ -122,6 +123,7 @@ struct ExportView: View {
                 .padding(.bottom, 24)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollsAboveFloatingTabBar()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Rectangle()
@@ -142,6 +144,7 @@ struct ExportView: View {
                 .padding(.bottom, 24)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollsAboveFloatingTabBar()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -392,8 +395,8 @@ struct ExportView: View {
             .padding(.top, 14)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity)
-            // Nested safeAreaInset does not sit above RootView’s floating tab bar;
-            // reserve matching clearance so Share / Print / Copy stay fully readable.
+            // The scroll-content margin does not move this strip. Keep the
+            // clearance that holds Share / Print / Copy above the tabs.
             .padding(.bottom, 78)
             .background(AppTheme.background)
     }

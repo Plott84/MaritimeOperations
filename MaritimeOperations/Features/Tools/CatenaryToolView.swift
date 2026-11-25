@@ -117,6 +117,7 @@ struct CatenaryToolView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollsAboveFloatingTabBar()
         }
         .navigationTitle("Catenary")
         .navigationBarTitleDisplayMode(.inline)

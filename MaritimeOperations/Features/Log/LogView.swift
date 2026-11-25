@@ -86,6 +86,7 @@ struct LogView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
+            .scrollsAboveFloatingTabBar()
         }
         .navigationTitle("Entries")
         .navigationBarTitleDisplayMode(.inline)
