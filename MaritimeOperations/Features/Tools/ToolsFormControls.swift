@@ -60,6 +60,7 @@ struct ToolNumberField: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(isError ? AppTheme.danger : AppTheme.fieldBorder, lineWidth: isError ? 1.5 : 1)
             }
+            .toolInputBox()
             if let errorReason, isError {
                 Text(errorReason)
                     .font(.footnote)
@@ -351,5 +352,6 @@ struct ToolDegMinInput<Hemi: Hashable>: View {
                 }
             Text(unit).foregroundStyle(AppTheme.textSecondary)
         }
+        .toolInputBox()
     }
 }

@@ -532,6 +532,7 @@ private struct RiggingField: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(error == nil ? AppTheme.fieldBorder : AppTheme.danger, lineWidth: error == nil ? 1 : 1.5)
             }
+            .toolInputBox()
             if let error {
                 Text(error)
                     .font(.footnote)

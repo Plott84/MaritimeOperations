@@ -72,6 +72,7 @@ struct FloatingTabBar: View {
         .glassEffect(.regular, in: .capsule)
         .padding(.horizontal, 12)
         .padding(.bottom, 6)
+        .background(FloatingTabBarMarker())
     }
 }
 
