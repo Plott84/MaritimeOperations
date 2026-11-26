@@ -31,6 +31,99 @@ final class ToolsRiggingUITests: XCTestCase {
         }
     }
 
+    /// Mass in a readout label. The screen formats with the simulator locale,
+    /// so "4.29 t" and "4,29 t" are the same figure. The number has to sit in
+    /// front of a unit; a block index ("T 1") does not count.
+    /// Same rules as `RiggingMathTests.massAmounts`.
+    private func massAmounts(_ text: String) -> [Double] {
+        let chars = Array(text)
+        var values: [Double] = []
+        var index = 0
+        while index < chars.count {
+            guard let (value, end) = readAmount(chars, from: index) else {
+                index += 1
+                continue
+            }
+            if hasMassUnit(chars, from: end) {
+                values.append(value)
+            }
+            index = max(end, index + 1)
+        }
+        return values
+    }
+
+    private func readAmount(_ chars: [Character], from start: Int) -> (Double, Int)? {
+        var index = start
+        var digits = ""
+        var sawDigit = false
+        var sawSeparator = false
+        if chars[index] == "-" {
+            digits.append("-")
+            index += 1
+            if index >= chars.count { return nil }
+        }
+        while index < chars.count {
+            let ch = chars[index]
+            if ch.isASCII && ch.isNumber {
+                digits.append(ch)
+                sawDigit = true
+                index += 1
+                continue
+            }
+            if sawDigit && !sawSeparator && (ch == "." || ch == ",") {
+                let next = index + 1
+                if next < chars.count, chars[next].isASCII, chars[next].isNumber {
+                    digits.append(".")
+                    sawSeparator = true
+                    index += 1
+                    continue
+                }
+            }
+            break
+        }
+        guard sawDigit, let value = Double(digits) else { return nil }
+        return (value, index)
+    }
+
+    private func hasMassUnit(_ chars: [Character], from start: Int) -> Bool {
+        var index = start
+        while index < chars.count, chars[index] == " " || chars[index] == "\u{00A0}" {
+            index += 1
+        }
+        let rest = String(chars[index...])
+        if rest.hasPrefix("tonnes") || rest.hasPrefix("tonne") { return true }
+        if rest.hasPrefix("kilograms") || rest.hasPrefix("kilogram") { return true }
+        if rest.hasPrefix("kg") { return true }
+        guard rest.hasPrefix("t") else { return false }
+        let after = rest.dropFirst()
+        guard let next = after.first else { return true }
+        return !next.isLetter
+    }
+
+    private func assertMass(
+        _ text: String,
+        _ expected: Double,
+        accuracy: Double = 0.001,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let got = massAmounts(text)
+        XCTAssertEqual(got.count, 1, text, file: file, line: line)
+        XCTAssertEqual(got.first ?? .nan, expected, accuracy: accuracy, text, file: file, line: line)
+    }
+
+    private func assertNotMass(
+        _ text: String,
+        _ rejected: Double,
+        accuracy: Double = 0.001,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let got = massAmounts(text)
+        XCTAssertEqual(got.count, 1, text, file: file, line: line)
+        XCTAssertNotEqual(got.first ?? .nan, rejected, accuracy: accuracy, text, file: file, line: line)
+    }
+
     func testSlingingAndChainBlock() throws {
         let app = XCUIApplication.launchedClean()
         XCTAssertEqual(app.buttons["tab_main"].label, "Main")
@@ -69,8 +162,8 @@ final class ToolsRiggingUITests: XCTestCase {
         XCTAssertTrue(hero.label.contains("from vertical"), hero.label)
         XCTAssertFalse(hero.label.lowercased().contains("safe"), hero.label)
         let required = app.descendants(matching: .any)["rigging.required"]
-        XCTAssertTrue(required.label.contains("4.29"), required.label)
-        XCTAssertFalse(required.label.contains("4.28"), required.label)
+        assertMass(required.label, 4.29)
+        assertNotMass(required.label, 4.28)
         XCTAssertTrue(app.descendants(matching: .any)["rigging.echo"].label.contains("from vertical"))
         XCTAssertTrue(app.descendants(matching: .any)["rigging.trig"].label.contains("Band decides pass/fail"))
         XCTAssertTrue(app.descendants(matching: .any)["rigging.trig"].label.contains("info only"))
@@ -104,7 +197,7 @@ final class ToolsRiggingUITests: XCTestCase {
         let exceeds = app.descendants(matching: .any)["rigging.hero"]
         XCTAssertTrue(exceeds.waitForExistence(timeout: 3))
         XCTAssertTrue(exceeds.label.contains("Exceeds"), exceeds.label)
-        XCTAssertTrue(app.descendants(matching: .any)["rigging.trig"].label.contains("3.92"))
+        assertMass(app.descendants(matching: .any)["rigging.trig"].label, 3.92)
         XCTAssertTrue(app.descendants(matching: .any)["rigging.trig"].label.contains("info only"))
 
         scrollToTop(app)
@@ -158,8 +251,8 @@ final class ToolsRiggingUITests: XCTestCase {
         reveal(app, "rigging.t1")
         let t1 = app.descendants(matching: .any)["rigging.t1"]
         XCTAssertTrue(t1.waitForExistence(timeout: 3))
-        XCTAssertTrue(t1.label.contains("1.70"), t1.label)
-        XCTAssertTrue(app.descendants(matching: .any)["rigging.t2"].label.contains("0.71"))
+        assertMass(t1.label, 1.70)
+        assertMass(app.descendants(matching: .any)["rigging.t2"].label, 0.71)
         XCTAssertTrue(app.descendants(matching: .any)["rigging.chain.beta1Row"].label.contains("from vertical"))
         XCTAssertTrue(app.descendants(matching: .any)["rigging.amber"].exists)
 
@@ -230,8 +323,8 @@ final class ToolsRiggingUITests: XCTestCase {
         reveal(app, "rigging.required")
         let straightRequired = app.descendants(matching: .any)["rigging.required"]
         XCTAssertTrue(straightRequired.waitForExistence(timeout: 3))
-        XCTAssertTrue(straightRequired.label.contains("4.29"), straightRequired.label)
-        XCTAssertFalse(straightRequired.label.contains("4.28"), straightRequired.label)
+        assertMass(straightRequired.label, 4.29)
+        assertNotMass(straightRequired.label, 4.28)
 
         scrollToTop(app)
         reveal(app, "rigging.hitch.Choke")
@@ -239,8 +332,8 @@ final class ToolsRiggingUITests: XCTestCase {
         reveal(app, "rigging.required")
         let chokeRequired = app.descendants(matching: .any)["rigging.required"]
         XCTAssertTrue(chokeRequired.waitForExistence(timeout: 3))
-        XCTAssertTrue(chokeRequired.label.contains("5.36"), chokeRequired.label)
-        XCTAssertFalse(chokeRequired.label.contains("4.29"), chokeRequired.label)
+        assertMass(chokeRequired.label, 5.36)
+        assertNotMass(chokeRequired.label, 4.29)
 
         scrollToTop(app)
         reveal(app, "rigging.hitch.Straight")
@@ -248,7 +341,7 @@ final class ToolsRiggingUITests: XCTestCase {
         reveal(app, "rigging.required")
         let restored = app.descendants(matching: .any)["rigging.required"]
         XCTAssertTrue(restored.waitForExistence(timeout: 3))
-        XCTAssertTrue(restored.label.contains("4.29"), restored.label)
+        assertMass(restored.label, 4.29)
     }
 
     func testNegativeAngleShowsFieldError() throws {
