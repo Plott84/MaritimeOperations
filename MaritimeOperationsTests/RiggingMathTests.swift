@@ -161,7 +161,7 @@ struct RiggingMathTests {
         let got = massAmounts(text)
         let bad = Double(rejected) ?? .nan
         #expect(got.count == 1, "\(text) → \(got)")
-        #expect(abs((got.first ?? .nan) - bad) >= 0.005, text)
+        #expect(abs((got.first ?? .nan) - bad) >= 0.005, "\(text)")
     }
 
     // MARK: - Rounding and factors
