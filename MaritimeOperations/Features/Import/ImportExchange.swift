@@ -1000,7 +1000,7 @@ enum ImportFileAccess {
         }
 
         // `.fileSizeKey` on the security-scoped URL, before the bytes are read.
-        // A missing size is treated as over the limit so a broken file is not loaded.
+        // A missing size is its own rejection. The file is not loaded either way.
         let reportedSize = byteCount(url: url)
         if case .failure(let error) = ImportValidator.validate(byteCount: reportedSize, entryCount: 0) {
             throw error

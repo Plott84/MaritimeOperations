@@ -106,7 +106,7 @@ struct ImportSheet: View {
             limitAlertActions
         } message: {
             limitAlertMessage(
-                displayedFailureMessage(matchingTooLarge: true),
+                displayedFailureMessage(identifier: ImportLimitCopy.tooLargeIdentifier),
                 identifier: ImportLimitCopy.tooLargeIdentifier
             )
         }
@@ -114,8 +114,16 @@ struct ImportSheet: View {
             limitAlertActions
         } message: {
             limitAlertMessage(
-                displayedFailureMessage(matchingTooLarge: false),
+                displayedFailureMessage(identifier: ImportLimitCopy.tooManyEntriesIdentifier),
                 identifier: ImportLimitCopy.tooManyEntriesIdentifier
+            )
+        }
+        .alert(ImportLimitCopy.unknownSizeTitle, isPresented: unknownSizePresented) {
+            limitAlertActions
+        } message: {
+            limitAlertMessage(
+                displayedFailureMessage(identifier: ImportLimitCopy.unknownSizeIdentifier),
+                identifier: ImportLimitCopy.unknownSizeIdentifier
             )
         }
         .background {
@@ -385,6 +393,17 @@ struct ImportSheet: View {
         )
     }
 
+    private var unknownSizePresented: Binding<Bool> {
+        Binding(
+            get: { limitFailure == .unknownSize },
+            set: { isPresented in
+                if !isPresented, limitFailure == .unknownSize {
+                    limitFailure = nil
+                }
+            }
+        )
+    }
+
     private var tooManyPresented: Binding<Bool> {
         Binding(
             get: {
@@ -426,16 +445,10 @@ struct ImportSheet: View {
             .accessibilityIdentifier(identifier)
     }
 
-    private func displayedFailureMessage(matchingTooLarge: Bool) -> String {
-        guard let failure = limitFailure ?? retainedLimitFailure else { return "" }
-        switch failure {
-        case .tooLarge where matchingTooLarge:
-            return failure.message
-        case .tooManyEntries where !matchingTooLarge:
-            return failure.message
-        default:
-            return ""
-        }
+    private func displayedFailureMessage(identifier: String) -> String {
+        guard let failure = limitFailure ?? retainedLimitFailure,
+              failure.accessibilityIdentifier == identifier else { return "" }
+        return failure.message
     }
 
     private func adoptLimitFailureIfNeeded() {
@@ -555,7 +568,7 @@ private struct ImportEyebrow: View {
     }
 }
 
-/// Stamps `importErrorTooLarge` / `importErrorTooManyEntries` on the system alert, and
+/// Stamps `importErrorTooLarge`, `importErrorUnknownSize`, or `importErrorTooManyEntries` on the system alert, and
 /// keeps the message labels wrapping at AXL instead of truncating.
 private struct ImportLimitAlertMarker: UIViewRepresentable {
     var failure: ImportLimitError?

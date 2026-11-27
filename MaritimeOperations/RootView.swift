@@ -145,7 +145,7 @@ struct RootView: View {
     }
 
     /// Files, AirDrop, or the share sheet opened an export. The sheet shows that file.
-    /// Over the size limit, the bytes are not read and the sheet shows the too-large alert.
+    /// Over the size limit, or when the size cannot be read, the bytes are not loaded.
     private func openImport(from url: URL) {
         do {
             importPreload = try ImportFileAccess.read(url: url)

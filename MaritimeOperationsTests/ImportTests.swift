@@ -496,12 +496,15 @@ struct ImportTests {
         #expect(ImportLimits.maxFileBytes == 5 * 1024 * 1024)
         #expect(ImportLimits.maxEntries == 20_000)
         #expect(ImportLimitCopy.tooLargeKey == "import.error.tooLarge")
+        #expect(ImportLimitCopy.unknownSizeKey == "import.error.unknownSize")
         #expect(ImportLimitCopy.tooManyEntriesKey == "import.error.tooManyEntries")
         #expect(ImportLimitCopy.tooLargeTitle == "File too large")
+        #expect(ImportLimitCopy.unknownSizeTitle == "Can't check this file")
         #expect(ImportLimitCopy.tooManyEntriesTitle == "Too many entries")
         #expect(ImportLimitCopy.chooseAnotherFile == "Choose Another File")
         #expect(ImportCopy.cancel == "Cancel")
         #expect(ImportLimitCopy.tooLargeIdentifier == "importErrorTooLarge")
+        #expect(ImportLimitCopy.unknownSizeIdentifier == "importErrorUnknownSize")
         #expect(ImportLimitCopy.tooManyEntriesIdentifier == "importErrorTooManyEntries")
     }
 
@@ -539,7 +542,7 @@ struct ImportTests {
 
     @Test func validateRejectsAnUnreadableSizeBeforeItCountsEntries() {
         let result = ImportValidator.validate(byteCount: nil, entryCount: ImportLimits.maxEntries + 1)
-        #expect(result == .failure(.tooLarge(byteCount: nil)))
+        #expect(result == .failure(.unknownSize))
     }
 
     @Test func sizeFailureWinsWhenTheFileIsAlsoOverTheEntryLimit() {
@@ -563,11 +566,20 @@ struct ImportTests {
         )
     }
 
-    @Test func unreadableSizeKeepsTheTooLargeTitle() {
-        let error = ImportLimitError.tooLarge(byteCount: nil)
-        #expect(error.title == "File too large")
-        #expect(error.accessibilityIdentifier == "importErrorTooLarge")
-        #expect(error.message == "This file is larger than 5 MB and can't be imported. Your entries are unchanged.")
+    @Test func unknownSizeIsItsOwnAlertAndDoesNotClaimTheFileIsOverFiveMegabytes() {
+        let error = ImportLimitError.unknownSize
+        #expect(error.title == "Can't check this file")
+        #expect(error.accessibilityIdentifier == "importErrorUnknownSize")
+        #expect(
+            error.message
+                == "Maritime Operations couldn't read this file's size, so nothing was imported. Your entries are unchanged."
+        )
+        #expect(!error.message.contains("5 MB"))
+        #expect(error.title != ImportLimitCopy.tooLargeTitle)
+        let known = ImportLimitError.tooLarge(byteCount: ImportLimits.maxFileBytes + 1)
+        #expect(known.accessibilityIdentifier == "importErrorTooLarge")
+        #expect(known.message.contains("5 MB"))
+        #expect(!known.message.contains("couldn't read this file's size"))
     }
 
     @Test func tooManyEntriesCopyFollowsTheLocaleAndSaysNothingWasImported() {

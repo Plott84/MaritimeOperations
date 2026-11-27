@@ -1,7 +1,7 @@
 import Foundation
 
 /// Hard bounds for Import. A DP logbook export is far smaller than either cap.
-/// `import.error.tooLarge` and `import.error.tooManyEntries` are the copy keys for the alerts.
+/// Copy keys: `import.error.tooLarge`, `import.error.unknownSize`, `import.error.tooManyEntries`.
 enum ImportLimits {
     /// 5 MB. Measured with `URLResourceValues.fileSizeKey` before the file is read.
     static let maxFileBytes = 5 * 1024 * 1024
@@ -11,14 +11,14 @@ enum ImportLimits {
 
 /// Pure size and entry-count gate. Nothing is written from here.
 /// A nil `byteCount` means the security-scoped URL did not report `.fileSizeKey`.
+/// That is its own failure. `tooLarge` is only a known size over the cap.
 enum ImportValidator {
     static func validate(byteCount: Int?, entryCount: Int) -> Result<Void, ImportLimitError> {
-        if let byteCount {
-            if byteCount > ImportLimits.maxFileBytes {
-                return .failure(.tooLarge(byteCount: byteCount))
-            }
-        } else {
-            return .failure(.tooLarge(byteCount: nil))
+        guard let byteCount else {
+            return .failure(.unknownSize)
+        }
+        if byteCount > ImportLimits.maxFileBytes {
+            return .failure(.tooLarge(byteCount: byteCount))
         }
         if entryCount > ImportLimits.maxEntries {
             return .failure(.tooManyEntries(entryCount: entryCount))
@@ -44,19 +44,25 @@ enum ImportLimitFormatting {
 enum ImportLimitCopy {
     /// `import.error.tooLarge`
     static let tooLargeKey = "import.error.tooLarge"
+    /// `import.error.unknownSize`
+    static let unknownSizeKey = "import.error.unknownSize"
     /// `import.error.tooManyEntries`
     static let tooManyEntriesKey = "import.error.tooManyEntries"
 
     static let tooLargeTitle = "File too large"
+    static let unknownSizeTitle = "Can't check this file"
     static let tooManyEntriesTitle = "Too many entries"
     static let chooseAnotherFile = "Choose Another File"
     static let tooLargeIdentifier = "importErrorTooLarge"
+    static let unknownSizeIdentifier = "importErrorUnknownSize"
     static let tooManyEntriesIdentifier = "importErrorTooManyEntries"
 }
 
 enum ImportLimitError: Error, Equatable, Sendable {
-    /// `import.error.tooLarge`. Nil `byteCount` means the size could not be read.
-    case tooLarge(byteCount: Int?)
+    /// `import.error.tooLarge`. The size was read and it is over the cap.
+    case tooLarge(byteCount: Int)
+    /// `import.error.unknownSize`. `.fileSizeKey` could not be read, so the bytes are not loaded.
+    case unknownSize
     /// `import.error.tooManyEntries`
     case tooManyEntries(entryCount: Int)
 
@@ -64,6 +70,8 @@ enum ImportLimitError: Error, Equatable, Sendable {
         switch self {
         case .tooLarge:
             ImportLimitCopy.tooLargeTitle
+        case .unknownSize:
+            ImportLimitCopy.unknownSizeTitle
         case .tooManyEntries:
             ImportLimitCopy.tooManyEntriesTitle
         }
@@ -73,6 +81,8 @@ enum ImportLimitError: Error, Equatable, Sendable {
         switch self {
         case .tooLarge:
             ImportLimitCopy.tooLargeIdentifier
+        case .unknownSize:
+            ImportLimitCopy.unknownSizeIdentifier
         case .tooManyEntries:
             ImportLimitCopy.tooManyEntriesIdentifier
         }
@@ -81,11 +91,10 @@ enum ImportLimitError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .tooLarge(let byteCount):
-            if let byteCount {
-                let size = ImportLimitFormatting.fileSize(byteCount)
-                return "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
-            }
-            return "This file is larger than 5 MB and can't be imported. Your entries are unchanged."
+            let size = ImportLimitFormatting.fileSize(byteCount)
+            return "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+        case .unknownSize:
+            return "Maritime Operations couldn't read this file's size, so nothing was imported. Your entries are unchanged."
         case .tooManyEntries(let entryCount):
             let count = ImportLimitFormatting.entryCount(entryCount)
             return "This file has \(count) entries. Maritime Operations can import up to 20,000 at a time. Nothing was imported and your entries are unchanged."
