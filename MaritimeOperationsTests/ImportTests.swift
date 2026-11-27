@@ -496,6 +496,7 @@ struct ImportTests {
         #expect(ImportLimits.maxFileBytes == 5_000_000)
         #expect(ImportLimits.maxEntries == 20_000)
         #expect(ImportLimitCopy.tooLargeKey == "import.error.tooLarge")
+        #expect(ImportErrorCopy.tooLargeJustOverKey == "import.error.tooLarge.justOver")
         #expect(ImportLimitCopy.unknownSizeKey == "import.error.unknownSize")
         #expect(ImportLimitCopy.tooManyEntriesKey == "import.error.tooManyEntries")
         #expect(ImportLimitCopy.tooLargeTitle == "File too large")
@@ -553,6 +554,7 @@ struct ImportTests {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .decimal
         formatter.allowedUnits = [.useKB, .useMB]
+        formatter.locale = .current
         let size = formatter.string(fromByteCount: Int64(bytes))
         #expect(ImportLimitFormatting.fileSize(bytes) == size)
         let error = ImportLimitError.tooLarge(byteCount: bytes)
@@ -560,8 +562,33 @@ struct ImportTests {
         #expect(error.accessibilityIdentifier == "importErrorTooLarge")
         #expect(
             error.message
-                == "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+                == ImportErrorCopy.tooLargeMessage(byteCount: bytes, formatter: formatter)
         )
+        #expect(error.message == "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged.")
+    }
+
+    @Test func justOverLineWhenFormattedSizeMatchesTheLimit() {
+        let justOver = "This file is just over 5 MB. Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+        for identifier in ["en_US", "nb_NO"] {
+            let formatter = ImportLimitFormatting.byteCountFormatter(locale: Locale(identifier: identifier))
+            let size = formatter.string(fromByteCount: 5_000_001)
+            let limit = formatter.string(fromByteCount: Int64(ImportLimits.maxFileBytes))
+            #expect(size == limit)
+            #expect(ImportErrorCopy.tooLargeMessage(byteCount: 5_000_001, formatter: formatter) == justOver)
+        }
+    }
+
+    @Test func formattedSizeLineWhenItDiffersFromTheLimit() {
+        for identifier in ["en_US", "nb_NO"] {
+            let formatter = ImportLimitFormatting.byteCountFormatter(locale: Locale(identifier: identifier))
+            let size = formatter.string(fromByteCount: 6_000_000)
+            let limit = formatter.string(fromByteCount: Int64(ImportLimits.maxFileBytes))
+            #expect(size != limit)
+            #expect(
+                ImportErrorCopy.tooLargeMessage(byteCount: 6_000_000, formatter: formatter)
+                    == "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+            )
+        }
     }
 
     @Test func unknownSizeIsItsOwnAlertAndDoesNotClaimTheFileIsOverFiveMegabytes() {

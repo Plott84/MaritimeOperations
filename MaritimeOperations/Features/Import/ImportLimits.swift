@@ -1,7 +1,7 @@
 import Foundation
 
 /// Hard bounds for Import. A DP logbook export is far smaller than either cap.
-/// Copy keys: `import.error.tooLarge`, `import.error.unknownSize`, `import.error.tooManyEntries`.
+/// Copy keys: `import.error.tooLarge`, `import.error.tooLarge.justOver`, `import.error.unknownSize`, `import.error.tooManyEntries`.
 enum ImportLimits {
     /// Decimal MB, so the cap matches the "5 MB" alert copy.
     static let maxFileBytes = 5_000_000
@@ -29,11 +29,16 @@ enum ImportValidator {
 
 enum ImportLimitFormatting {
     /// Decimal KB/MB, the same units as the "5 MB" limit in the alert.
-    static func fileSize(_ bytes: Int) -> String {
+    static func byteCountFormatter(locale: Locale = .current) -> ByteCountFormatter {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .decimal
         formatter.allowedUnits = [.useKB, .useMB]
-        return formatter.string(fromByteCount: Int64(bytes))
+        formatter.locale = locale
+        return formatter
+    }
+
+    static func fileSize(_ bytes: Int) -> String {
+        byteCountFormatter().string(fromByteCount: Int64(bytes))
     }
 
     /// Thousands separators follow `locale` (the current locale unless a test passes one).
@@ -57,6 +62,22 @@ enum ImportLimitCopy {
     static let tooLargeIdentifier = "importErrorTooLarge"
     static let unknownSizeIdentifier = "importErrorUnknownSize"
     static let tooManyEntriesIdentifier = "importErrorTooManyEntries"
+}
+
+/// Chooses the too-large alert sentence. When the formatted size rounds to the
+/// formatted limit, the copy says "just over" instead of repeating the same size.
+enum ImportErrorCopy {
+    /// `import.error.tooLarge.justOver`
+    static let tooLargeJustOverKey = "import.error.tooLarge.justOver"
+
+    static func tooLargeMessage(byteCount: Int, formatter: ByteCountFormatter) -> String {
+        let size = formatter.string(fromByteCount: Int64(byteCount))
+        let limit = formatter.string(fromByteCount: Int64(ImportLimits.maxFileBytes))
+        if size == limit {
+            return "This file is just over 5 MB. Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+        }
+        return "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+    }
 }
 
 enum ImportLimitError: Error, Equatable, Sendable {
@@ -92,8 +113,10 @@ enum ImportLimitError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .tooLarge(let byteCount):
-            let size = ImportLimitFormatting.fileSize(byteCount)
-            return "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+            return ImportErrorCopy.tooLargeMessage(
+                byteCount: byteCount,
+                formatter: ImportLimitFormatting.byteCountFormatter()
+            )
         case .unknownSize:
             return "Maritime Operations couldn't read this file's size, so nothing was imported. Your entries are unchanged."
         case .tooManyEntries(let entryCount):
