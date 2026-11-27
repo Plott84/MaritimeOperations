@@ -15,7 +15,7 @@ import XCTest
 /// The official `CatenaryDepthReachabilityUITests` stay as they are.
 /// Authoring VM had no Xcode; this test was not executed there.
 final class ToolsKeyboardChromeUITests: XCTestCase {
-    /// Same gap as `ToolsKeyboardPass.aboveRaisedBar`.
+    /// UI tests cannot see `ToolsKeyboardPass.aboveRaisedBar`. This is that 16 pt gap.
     private static let aboveRaisedBar: CGFloat = 16
 
     override func setUpWithError() throws {
@@ -44,16 +44,15 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
                 guard let toolbarTop = self.toolbarMinY(app, keyboard: keyboard, done: done) else { return false }
                 guard let unit = self.unitBeside(barrel, in: app, label: "mm") else { return false }
                 return unit.frame.height > 1
-                    && unit.frame.maxY <= toolbarTop - Self.aboveRaisedBar + 0.5
+                    && self.clearsToolbar(maxY: unit.frame.maxY, toolbarMinY: toolbarTop)
                     && barrel.isHittable
             },
             "Barrel diameter mm is not 16 pt above the keyboard toolbar, or the field is not hittable. toolbar=\(toolbarMinY(app, keyboard: keyboard, done: done).map { "\($0)" } ?? "missing") barrel=\(barrel.frame) unit=\(unitBeside(barrel, in: app, label: "mm")?.frame.debugDescription ?? "missing")"
         )
         let toolbarTop = try XCTUnwrap(toolbarMinY(app, keyboard: keyboard, done: done), "Keyboard toolbar missing")
         let unit = try XCTUnwrap(unitBeside(barrel, in: app, label: "mm"), "Barrel diameter mm missing")
-        XCTAssertLessThanOrEqual(
-            unit.frame.maxY,
-            toolbarTop - Self.aboveRaisedBar + 0.5,
+        XCTAssertTrue(
+            clearsToolbar(maxY: unit.frame.maxY, toolbarMinY: toolbarTop),
             "Barrel diameter mm maxY \(unit.frame.maxY) is not 16 pt above the toolbar \(toolbarTop)"
         )
         XCTAssertTrue(barrel.isHittable, "Barrel diameter field is not hittable")
@@ -72,28 +71,33 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
             waitUntil(timeout: 3) {
                 guard let toolbarTop = self.toolbarMinY(app, keyboard: keyboard, done: done) else { return false }
                 let frame = length.frame
-                return frame.height > 1 && frame.maxY <= toolbarTop + 0.5 && length.isHittable
+                return frame.height > 1
+                    && self.clearsToolbar(maxY: frame.maxY, toolbarMinY: toolbarTop)
+                    && length.isHittable
             },
-            "Sling length is not fully above the keyboard toolbar, or the field is not hittable. toolbar=\(toolbarMinY(app, keyboard: keyboard, done: done).map { "\($0)" } ?? "missing") field=\(length.frame)"
+            "Sling length is not 16 pt above the keyboard toolbar, or the field is not hittable. toolbar=\(toolbarMinY(app, keyboard: keyboard, done: done).map { "\($0)" } ?? "missing") field=\(length.frame)"
         )
         let toolbarTop = try XCTUnwrap(toolbarMinY(app, keyboard: keyboard, done: done), "Keyboard toolbar missing")
-        XCTAssertLessThanOrEqual(
-            length.frame.maxY,
-            toolbarTop + 0.5,
-            "Sling length maxY \(length.frame.maxY) is not above the toolbar \(toolbarTop)"
+        XCTAssertTrue(
+            clearsToolbar(maxY: length.frame.maxY, toolbarMinY: toolbarTop),
+            "Sling length maxY \(length.frame.maxY) is not 16 pt above the toolbar \(toolbarTop)"
         )
         XCTAssertGreaterThan(length.frame.minY, contentTop(app), "Sling length has no frame below the navigation bar")
         XCTAssertTrue(length.isHittable, "Sling length field is not hittable")
     }
 
-    /// KB-AXL-03. `tab_export` is not checked with `isHittable`; AXL reports that as a false negative.
-    func testKBAXL03WinchAndRiggingLastFieldDoneLeavesExportReachable() throws {
+    /// KB-AXL-03a. Fresh launch. `tab_export` is not checked with `isHittable`.
+    func testKBAXL03aWinchLastFieldDoneLeavesExportReachable() throws {
         let app = XCUIApplication.launchedClean(extraArguments: ContentSize.accessibilityExtraLarge.launchArguments)
         openTool(app, tile: "toolTile.winch", title: "Winch capacity")
         focusField(app, labeled: "1st-layer pull (optional)")
         _ = waitForKeyboard(app)
         assertExportReachableAfterDone(app)
+    }
 
+    /// KB-AXL-03b. Fresh launch, so Rigging does not reuse Winch’s navigation stack.
+    func testKBAXL03bRiggingLastFieldDoneLeavesExportReachable() throws {
+        let app = XCUIApplication.launchedClean(extraArguments: ContentSize.accessibilityExtraLarge.launchArguments)
         openTool(app, tile: "toolTile.rigging", title: "Slinging & Rigging")
         focusField(app, identifier: "rigging.tag")
         _ = waitForKeyboard(app)
@@ -371,6 +375,12 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
                 && frame.maxY <= self.tabButtonTop(app) + 0.5
                 && element.isHittable
         })
+    }
+
+    /// `maxY + aboveRaisedBar <= toolbarMinY + 0.5`. The extra 0.5 pt is frame rounding.
+    /// KB-AXL-01 and KB-AXL-02 both use this so the gap cannot drift.
+    private func clearsToolbar(maxY: CGFloat, toolbarMinY: CGFloat) -> Bool {
+        maxY + Self.aboveRaisedBar <= toolbarMinY + 0.5
     }
 
     private func keyboardDone(_ app: XCUIApplication) -> XCUIElement {
