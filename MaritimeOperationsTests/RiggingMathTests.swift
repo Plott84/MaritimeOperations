@@ -71,99 +71,6 @@ struct RiggingMathTests {
         }
     }
 
-    /// Masses in a readout. `massText` follows the simulator locale, so "4.29 t"
-    /// and "4,29 t" are the same value. The number has to sit in front of a unit
-    /// (`t`, `tonne(s)`, `kg`, `kilogram(s)`); angles and mode factors stay out.
-    /// Same rules as `ToolsRiggingUITests.massAmounts`.
-    private func massAmounts(_ text: String) -> [Double] {
-        let chars = Array(text)
-        var values: [Double] = []
-        var index = 0
-        while index < chars.count {
-            guard let (value, end) = readAmount(chars, from: index) else {
-                index += 1
-                continue
-            }
-            if hasMassUnit(chars, from: end) {
-                values.append(value)
-            }
-            index = max(end, index + 1)
-        }
-        return values
-    }
-
-    private func readAmount(_ chars: [Character], from start: Int) -> (Double, Int)? {
-        var index = start
-        var digits = ""
-        var sawDigit = false
-        var sawSeparator = false
-        if chars[index] == "-" {
-            digits.append("-")
-            index += 1
-            if index >= chars.count { return nil }
-        }
-        while index < chars.count {
-            let ch = chars[index]
-            if ch.isASCII && ch.isNumber {
-                digits.append(ch)
-                sawDigit = true
-                index += 1
-                continue
-            }
-            if sawDigit && !sawSeparator && (ch == "." || ch == ",") {
-                let next = index + 1
-                if next < chars.count, chars[next].isASCII, chars[next].isNumber {
-                    digits.append(".")
-                    sawSeparator = true
-                    index += 1
-                    continue
-                }
-            }
-            break
-        }
-        guard sawDigit, let value = Double(digits) else { return nil }
-        return (value, index)
-    }
-
-    private func hasMassUnit(_ chars: [Character], from start: Int) -> Bool {
-        var index = start
-        while index < chars.count, chars[index] == " " || chars[index] == "\u{00A0}" {
-            index += 1
-        }
-        let rest = String(chars[index...])
-        if rest.hasPrefix("tonnes") || rest.hasPrefix("tonne") { return true }
-        if rest.hasPrefix("kilograms") || rest.hasPrefix("kilogram") { return true }
-        if rest.hasPrefix("kg") { return true }
-        guard rest.hasPrefix("t") else { return false }
-        let after = rest.dropFirst()
-        guard let next = after.first else { return true }
-        return !next.isLetter
-    }
-
-    private func expectMass(_ text: String, _ expected: String, accuracy: Double = 0.001) {
-        let got = massAmounts(text)
-        let want = Double(expected) ?? .nan
-        #expect(got.count == 1, "\(text) → \(got)")
-        #expect(abs((got.first ?? .nan) - want) < accuracy, "\(text)")
-    }
-
-    private func expectMasses(_ text: String, _ expected: [String], accuracy: Double = 0.001) {
-        let got = massAmounts(text)
-        let wants = expected.map { Double($0) ?? .nan }
-        #expect(got.count == wants.count, "\(text) → \(got)")
-        for (value, want) in zip(got, wants) {
-            #expect(abs(value - want) < accuracy, "\(text)")
-        }
-    }
-
-    /// The rounded figure must not be the truncated one (4.29, not 4.28).
-    private func expectNotMass(_ text: String, _ rejected: String) {
-        let got = massAmounts(text)
-        let bad = Double(rejected) ?? .nan
-        #expect(got.count == 1, "\(text) → \(got)")
-        #expect(abs((got.first ?? .nan) - bad) >= 0.005, "\(text)")
-    }
-
     // MARK: - Rounding and factors
 
     @Test func roundingRequiredAndTensionUpCapacityDown() {
@@ -232,14 +139,14 @@ struct RiggingMathTests {
         #expect(row.hero == "Within marked WLL")
         #expect(row.within)
         #expect(row.bandLine == "0–45° · M = 1.4")
-        expectMass(row.requiredLine, "4.29")
+        NumericExpect.expectMass(row.requiredLine, "4.29")
         #expect(row.requiredLine.hasPrefix("≥ "))
-        expectNotMass(row.requiredLine, "4.28")
-        expectMass(row.assemblyLine, "7.00")
-        expectMass(row.tensionLine, "3.93")
+        NumericExpect.expectNotMass(row.requiredLine, "4.28")
+        NumericExpect.expectMass(row.assemblyLine, "7.00")
+        NumericExpect.expectMass(row.tensionLine, "3.93")
         #expect(row.trigLine.contains("Exact trig (info only): factor 1.307"))
         #expect(row.trigLine.contains("/leg. Band decides pass/fail."))
-        expectMass(row.trigLine, "3.93")
+        NumericExpect.expectMass(row.trigLine, "3.93")
         #expect(row.amber == nil)
         #expect(row.assumptions == RiggingCopy.assumptions)
         let echo = try #require(model.slingScreen.echo)
@@ -255,13 +162,13 @@ struct RiggingMathTests {
         let model = sling(load: "6", tag: "5", angle: "40")
         let row = try #require(slingRow(model))
         #expect(row.hero == "Within marked WLL")
-        expectMass(row.requiredLine, "4.29")
+        NumericExpect.expectMass(row.requiredLine, "4.29")
         #expect(row.requiredLine.hasPrefix("≥ "))
-        expectMass(row.assemblyLine, "7.00")
-        expectMass(row.tensionLine, "3.92")
+        NumericExpect.expectMass(row.assemblyLine, "7.00")
+        NumericExpect.expectMass(row.tensionLine, "3.92")
         #expect(row.trigLine.contains("factor 1.305"))
         #expect(row.trigLine.contains("t/leg"))
-        expectMass(row.trigLine, "3.92")
+        NumericExpect.expectMass(row.trigLine, "3.92")
         #expect(row.trigLine.contains("info only"))
         #expect(row.trigLine.contains("Band decides pass/fail."))
         #expect(model.slingScreen.echo?.visible.contains("40.0° from vertical") == true)
@@ -274,8 +181,8 @@ struct RiggingMathTests {
         let row = try #require(slingRow(model))
         #expect(row.hero == "Exceeds")
         #expect(!row.within)
-        expectMass(row.assemblyLine, "5.60")
-        expectMass(row.tensionLine, "3.92")
+        NumericExpect.expectMass(row.assemblyLine, "5.60")
+        NumericExpect.expectMass(row.tensionLine, "3.92")
         #expect(row.trigLine.contains("info only"))
         #expect(model.lastResultSummary == "Last sling 6 t · exceeds · 40°")
     }
@@ -283,9 +190,9 @@ struct RiggingMathTests {
     @Test func threeAndFourLegsUseTwoLegMath() throws {
         let four = sling(load: "6", tag: "5.3", legs: 4, angle: "30")
         let fourRow = try #require(slingRow(four))
-        expectMass(fourRow.assemblyLine, "7.42")
+        NumericExpect.expectMass(fourRow.assemblyLine, "7.42")
         #expect(fourRow.bandLine.contains("M = 1.4"))
-        expectNotMass(fourRow.assemblyLine, "11.13")
+        NumericExpect.expectNotMass(fourRow.assemblyLine, "11.13")
         #expect(four.legNote == "3- and 4-leg slings are calculated as 2-leg.")
         #expect(RiggingMath.modeFactor(legs: 4, hitch: .straight, beta: dec("30")) == dec("1.4"))
 
@@ -293,7 +200,7 @@ struct RiggingMathTests {
         let two = sling(load: "6", tag: "5", legs: 2, angle: "30")
         let threeRow = try #require(slingRow(three))
         let twoRow = try #require(slingRow(two))
-        expectMass(threeRow.tensionLine, "3.47")
+        NumericExpect.expectMass(threeRow.tensionLine, "3.47")
         #expect(threeRow.tensionLine == twoRow.tensionLine)
         #expect(threeRow.requiredLine == twoRow.requiredLine)
         #expect(three.legNote == RiggingCopy.legNote)
@@ -323,7 +230,7 @@ struct RiggingMathTests {
         let row = try #require(slingRow(model))
         #expect(model.slingScreen.echo?.visible.contains("60.0° from vertical") == true)
         #expect(row.amber == RiggingCopy.highAngle)
-        expectMass(row.tensionLine, "6.00")
+        NumericExpect.expectMass(row.tensionLine, "6.00")
         if case .blocked = model.slingScreen.panel {
             Issue.record("60° is inclusive")
         }
@@ -356,7 +263,7 @@ struct RiggingMathTests {
         if case .sling = zero.slingScreen.panel { Issue.record("H = 0 must not produce a result") }
 
         let equal = sling(load: "6", tag: "5", length: "4", height: "4")
-        expectMass(slingRow(equal)?.tensionLine ?? "", "3.00")
+        NumericExpect.expectMass(slingRow(equal)?.tensionLine ?? "", "3.00")
         #expect(equal.slingScreen.echo?.visible.contains("0.0° from vertical") == true)
     }
 
@@ -478,7 +385,7 @@ struct RiggingMathTests {
         #expect(model.slingScreen.errors.load == RiggingCopy.enterNumber)
         model.loadText = "6,0"
         model.tagText = "5"
-        expectMass(slingRow(model)?.requiredLine ?? "", "4.29")
+        NumericExpect.expectMass(slingRow(model)?.requiredLine ?? "", "4.29")
         #expect(slingRow(model)?.requiredLine.hasPrefix("≥ ") == true)
 
         model.loadText = ""
@@ -584,13 +491,13 @@ struct RiggingMathTests {
         #expect(row.noReduction == "No capacity reduction at 0°.")
         #expect(row.angleLine == "0.0° from vertical")
         #expect(row.angleSpoken.contains("from vertical"))
-        expectMasses(row.heroSpoken, ["0.80", "1.00"])
+        NumericExpect.expectMasses(row.heroSpoken, ["0.80", "1.00"])
         #expect(row.heroSpoken.contains("Within block W L L."))
         #expect(row.heroSpoken.contains("tonnes on a"))
         #expect(row.heroSpoken.contains("tonne block."))
         #expect(row.heroSpoken.contains("Angle 0.0 degrees from vertical."))
-        expectMass(row.loadLine, "0.80")
-        expectMass(row.wllLine, "1.00")
+        NumericExpect.expectMass(row.loadLine, "0.80")
+        NumericExpect.expectMass(row.wllLine, "1.00")
         #expect(model.chainScreen.echo?.visible == "β = 0.0° from vertical · straight pull")
         #expect(model.lastResultSummary == "Last block 0.80 t · within")
         assertClean([row.hero, row.heroSpoken, row.angleLine, row.noReduction ?? ""])
@@ -635,8 +542,8 @@ struct RiggingMathTests {
             Issue.record("expected tensions")
             return
         }
-        expectMass(row.tension1Line, "1.70")
-        expectMass(row.tension2Line, "0.71")
+        NumericExpect.expectMass(row.tension1Line, "1.70")
+        NumericExpect.expectMass(row.tension2Line, "0.71")
         #expect(row.amber == RiggingCopy.chainAmber)
         #expect(row.angle1Line.contains("from vertical"))
         #expect(row.angle2Line.contains("from vertical"))
@@ -689,8 +596,8 @@ struct RiggingMathTests {
             Issue.record("one vertical block is a real geometry")
             return
         }
-        expectMass(row.tension1Line, "0.50")
-        expectMass(row.tension2Line, "0.00")
+        NumericExpect.expectMass(row.tension1Line, "0.50")
+        NumericExpect.expectMass(row.tension2Line, "0.00")
         #expect(row.amber == RiggingCopy.chainAmber)
     }
 

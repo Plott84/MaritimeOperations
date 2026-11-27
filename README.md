@@ -11,6 +11,12 @@ Personal DPO logbook helper (iPhone, iOS 18+, SwiftUI + SwiftData).
 CLI tip if `xcodebuild` can’t find SDKs:
 `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
 
+Locale check: `scripts/test-locales.sh '<destination>'` runs `MaritimeOperationsTests` twice (`-testLanguage nb -testRegion NO`, then `-testLanguage en -testRegion US`). It sets `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, `CODE_SIGNING_ALLOWED=NO`, and `CODE_SIGN_IDENTITY=-`, and exits non-zero if either run fails.
+
+```bash
+scripts/test-locales.sh 'platform=iOS Simulator,name=iPhone 16'
+```
+
 ## MVP included
 
 - Floating tab shell with `safeAreaInset` (Main / Entries / Tools / Export)
