@@ -75,6 +75,7 @@ struct PortUnlocodeToolView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(AppTheme.fieldBorder, lineWidth: 1)
         }
+        .toolInputBox()
     }
 
     private var mapCard: some View {

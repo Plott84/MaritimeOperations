@@ -12,10 +12,20 @@ private struct FloatingTabBarHeightEnvironmentKey: EnvironmentKey {
     static let defaultValue: CGFloat = 0
 }
 
+private struct ToolsKeyboardClearanceActiveKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
     var floatingTabBarHeight: CGFloat {
         get { self[FloatingTabBarHeightEnvironmentKey.self] }
         set { self[FloatingTabBarHeightEnvironmentKey.self] = newValue }
+    }
+
+    /// True only while a Tools screen — not a sheet, not another tab — has the keyboard up.
+    var toolsKeyboardClearanceActive: Bool {
+        get { self[ToolsKeyboardClearanceActiveKey.self] }
+        set { self[ToolsKeyboardClearanceActiveKey.self] = newValue }
     }
 }
 
@@ -27,6 +37,10 @@ extension View {
     /// the Depth value at y=788 (Mac, 0b08089, both content sizes). This margin
     /// is applied on the scroll view and is the bar’s measured height, added
     /// on top of the safe area the keyboard already grows.
+    ///
+    /// While the Tools keyboard is up, the same margin also adds
+    /// `ToolsKeyboardPass.aboveRaisedBar` so the focused box can scroll clear.
+    /// Export’s sticky strip does not use this margin; its 78 pt pad stays.
     func scrollsAboveFloatingTabBar() -> some View {
         modifier(FloatingTabBarScrollMargin())
     }
@@ -34,8 +48,10 @@ extension View {
 
 private struct FloatingTabBarScrollMargin: ViewModifier {
     @Environment(\.floatingTabBarHeight) private var barHeight
+    @Environment(\.toolsKeyboardClearanceActive) private var keyboardClearance
 
     func body(content: Content) -> some View {
-        content.contentMargins(.bottom, barHeight, for: .scrollContent)
+        let extra = keyboardClearance ? ToolsKeyboardPass.aboveRaisedBar : 0
+        content.contentMargins(.bottom, barHeight + extra, for: .scrollContent)
     }
 }

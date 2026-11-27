@@ -16,6 +16,10 @@ struct RootView: View {
     @State private var importToast: String?
     /// Measured floating-tab height. Scroll views under the bar use it as bottom inset.
     @State private var tabBarHeight: CGFloat = 0
+    /// Tools keyboard chrome. Opacity only — never writes `tab` or a navigation path.
+    @State private var toolsKeyboardVisible = false
+    @State private var toolsKeyboardSheet = false
+    @State private var toolsKeyboardAnimation: Animation?
 
     init() {
         let primary = HomeBooks.load(defaults: .standard).primary
@@ -83,9 +87,20 @@ struct RootView: View {
             }
         }
         .environment(\.floatingTabBarHeight, tabBarHeight)
+        .environment(\.toolsKeyboardClearanceActive, toolsKeyboardClearanceActive)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            ToolsKeyboardVisibilityAnchor { visible, sheet, animation in
+                toolsKeyboardAnimation = animation
+                toolsKeyboardSheet = sheet
+                toolsKeyboardVisible = visible
+            }
+        }
         .safeAreaInset(edge: .bottom) {
             FloatingTabBar(selection: $tab)
+                .opacity(showsFloatingTabBar ? 1 : 0)
+                .allowsHitTesting(showsFloatingTabBar)
+                .animation(toolsKeyboardAnimation, value: showsFloatingTabBar)
                 .background {
                     GeometryReader { proxy in
                         Color.clear.preference(key: FloatingTabBarHeightKey.self, value: proxy.size.height)
@@ -134,6 +149,20 @@ struct RootView: View {
                 importToast = nil
             }
         }
+    }
+
+    /// QA: the bar hides on Tools while the keyboard is up, and returns after Done
+    /// on the same tab. Sheets keep the bar. This does not assign `tab`.
+    private var showsFloatingTabBar: Bool {
+        ToolsKeyboardPass.showsFloatingTabBar(
+            onToolsTab: tab == .tools,
+            keyboardVisible: toolsKeyboardVisible,
+            sheetPresented: toolsKeyboardSheet
+        )
+    }
+
+    private var toolsKeyboardClearanceActive: Bool {
+        tab == .tools && toolsKeyboardVisible && !toolsKeyboardSheet
     }
 
     /// Files, AirDrop, or the share sheet opened an export. The sheet shows that file.
