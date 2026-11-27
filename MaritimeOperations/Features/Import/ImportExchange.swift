@@ -935,16 +935,37 @@ struct ImportSession: Equatable {
         }
     }
 
-    mutating func receiveFile(name: String, data: Data) {
+    /// Returns a limit failure when the bytes or the decoded entry count are over the cap.
+    /// The payload is not kept, so Import cannot write it. Other read errors stay inline.
+    @discardableResult
+    mutating func receiveFile(name: String, data: Data) -> ImportLimitError? {
         mode = .merge
+        if case .failure(let error) = ImportValidator.validate(byteCount: data.count, entryCount: 0) {
+            source = .empty
+            return error
+        }
         do {
             let payload = try ImportExchange.parse(data: data, filename: name)
+            let entryCount = payload.recordCount
+            if case .failure(let error) = ImportValidator.validate(byteCount: data.count, entryCount: entryCount) {
+                source = .empty
+                return error
+            }
             source = .valid(name: name, byteCount: data.count, payload: payload)
+            return nil
         } catch let error as ImportReadError {
             source = .invalid(name: name, byteCount: data.count, message: error.inlineMessage)
+            return nil
         } catch {
             source = .invalid(name: name, byteCount: data.count, message: ImportCopy.inlineError)
+            return nil
         }
+    }
+
+    /// Drops a chosen file after a limit rejection so a previous valid payload cannot be written.
+    mutating func rejectOverLimit() {
+        mode = .merge
+        source = .empty
     }
 
     mutating func failRead(name: String) {
@@ -977,14 +998,33 @@ enum ImportFileAccess {
                 url.stopAccessingSecurityScopedResource()
             }
         }
+
+        // `.fileSizeKey` on the security-scoped URL, before the bytes are read.
+        // A missing size is its own rejection. The file is not loaded either way.
+        let reportedSize = byteCount(url: url)
+        if case .failure(let error) = ImportValidator.validate(byteCount: reportedSize, entryCount: 0) {
+            throw error
+        }
+
         let data: Data
         do {
             data = try Data(contentsOf: url)
         } catch {
             throw ImportReadError.notMaritimeExport
         }
+        if case .failure(let error) = ImportValidator.validate(byteCount: data.count, entryCount: 0) {
+            throw error
+        }
         let name = url.lastPathComponent.isEmpty ? "Export" : url.lastPathComponent
         return ImportReadFile(name: name, data: data)
+    }
+
+    private static func byteCount(url: URL) -> Int? {
+        do {
+            return try url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+        } catch {
+            return nil
+        }
     }
 }
 
