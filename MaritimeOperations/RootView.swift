@@ -13,6 +13,7 @@ struct RootView: View {
     @State private var entriesBook: LogBook?
     @State private var showImport = false
     @State private var importPreload: ImportReadFile?
+    @State private var importLimitFailure: ImportLimitError?
     @State private var importToast: String?
     /// Measured floating-tab height. Scroll views under the bar use it as bottom inset.
     @State private var tabBarHeight: CGFloat = 0
@@ -102,8 +103,15 @@ struct RootView: View {
         .onOpenURL { url in
             openImport(from: url)
         }
-        .sheet(isPresented: $showImport, onDismiss: { importPreload = nil }) {
-            ImportSheet(preload: $importPreload, onFinished: finishImport)
+        .sheet(isPresented: $showImport, onDismiss: {
+            importPreload = nil
+            importLimitFailure = nil
+        }) {
+            ImportSheet(
+                preload: $importPreload,
+                limitFailure: $importLimitFailure,
+                onFinished: finishImport
+            )
         }
         .sheet(isPresented: $showingAddCrane) {
             AddCraneEntryView()
@@ -137,14 +145,20 @@ struct RootView: View {
     }
 
     /// Files, AirDrop, or the share sheet opened an export. The sheet shows that file.
+    /// Over the size limit, the bytes are not read and the sheet shows the too-large alert.
     private func openImport(from url: URL) {
-        if let file = try? ImportFileAccess.read(url: url) {
-            importPreload = file
-        } else {
+        do {
+            importPreload = try ImportFileAccess.read(url: url)
+            importLimitFailure = nil
+        } catch let error as ImportLimitError {
+            importPreload = nil
+            importLimitFailure = error
+        } catch {
             importPreload = ImportReadFile(
                 name: url.lastPathComponent.isEmpty ? "Export" : url.lastPathComponent,
                 data: Data()
             )
+            importLimitFailure = nil
         }
         showImport = true
     }
@@ -153,6 +167,7 @@ struct RootView: View {
     private func finishImport(_ report: ImportReport) {
         showImport = false
         importPreload = nil
+        importLimitFailure = nil
         showingAddRigMove = false
         logPath = report.logPath
         if let book = report.logPath.first {

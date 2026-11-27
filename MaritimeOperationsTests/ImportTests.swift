@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import MaritimeOperations
 
-/// Import: CSV/PDF parse, merge, replace scope, and the gates that keep a bad file from writing.
+/// Import: CSV/PDF parse, merge, replace scope, size and entry limits, and the gates that keep a bad file from writing.
 struct ImportTests {
     private let cal: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -490,7 +490,183 @@ struct ImportTests {
         #expect(payload.dp.map(\.vessel) == ["Disk"])
     }
 
+    // MARK: - Size and entry limits (REC-06)
+
+    @Test func limitsAreFiveMegabytesAndTwentyThousandEntries() {
+        #expect(ImportLimits.maxFileBytes == 5 * 1024 * 1024)
+        #expect(ImportLimits.maxEntries == 20_000)
+        #expect(ImportLimitCopy.tooLargeKey == "import.error.tooLarge")
+        #expect(ImportLimitCopy.tooManyEntriesKey == "import.error.tooManyEntries")
+        #expect(ImportLimitCopy.tooLargeTitle == "File too large")
+        #expect(ImportLimitCopy.tooManyEntriesTitle == "Too many entries")
+        #expect(ImportLimitCopy.chooseAnotherFile == "Choose Another File")
+        #expect(ImportCopy.cancel == "Cancel")
+        #expect(ImportLimitCopy.tooLargeIdentifier == "importErrorTooLarge")
+        #expect(ImportLimitCopy.tooManyEntriesIdentifier == "importErrorTooManyEntries")
+    }
+
+    @Test func validateAcceptsTheByteLimitAndTheEntryLimitTogether() {
+        let result = ImportValidator.validate(
+            byteCount: ImportLimits.maxFileBytes,
+            entryCount: ImportLimits.maxEntries
+        )
+        #expect(result == .success(()))
+    }
+
+    @Test func validateRejectsOneByteOverTheLimit() {
+        let bytes = ImportLimits.maxFileBytes + 1
+        let result = ImportValidator.validate(byteCount: bytes, entryCount: ImportLimits.maxEntries)
+        #expect(result == .failure(.tooLarge(byteCount: bytes)))
+    }
+
+    @Test func validateRejectsAFileWellOverTheLimit() {
+        let bytes = ImportLimits.maxFileBytes * 20
+        let result = ImportValidator.validate(byteCount: bytes, entryCount: 1)
+        #expect(result == .failure(.tooLarge(byteCount: bytes)))
+    }
+
+    @Test func validateRejectsOneEntryOverTheLimit() {
+        let count = ImportLimits.maxEntries + 1
+        let result = ImportValidator.validate(byteCount: ImportLimits.maxFileBytes, entryCount: count)
+        #expect(result == .failure(.tooManyEntries(entryCount: count)))
+    }
+
+    @Test func validateRejectsAnEntryCountWellOverTheLimit() {
+        let count = ImportLimits.maxEntries * 50
+        let result = ImportValidator.validate(byteCount: 1, entryCount: count)
+        #expect(result == .failure(.tooManyEntries(entryCount: count)))
+    }
+
+    @Test func validateRejectsAnUnreadableSizeBeforeItCountsEntries() {
+        let result = ImportValidator.validate(byteCount: nil, entryCount: ImportLimits.maxEntries + 1)
+        #expect(result == .failure(.tooLarge(byteCount: nil)))
+    }
+
+    @Test func sizeFailureWinsWhenTheFileIsAlsoOverTheEntryLimit() {
+        let bytes = ImportLimits.maxFileBytes + 1
+        let result = ImportValidator.validate(byteCount: bytes, entryCount: ImportLimits.maxEntries + 1)
+        #expect(result == .failure(.tooLarge(byteCount: bytes)))
+    }
+
+    @Test func tooLargeCopyUsesByteCountFormatterAndSaysNothingWasImported() {
+        let bytes = 1_234_567
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        let size = formatter.string(fromByteCount: Int64(bytes))
+        #expect(ImportLimitFormatting.fileSize(bytes) == size)
+        let error = ImportLimitError.tooLarge(byteCount: bytes)
+        #expect(error.title == "File too large")
+        #expect(error.accessibilityIdentifier == "importErrorTooLarge")
+        #expect(
+            error.message
+                == "This file is \(size). Maritime Operations can import files up to 5 MB. Nothing was imported and your entries are unchanged."
+        )
+    }
+
+    @Test func unreadableSizeKeepsTheTooLargeTitle() {
+        let error = ImportLimitError.tooLarge(byteCount: nil)
+        #expect(error.title == "File too large")
+        #expect(error.accessibilityIdentifier == "importErrorTooLarge")
+        #expect(error.message == "This file is larger than 5 MB and can't be imported. Your entries are unchanged.")
+    }
+
+    @Test func tooManyEntriesCopyFollowsTheLocaleAndSaysNothingWasImported() {
+        let count = 20_001
+        #expect(ImportLimitFormatting.entryCount(count, locale: Locale(identifier: "en_US")) == "20,001")
+        #expect(ImportLimitFormatting.entryCount(ImportLimits.maxEntries, locale: Locale(identifier: "en_US")) == "20,000")
+        #expect(ImportLimitFormatting.entryCount(count, locale: Locale(identifier: "de_DE")) == "20.001")
+        let formatted = ImportLimitFormatting.entryCount(count)
+        let error = ImportLimitError.tooManyEntries(entryCount: count)
+        #expect(error.title == "Too many entries")
+        #expect(error.accessibilityIdentifier == "importErrorTooManyEntries")
+        #expect(
+            error.message
+                == "This file has \(formatted) entries. Maritime Operations can import up to 20,000 at a time. Nothing was imported and your entries are unchanged."
+        )
+    }
+
+    @Test func aNormalExportStaysInsideBothLimitsAndCanBeImported() throws {
+        let entry = DPEntry(source: .manual, date: day(2026, 9, 1), durationHours: 2, vessel: "Inside")
+        let csv = try encode(dp: [entry])
+        let data = Data(csv.utf8)
+        let payload = try ImportExchange.parse(data: data, filename: "inside.csv")
+        #expect(payload.recordCount == 1)
+        #expect(ImportValidator.validate(byteCount: data.count, entryCount: payload.recordCount) == .success(()))
+        var session = ImportSession()
+        session.mode = .replaceBooks
+        #expect(session.receiveFile(name: "inside.csv", data: data) == nil)
+        #expect(session.canImport)
+        #expect(session.mode == .merge)
+        #expect(session.payload?.recordCount == 1)
+        #expect(ImportWriteGate.shouldWrite(canImport: session.canImport, mode: session.mode, replaceConfirmed: false))
+    }
+
+    @Test func oversizedBytesAreNotImportableAndDoNotPassTheWriteGate() {
+        var session = ImportSession()
+        session.mode = .replaceBooks
+        let bytes = ImportLimits.maxFileBytes + 1
+        let failure = session.receiveFile(name: "huge.csv", data: Data(count: bytes))
+        #expect(failure == .tooLarge(byteCount: bytes))
+        #expect(!session.canImport)
+        #expect(session.payload == nil)
+        #expect(session.inlineError == nil)
+        #expect(session.mode == .merge)
+        #expect(!ImportWriteGate.shouldWrite(canImport: session.canImport, mode: .merge, replaceConfirmed: true))
+        #expect(!ImportWriteGate.shouldWrite(canImport: session.canImport, mode: .replaceBooks, replaceConfirmed: true))
+    }
+
+    @Test func rejectOverLimitDropsAPreviouslyValidFileSoItCannotBeWritten() throws {
+        let entry = DPEntry(source: .manual, date: day(2026, 9, 2), durationHours: 1, vessel: "Kept")
+        let csv = try encode(dp: [entry])
+        var session = ImportSession()
+        session.mode = .replaceBooks
+        #expect(session.receiveFile(name: "kept.csv", data: Data(csv.utf8)) == nil)
+        #expect(session.canImport)
+        session.rejectOverLimit()
+        #expect(!session.canImport)
+        #expect(session.payload == nil)
+        #expect(session.mode == .merge)
+        #expect(!ImportWriteGate.shouldWrite(canImport: session.canImport, mode: .replaceBooks, replaceConfirmed: true))
+    }
+
+    @Test func readAcceptsAFileExactlyAtTheByteLimit() throws {
+        let bytes = ImportLimits.maxFileBytes
+        let url = try makeSizedFile(bytes: bytes)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let values = try url.resourceValues(forKeys: [.fileSizeKey])
+        #expect(values.fileSize == bytes)
+        let file = try ImportFileAccess.read(url: url)
+        #expect(file.data.count == bytes)
+        #expect(ImportValidator.validate(byteCount: file.data.count, entryCount: 0) == .success(()))
+    }
+
+    @Test func readRejectsAFileOneByteOverTheLimit() throws {
+        let bytes = ImportLimits.maxFileBytes + 1
+        let url = try makeSizedFile(bytes: bytes)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let values = try url.resourceValues(forKeys: [.fileSizeKey])
+        #expect(values.fileSize == bytes)
+        do {
+            _ = try ImportFileAccess.read(url: url)
+            Issue.record("Expected the size limit to reject the file")
+        } catch let error as ImportLimitError {
+            #expect(error == .tooLarge(byteCount: bytes))
+            #expect(error.accessibilityIdentifier == "importErrorTooLarge")
+        } catch {
+            Issue.record("Unexpected error \(error)")
+        }
+    }
+
     // MARK: - Helpers
+
+    /// Real bytes, so `.fileSizeKey` is the logical size and not a sparse-file quirk.
+    private func makeSizedFile(bytes: Int) throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("import-limit-\(UUID().uuidString).csv")
+        try Data(count: bytes).write(to: url)
+        return url
+    }
+
 
     private func encode(
         books: ExportBookSelection = ExportBookSelection(),

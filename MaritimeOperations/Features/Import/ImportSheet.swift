@@ -1,11 +1,23 @@
 import SwiftUI
 import SwiftData
+import UIKit
 import UniformTypeIdentifiers
 
 /// Import sheet. Solid navy cards — no Liquid Glass on this screen.
 struct ImportSheet: View {
     @Binding var preload: ImportReadFile?
+    @Binding var limitFailure: ImportLimitError?
     var onFinished: (ImportReport) -> Void
+
+    init(
+        preload: Binding<ImportReadFile?>,
+        limitFailure: Binding<ImportLimitError?> = .constant(nil),
+        onFinished: @escaping (ImportReport) -> Void
+    ) {
+        _preload = preload
+        _limitFailure = limitFailure
+        self.onFinished = onFinished
+    }
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -16,6 +28,9 @@ struct ImportSheet: View {
     @State private var showPicker = false
     @State private var confirmReplace = false
     @State private var showSaveError = false
+    /// Keeps the alert copy on screen while the alert dismisses.
+    @State private var retainedLimitFailure: ImportLimitError?
+    @State private var hapticFailure: ImportLimitError?
 
     var body: some View {
         sheetChrome
@@ -58,9 +73,15 @@ struct ImportSheet: View {
         .presentationBackground(AppTheme.background)
         .presentationDragIndicator(.visible)
         .accessibilityIdentifier("importSheet")
-        .onAppear(perform: loadPreloadIfNeeded)
+        .onAppear {
+            loadPreloadIfNeeded()
+            adoptLimitFailureIfNeeded()
+        }
         .onChange(of: preload?.id) { _, _ in
             loadPreloadIfNeeded()
+        }
+        .onChange(of: limitFailure) { _, _ in
+            adoptLimitFailureIfNeeded()
         }
         .fileImporter(
             isPresented: $showPicker,
@@ -80,6 +101,27 @@ struct ImportSheet: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Nothing was changed.")
+        }
+        .alert(ImportLimitCopy.tooLargeTitle, isPresented: tooLargePresented) {
+            limitAlertActions
+        } message: {
+            limitAlertMessage(
+                displayedFailureMessage(matchingTooLarge: true),
+                identifier: ImportLimitCopy.tooLargeIdentifier
+            )
+        }
+        .alert(ImportLimitCopy.tooManyEntriesTitle, isPresented: tooManyPresented) {
+            limitAlertActions
+        } message: {
+            limitAlertMessage(
+                displayedFailureMessage(matchingTooLarge: false),
+                identifier: ImportLimitCopy.tooManyEntriesIdentifier
+            )
+        }
+        .background {
+            ImportLimitAlertMarker(failure: limitFailure ?? retainedLimitFailure)
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
         }
     }
 
@@ -300,10 +342,11 @@ struct ImportSheet: View {
     // MARK: - Actions
 
     private func loadPreloadIfNeeded() {
+        guard limitFailure == nil else { return }
         guard let file = preload else { return }
         guard loadedPreloadID != file.id else { return }
         loadedPreloadID = file.id
-        session.receiveFile(name: file.name, data: file.data)
+        limitFailure = session.receiveFile(name: file.name, data: file.data)
     }
 
     private func handlePick(_ result: Result<[URL], Error>) {
@@ -317,11 +360,95 @@ struct ImportSheet: View {
             guard let url = urls.first else { return }
             do {
                 let file = try ImportFileAccess.read(url: url)
-                session.receiveFile(name: file.name, data: file.data)
+                limitFailure = session.receiveFile(name: file.name, data: file.data)
+            } catch let error as ImportLimitError {
+                session.rejectOverLimit()
+                limitFailure = error
             } catch {
+                limitFailure = nil
                 session.failRead(name: url.lastPathComponent)
             }
         }
+    }
+
+    private var tooLargePresented: Binding<Bool> {
+        Binding(
+            get: {
+                if case .tooLarge = limitFailure { return true }
+                return false
+            },
+            set: { isPresented in
+                if !isPresented, case .tooLarge = limitFailure {
+                    limitFailure = nil
+                }
+            }
+        )
+    }
+
+    private var tooManyPresented: Binding<Bool> {
+        Binding(
+            get: {
+                if case .tooManyEntries = limitFailure { return true }
+                return false
+            },
+            set: { isPresented in
+                if !isPresented, case .tooManyEntries = limitFailure {
+                    limitFailure = nil
+                }
+            }
+        )
+    }
+
+    /// Default action reopens the picker. Cancel leaves existing entries alone.
+    /// Neither button is destructive.
+    @ViewBuilder
+    private var limitAlertActions: some View {
+        Button(ImportLimitCopy.chooseAnotherFile) {
+            limitFailure = nil
+            // After the alert finishes dismissing, otherwise the picker will not present.
+            Task { @MainActor in
+                showPicker = true
+            }
+        }
+        .keyboardShortcut(.defaultAction)
+        Button(ImportCopy.cancel, role: .cancel) {}
+    }
+
+    /// Full message at AXL: wrap, do not shrink, do not truncate.
+    private func limitAlertMessage(_ text: String, identifier: String) -> some View {
+        Text(text)
+            .font(.body)
+            .multilineTextAlignment(.leading)
+            .lineLimit(nil)
+            .minimumScaleFactor(1)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityIdentifier(identifier)
+    }
+
+    private func displayedFailureMessage(matchingTooLarge: Bool) -> String {
+        guard let failure = limitFailure ?? retainedLimitFailure else { return "" }
+        switch failure {
+        case .tooLarge where matchingTooLarge:
+            return failure.message
+        case .tooManyEntries where !matchingTooLarge:
+            return failure.message
+        default:
+            return ""
+        }
+    }
+
+    private func adoptLimitFailureIfNeeded() {
+        if let failure = limitFailure {
+            retainedLimitFailure = failure
+            session.rejectOverLimit()
+            if hapticFailure != failure {
+                hapticFailure = failure
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+            return
+        }
+        hapticFailure = nil
     }
 
     private func importTapped() {
@@ -425,6 +552,90 @@ private struct ImportEyebrow: View {
             .foregroundStyle(tint)
             .padding(.bottom, 8)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// Stamps `importErrorTooLarge` / `importErrorTooManyEntries` on the system alert, and
+/// keeps the message labels wrapping at AXL instead of truncating.
+private struct ImportLimitAlertMarker: UIViewRepresentable {
+    var failure: ImportLimitError?
+
+    func makeUIView(context: Context) -> MarkerView {
+        let view = MarkerView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        view.isAccessibilityElement = false
+        return view
+    }
+
+    func updateUIView(_ uiView: MarkerView, context: Context) {
+        if uiView.failure != failure {
+            uiView.retries = 0
+        }
+        uiView.failure = failure
+        uiView.apply()
+    }
+
+    final class MarkerView: UIView {
+        var failure: ImportLimitError?
+        var retries = 0
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            apply()
+        }
+
+        func apply() {
+            guard let failure else { return }
+            guard let alert = presentedAlert(title: failure.title) else {
+                scheduleRetry()
+                return
+            }
+            alert.view.accessibilityIdentifier = failure.accessibilityIdentifier
+            wrapLabels(in: alert.view)
+        }
+
+        private func scheduleRetry() {
+            guard retries < 4 else { return }
+            retries += 1
+            DispatchQueue.main.async { [weak self] in
+                self?.apply()
+            }
+        }
+
+        private func presentedAlert(title: String) -> UIAlertController? {
+            guard let root = window?.rootViewController else { return nil }
+            return search(root, title: title)
+        }
+
+        private func search(_ controller: UIViewController, title: String) -> UIAlertController? {
+            if let alert = controller as? UIAlertController, alert.title == title {
+                return alert
+            }
+            if let presented = controller.presentedViewController,
+               let found = search(presented, title: title) {
+                return found
+            }
+            for child in controller.children {
+                if let found = search(child, title: title) {
+                    return found
+                }
+            }
+            return nil
+        }
+
+        private func wrapLabels(in view: UIView) {
+            if let label = view as? UILabel {
+                label.numberOfLines = 0
+                label.lineBreakMode = .byWordWrapping
+                label.adjustsFontSizeToFitWidth = false
+                label.allowsDefaultTighteningForTruncation = false
+                label.adjustsFontForContentSizeCategory = true
+            }
+            for subview in view.subviews {
+                wrapLabels(in: subview)
+            }
+        }
     }
 }
 
