@@ -343,13 +343,7 @@ struct WinchCapacityToolView: View {
                         ToolsKeyboard.dismiss()
                         showSave = true
                     } label: {
-                        Text(NamedWinchCopy.save)
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(AppTheme.onTeal)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .frame(minHeight: HomeCTAButton.hardMinimumHit)
-                            .background(AppTheme.teal, in: Capsule())
+                        WinchSavePill()
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(NamedWinchCopy.saveHint)
