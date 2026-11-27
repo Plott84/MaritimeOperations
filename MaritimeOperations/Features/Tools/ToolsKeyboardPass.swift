@@ -3,7 +3,9 @@ import CoreGraphics
 /// QA pass rules for the Tools keyboard. Large and accessibility extra large.
 ///
 /// 1. With the keyboard up, the whole input box sits at least `aboveRaisedBar`
-///    (16 pt) above the raised bar.
+///    (16 pt) above the raised bar. When another input row is below the focused
+///    box, that next row’s bottom is the edge that must clear the bar, so Done
+///    does not cover it. The last field has no next row.
 /// 2. The Done button never covers a unit label.
 /// 3. The floating tab bar hides while the keyboard is up and returns after Done
 ///    on the same selected tab. Keyboard chrome does not reset tab selection
@@ -19,6 +21,23 @@ enum ToolsKeyboardPass {
 
     static func inputBoxClearsRaisedBar(boxMaxY: CGFloat, raisedBarTop: CGFloat) -> Bool {
         boxMaxY <= raisedBarTop - aboveRaisedBar
+    }
+
+    /// Nearest input row whose top is at or below the focused box’s bottom.
+    /// A box beside the focused field shares its vertical span and is not next.
+    /// Nil when this field is the last one.
+    static func nextRow(below focused: CGRect, rows: [CGRect]) -> CGRect? {
+        let below = rows.filter { row in
+            row.width > 0 && row.height > 0 && row.minY >= focused.maxY
+        }
+        return below.min { $0.minY < $1.minY }
+    }
+
+    /// Bottom that must sit `aboveRaisedBar` above the keyboard toolbar.
+    /// The next row’s bottom when there is one; otherwise the focused box.
+    static func clearanceEdge(focused: CGRect, rows: [CGRect]) -> CGFloat {
+        guard let next = nextRow(below: focused, rows: rows) else { return focused.maxY }
+        return max(focused.maxY, next.maxY)
     }
 
     /// How far the box still sits below the 16 pt line. Zero or less means it already clears.

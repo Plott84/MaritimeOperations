@@ -23,6 +23,32 @@ struct ToolsKeyboardPassTests {
         #expect(!ToolsKeyboardPass.inputBoxClearsRaisedBar(boxMaxY: 640, raisedBarTop: 640))
     }
 
+    @Test func nextRowIsTheNearestInputBelowTheFocusedBox() {
+        let focused = CGRect(x: 0, y: 100, width: 300, height: 48)
+        let beside = CGRect(x: 160, y: 100, width: 140, height: 48)
+        let next = CGRect(x: 0, y: 170, width: 300, height: 48)
+        let later = CGRect(x: 0, y: 240, width: 300, height: 60)
+        #expect(ToolsKeyboardPass.nextRow(below: focused, rows: [beside, later, next, focused]) == next)
+        #expect(ToolsKeyboardPass.clearanceEdge(focused: focused, rows: [beside, later, next]) == next.maxY)
+    }
+
+    @Test func lastFieldKeepsTheFocusedBoxAsTheClearanceEdge() {
+        let focused = CGRect(x: 0, y: 400, width: 300, height: 48)
+        let above = CGRect(x: 0, y: 300, width: 300, height: 48)
+        let empty = CGRect.zero
+        #expect(ToolsKeyboardPass.nextRow(below: focused, rows: [above, empty, focused]) == nil)
+        #expect(ToolsKeyboardPass.clearanceEdge(focused: focused, rows: [above, empty]) == focused.maxY)
+    }
+
+    @Test func aClearFocusedFieldStillScrollsWhenTheNextRowIsUnderTheBar() {
+        let focused = CGRect(x: 0, y: 520, width: 300, height: 48)
+        let next = CGRect(x: 0, y: 630, width: 300, height: 70)
+        let edge = ToolsKeyboardPass.clearanceEdge(focused: focused, rows: [next])
+        #expect(edge == next.maxY)
+        #expect(ToolsKeyboardPass.overflow(boxMaxY: focused.maxY, raisedBarTop: 640) < 0)
+        #expect(ToolsKeyboardPass.overflow(boxMaxY: edge, raisedBarTop: 640) == 76)
+    }
+
     @Test func overflowIsHowFarTheBoxStillSitsBelowThe16PointLine() {
         #expect(ToolsKeyboardPass.overflow(boxMaxY: 624, raisedBarTop: 640) == 0)
         #expect(ToolsKeyboardPass.overflow(boxMaxY: 700, raisedBarTop: 640) == 76)

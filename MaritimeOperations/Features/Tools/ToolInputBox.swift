@@ -27,8 +27,8 @@ private struct ToolInputBoxAnchor: UIViewRepresentable {
     }
 }
 
-/// Scrolls the enclosing Tools scroll view so this box sits `ToolsKeyboardPass.aboveRaisedBar`
-/// above the raised bar (tab-bar marker, keyboard top, and the scroll view's visible bottom).
+/// Scrolls the enclosing Tools scroll view so the focused box, and the next input
+/// row when there is one, sit `ToolsKeyboardPass.aboveRaisedBar` above the raised bar.
 final class ToolInputBoxAnchorView: UIView {
     private var observing = false
     private var keyboardVisible = false
@@ -97,8 +97,10 @@ final class ToolInputBoxAnchorView: UIView {
         guard keyboardVisible, bounds.width > 1, bounds.height > 1, let window else { return }
         guard containsFocusedField(in: window), let scroll = enclosingScrollView() else { return }
         guard let raised = raisedBarTop(in: window, scroll: scroll) else { return }
-        let boxMaxY = convert(bounds, to: window).maxY
-        let overflow = ToolsKeyboardPass.overflow(boxMaxY: boxMaxY, raisedBarTop: raised)
+        let focused = convert(bounds, to: window)
+        let rows = otherInputBoxes(in: scroll, window: window)
+        let edge = ToolsKeyboardPass.clearanceEdge(focused: focused, rows: rows)
+        let overflow = ToolsKeyboardPass.overflow(boxMaxY: edge, raisedBarTop: raised)
         let target = ToolsKeyboardPass.contentOffsetY(current: scroll.contentOffset.y, overflow: overflow)
         let lower = -scroll.adjustedContentInset.top
         let rawUpper = scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom
@@ -125,6 +127,13 @@ final class ToolInputBoxAnchorView: UIView {
         let box = convert(bounds, to: window)
         let field = focused.convert(focused.bounds, to: window)
         return box.intersects(field)
+    }
+
+    private func otherInputBoxes(in scroll: UIScrollView, window: UIWindow) -> [CGRect] {
+        scroll.descendants(of: ToolInputBoxAnchorView.self).compactMap { box in
+            guard box !== self, box.window === window, box.bounds.width > 1, box.bounds.height > 1 else { return nil }
+            return box.convert(box.bounds, to: window)
+        }
     }
 
     private func enclosingScrollView() -> UIScrollView? {
@@ -172,5 +181,16 @@ private extension UIView {
             if let found = subview.firstDescendant(of: type) { return found }
         }
         return nil
+    }
+
+    func descendants<T: UIView>(of type: T.Type) -> [T] {
+        var found: [T] = []
+        for subview in subviews {
+            if let match = subview as? T {
+                found.append(match)
+            }
+            found.append(contentsOf: subview.descendants(of: type))
+        }
+        return found
     }
 }
