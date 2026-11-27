@@ -30,6 +30,76 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
         try exercise(.accessibilityExtraLarge)
     }
 
+    /// KB-AXL-01. Wire diameter is the row above Barrel diameter.
+    func testKBAXL01WinchBarrelUnitClearsKeyboardToolbar() throws {
+        let app = XCUIApplication.launchedClean(extraArguments: ContentSize.accessibilityExtraLarge.launchArguments)
+        openTool(app, tile: "toolTile.winch", title: "Winch capacity")
+        focusField(app, identifier: "winchField.wireDia")
+        let keyboard = waitForKeyboard(app)
+        let done = keyboardDone(app)
+        let barrel = app.textFields["winchField.barrelD0"]
+        XCTAssertTrue(barrel.waitForExistence(timeout: 3), "Barrel diameter field missing")
+        XCTAssertTrue(
+            waitUntil(timeout: 3) {
+                guard let toolbarTop = self.toolbarMinY(app, keyboard: keyboard, done: done) else { return false }
+                guard let unit = self.unitBeside(barrel, in: app, label: "mm") else { return false }
+                return unit.frame.height > 1
+                    && unit.frame.maxY <= toolbarTop - Self.aboveRaisedBar + 0.5
+                    && barrel.isHittable
+            },
+            "Barrel diameter mm is not 16 pt above the keyboard toolbar, or the field is not hittable. toolbar=\(toolbarMinY(app, keyboard: keyboard, done: done).map { "\($0)" } ?? "missing") barrel=\(barrel.frame) unit=\(unitBeside(barrel, in: app, label: "mm")?.frame.debugDescription ?? "missing")"
+        )
+        let toolbarTop = try XCTUnwrap(toolbarMinY(app, keyboard: keyboard, done: done), "Keyboard toolbar missing")
+        let unit = try XCTUnwrap(unitBeside(barrel, in: app, label: "mm"), "Barrel diameter mm missing")
+        XCTAssertLessThanOrEqual(
+            unit.frame.maxY,
+            toolbarTop - Self.aboveRaisedBar + 0.5,
+            "Barrel diameter mm maxY \(unit.frame.maxY) is not 16 pt above the toolbar \(toolbarTop)"
+        )
+        XCTAssertTrue(barrel.isHittable, "Barrel diameter field is not hittable")
+    }
+
+    /// KB-AXL-02. Load is the row above Sling length.
+    func testKBAXL02RiggingSlingLengthClearsKeyboardToolbar() throws {
+        let app = XCUIApplication.launchedClean(extraArguments: ContentSize.accessibilityExtraLarge.launchArguments)
+        openTool(app, tile: "toolTile.rigging", title: "Slinging & Rigging")
+        focusField(app, identifier: "rigging.load")
+        let keyboard = waitForKeyboard(app)
+        let done = keyboardDone(app)
+        let length = app.textFields["rigging.length"]
+        XCTAssertTrue(length.waitForExistence(timeout: 3), "Sling length field missing")
+        XCTAssertTrue(
+            waitUntil(timeout: 3) {
+                guard let toolbarTop = self.toolbarMinY(app, keyboard: keyboard, done: done) else { return false }
+                let frame = length.frame
+                return frame.height > 1 && frame.maxY <= toolbarTop + 0.5 && length.isHittable
+            },
+            "Sling length is not fully above the keyboard toolbar, or the field is not hittable. toolbar=\(toolbarMinY(app, keyboard: keyboard, done: done).map { "\($0)" } ?? "missing") field=\(length.frame)"
+        )
+        let toolbarTop = try XCTUnwrap(toolbarMinY(app, keyboard: keyboard, done: done), "Keyboard toolbar missing")
+        XCTAssertLessThanOrEqual(
+            length.frame.maxY,
+            toolbarTop + 0.5,
+            "Sling length maxY \(length.frame.maxY) is not above the toolbar \(toolbarTop)"
+        )
+        XCTAssertGreaterThan(length.frame.minY, contentTop(app), "Sling length has no frame below the navigation bar")
+        XCTAssertTrue(length.isHittable, "Sling length field is not hittable")
+    }
+
+    /// KB-AXL-03. `tab_export` is not checked with `isHittable`; AXL reports that as a false negative.
+    func testKBAXL03WinchAndRiggingLastFieldDoneLeavesExportReachable() throws {
+        let app = XCUIApplication.launchedClean(extraArguments: ContentSize.accessibilityExtraLarge.launchArguments)
+        openTool(app, tile: "toolTile.winch", title: "Winch capacity")
+        focusField(app, labeled: "1st-layer pull (optional)")
+        _ = waitForKeyboard(app)
+        assertExportReachableAfterDone(app)
+
+        openTool(app, tile: "toolTile.rigging", title: "Slinging & Rigging")
+        focusField(app, identifier: "rigging.tag")
+        _ = waitForKeyboard(app)
+        assertExportReachableAfterDone(app)
+    }
+
     private func exercise(_ size: ContentSize) throws {
         let app = XCUIApplication.launchedClean(extraArguments: size.launchArguments)
         openCatenary(app)
@@ -166,8 +236,8 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
         return DepthRow(label: label, field: field, unit: unit)
     }
 
-    private func unitBeside(_ field: XCUIElement, in app: XCUIApplication) -> XCUIElement? {
-        let units = app.staticTexts.matching(NSPredicate(format: "label == %@", "m"))
+    private func unitBeside(_ field: XCUIElement, in app: XCUIApplication, label: String = "m") -> XCUIElement? {
+        let units = app.staticTexts.matching(NSPredicate(format: "label == %@", label))
         var best: (element: XCUIElement, dy: CGFloat)?
         var runnerUp = CGFloat.greatestFiniteMagnitude
         for index in 0..<units.count {
@@ -250,8 +320,112 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
     }
 
     private func contentTop(_ app: XCUIApplication) -> CGFloat {
-        let bar = app.navigationBars["Catenary"].exists ? app.navigationBars["Catenary"] : app.navigationBars["Tools"]
-        return bar.frame.maxY
+        for title in ["Catenary", "Winch capacity", "Slinging & Rigging", "Tools"] {
+            let bar = app.navigationBars[title]
+            if bar.exists, bar.frame.maxY > 1 {
+                return bar.frame.maxY
+            }
+        }
+        return app.navigationBars.firstMatch.frame.maxY
+    }
+
+    private func openTool(_ app: XCUIApplication, tile identifier: String, title: String) {
+        let tools = app.buttons["tab_tools"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 8), "Tools tab missing")
+        tools.tap()
+        XCTAssertTrue(app.navigationBars["Tools"].waitForExistence(timeout: 5))
+        let tile = app.descendants(matching: .any)[identifier]
+        XCTAssertTrue(tile.waitForExistence(timeout: 5), "\(identifier) missing")
+        scrollUntil(app, element: tile, isClear: { element in
+            element.frame.height > 1
+                && element.frame.maxY <= self.tabButtonTop(app) + 0.5
+                && element.isHittable
+        })
+        tile.tap()
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5), title)
+    }
+
+    @discardableResult
+    private func focusField(_ app: XCUIApplication, identifier: String) -> XCUIElement {
+        let field = app.textFields[identifier]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), identifier)
+        revealAboveTabs(app, field)
+        field.tap()
+        return field
+    }
+
+    @discardableResult
+    private func focusField(_ app: XCUIApplication, labeled label: String) -> XCUIElement {
+        let field = app.textFields.matching(NSPredicate(format: "label == %@", label)).firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), label)
+        revealAboveTabs(app, field)
+        field.tap()
+        return field
+    }
+
+    private func revealAboveTabs(_ app: XCUIApplication, _ element: XCUIElement) {
+        scrollUntil(app, element: element, isClear: { element in
+            let frame = element.frame
+            return frame.height > 1
+                && frame.minY >= self.contentTop(app) - 0.5
+                && frame.maxY <= self.tabButtonTop(app) + 0.5
+                && element.isHittable
+        })
+    }
+
+    private func keyboardDone(_ app: XCUIApplication) -> XCUIElement {
+        let done = app.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: 3), "Keyboard Done must stay reachable")
+        return done
+    }
+
+    /// Toolbar that contains Done. Prefer the bar inside the keyboard, then any toolbar whose frame holds Done.
+    private func keyboardToolbar(in app: XCUIApplication, keyboard: XCUIElement, done: XCUIElement) -> XCUIElement {
+        let keyboardBars = keyboard.toolbars.containing(NSPredicate(format: "label == %@", "Done"))
+        if keyboardBars.firstMatch.exists, keyboardBars.firstMatch.frame.height > 1 {
+            return nearestBar(in: keyboardBars, to: done)
+        }
+        let bars = app.toolbars.containing(NSPredicate(format: "label == %@", "Done"))
+        return nearestBar(in: bars, to: done)
+    }
+
+    private func nearestBar(in bars: XCUIElementQuery, to done: XCUIElement) -> XCUIElement {
+        var best: XCUIElement?
+        var bestDistance = CGFloat.greatestFiniteMagnitude
+        for index in 0..<bars.count {
+            let bar = bars.element(boundBy: index)
+            let frame = bar.frame
+            guard frame.height > 1, frame.intersects(done.frame) else { continue }
+            let distance = abs(frame.midY - done.frame.midY)
+            if distance < bestDistance {
+                bestDistance = distance
+                best = bar
+            }
+        }
+        return best ?? bars.firstMatch
+    }
+
+    private func toolbarMinY(_ app: XCUIApplication, keyboard: XCUIElement, done: XCUIElement) -> CGFloat? {
+        let bar = keyboardToolbar(in: app, keyboard: keyboard, done: done)
+        guard bar.exists, bar.frame.height > 1, bar.frame.minY > 1 else { return nil }
+        return bar.frame.minY
+    }
+
+    private func assertExportReachableAfterDone(_ app: XCUIApplication) {
+        let done = keyboardDone(app)
+        done.tap()
+        let keyboardGone = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"),
+            object: app.keyboards.firstMatch
+        )
+        XCTAssertEqual(XCTWaiter().wait(for: [keyboardGone], timeout: 5), .completed, "Done did not dismiss the keyboard")
+        let export = app.buttons["tab_export"]
+        XCTAssertTrue(export.waitForExistence(timeout: 5), "Export tab missing after Done")
+        export.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["exportBook_dp"].waitForExistence(timeout: 5),
+            "Export did not open"
+        )
     }
 
     private func tabButtonTop(_ app: XCUIApplication) -> CGFloat {
