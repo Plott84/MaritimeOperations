@@ -3,8 +3,8 @@ import Foundation
 /// Hard bounds for Import. A DP logbook export is far smaller than either cap.
 /// Copy keys: `import.error.tooLarge`, `import.error.unknownSize`, `import.error.tooManyEntries`.
 enum ImportLimits {
-    /// 5 MB. Measured with `URLResourceValues.fileSizeKey` before the file is read.
-    static let maxFileBytes = 5 * 1024 * 1024
+    /// Decimal MB, so the cap matches the "5 MB" alert copy.
+    static let maxFileBytes = 5_000_000
     /// Entries across every book in one file, checked after a successful decode.
     static let maxEntries = 20_000
 }
@@ -28,10 +28,11 @@ enum ImportValidator {
 }
 
 enum ImportLimitFormatting {
-    /// `ByteCountFormatter` with the `.file` count style (Finder units, current locale).
+    /// Decimal KB/MB, the same units as the "5 MB" limit in the alert.
     static func fileSize(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
+        formatter.countStyle = .decimal
+        formatter.allowedUnits = [.useKB, .useMB]
         return formatter.string(fromByteCount: Int64(bytes))
     }
 

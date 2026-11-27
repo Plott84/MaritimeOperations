@@ -493,7 +493,7 @@ struct ImportTests {
     // MARK: - Size and entry limits (REC-06)
 
     @Test func limitsAreFiveMegabytesAndTwentyThousandEntries() {
-        #expect(ImportLimits.maxFileBytes == 5 * 1024 * 1024)
+        #expect(ImportLimits.maxFileBytes == 5_000_000)
         #expect(ImportLimits.maxEntries == 20_000)
         #expect(ImportLimitCopy.tooLargeKey == "import.error.tooLarge")
         #expect(ImportLimitCopy.unknownSizeKey == "import.error.unknownSize")
@@ -508,22 +508,19 @@ struct ImportTests {
         #expect(ImportLimitCopy.tooManyEntriesIdentifier == "importErrorTooManyEntries")
     }
 
-    @Test func validateAcceptsTheByteLimitAndTheEntryLimitTogether() {
-        let result = ImportValidator.validate(
-            byteCount: ImportLimits.maxFileBytes,
-            entryCount: ImportLimits.maxEntries
-        )
+    @Test func validateAcceptsExactlyFiveMillionBytes() {
+        #expect(ImportLimits.maxFileBytes == 5_000_000)
+        let result = ImportValidator.validate(byteCount: 5_000_000, entryCount: ImportLimits.maxEntries)
         #expect(result == .success(()))
     }
 
-    @Test func validateRejectsOneByteOverTheLimit() {
-        let bytes = ImportLimits.maxFileBytes + 1
-        let result = ImportValidator.validate(byteCount: bytes, entryCount: ImportLimits.maxEntries)
-        #expect(result == .failure(.tooLarge(byteCount: bytes)))
+    @Test func validateRejectsOneByteOverFiveMillion() {
+        let result = ImportValidator.validate(byteCount: 5_000_001, entryCount: 0)
+        #expect(result == .failure(.tooLarge(byteCount: 5_000_001)))
     }
 
     @Test func validateRejectsAFileWellOverTheLimit() {
-        let bytes = ImportLimits.maxFileBytes * 20
+        let bytes = 50_000_000
         let result = ImportValidator.validate(byteCount: bytes, entryCount: 1)
         #expect(result == .failure(.tooLarge(byteCount: bytes)))
     }
@@ -554,7 +551,8 @@ struct ImportTests {
     @Test func tooLargeCopyUsesByteCountFormatterAndSaysNothingWasImported() {
         let bytes = 1_234_567
         let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
+        formatter.countStyle = .decimal
+        formatter.allowedUnits = [.useKB, .useMB]
         let size = formatter.string(fromByteCount: Int64(bytes))
         #expect(ImportLimitFormatting.fileSize(bytes) == size)
         let error = ImportLimitError.tooLarge(byteCount: bytes)
@@ -580,6 +578,12 @@ struct ImportTests {
         #expect(known.accessibilityIdentifier == "importErrorTooLarge")
         #expect(known.message.contains("5 MB"))
         #expect(!known.message.contains("couldn't read this file's size"))
+    }
+
+    @Test func oneByteOverFormatsWithFiveAndMB() {
+        let text = ImportLimitFormatting.fileSize(5_000_001)
+        #expect(text.contains("5"))
+        #expect(text.contains("MB"))
     }
 
     @Test func tooManyEntriesCopyFollowsTheLocaleAndSaysNothingWasImported() {
