@@ -8,7 +8,9 @@ import XCTest
 ///    accessibility extra large. `ToolsKeyboardPass.aboveRaisedBar` is that 16 pt.
 /// 2. Done does not cover the unit.
 /// 3. The tab bar is not hittable while the keyboard is up, and after Done the
-///    same Tools tab is still selected on Catenary.
+///    same Tools tab is still selected on Catenary. Large also requires the
+///    Tools tab to be hittable. Accessibility extra large taps Export and waits
+///    for `exportBook_dp`.
 ///
 /// The official `CatenaryDepthReachabilityUITests` stay as they are.
 /// Authoring VM had no Xcode; this test was not executed there.
@@ -81,14 +83,26 @@ final class ToolsKeyboardChromeUITests: XCTestCase {
             object: app.keyboards.firstMatch
         )
         XCTAssertEqual(XCTWaiter().wait(for: [keyboardGone], timeout: 5), .completed, "Done did not dismiss the keyboard")
-        XCTAssertTrue(
-            waitUntil(timeout: 3) { tools.isHittable && tools.isSelected },
-            "Tab bar did not return on the Tools tab after Done"
-        )
-        XCTAssertTrue(app.navigationBars["Catenary"].exists, "Done left Catenary")
-        XCTAssertFalse(app.buttons["tab_log"].isSelected, "Done selected Entries")
-        XCTAssertFalse(app.buttons["tab_main"].isSelected, "Done selected Main")
-        XCTAssertFalse(app.buttons["tab_export"].isSelected, "Done selected Export")
+        switch size {
+        case .large:
+            XCTAssertTrue(
+                waitUntil(timeout: 3) { tools.isHittable && tools.isSelected },
+                "Tab bar did not return on the Tools tab after Done"
+            )
+            XCTAssertTrue(app.navigationBars["Catenary"].exists, "Done left Catenary")
+            XCTAssertFalse(app.buttons["tab_log"].isSelected, "Done selected Entries")
+            XCTAssertFalse(app.buttons["tab_main"].isSelected, "Done selected Main")
+            XCTAssertFalse(app.buttons["tab_export"].isSelected, "Done selected Export")
+        case .accessibilityExtraLarge:
+            XCTAssertTrue(tools.isSelected, "Tools tab was not selected after Done")
+            let export = app.buttons["tab_export"]
+            XCTAssertTrue(export.waitForExistence(timeout: 5), "Export tab missing after Done")
+            export.tap()
+            XCTAssertTrue(
+                app.descendants(matching: .any)["exportBook_dp"].waitForExistence(timeout: 5),
+                "Export did not open"
+            )
+        }
     }
 
     // MARK: - Rules
